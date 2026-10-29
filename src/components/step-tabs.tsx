@@ -28,8 +28,7 @@ function FlowLine() {
 }
 
 /**
- * Scan Portal → Opportunities → Approval Center. Each circle shows its key number, opens its screen below,
- * and shows an orange mark when work is waiting.
+ * Scan Portal → Opportunities → Approval Center. Each circle shows its key number and opens its screen below.
  */
 export function StepTabs() {
   // First-time setup belongs to step 1, so Scan Portal shows as selected there.
@@ -40,11 +39,9 @@ export function StepTabs() {
 
   const { tenders } = demo;
   const open = tenders.filter(isActive).length;
-  const newFromScan = tenders.filter((t) => t.fromLatestScan).length;
   const awaiting = tenders.filter((t) => t.status === "Awaiting HoD").length;
   const portals = demo.sources.filter((s) => s.kind !== "Upload");
   const connected = portals.filter((s) => s.status === "Connected").length;
-  const needsSignIn = portals.filter((s) => s.accessState === "Action needed" && s.status !== "Paused").length;
 
   const steps = [
     {
@@ -54,7 +51,6 @@ export function StepTabs() {
       icon: Radar,
       value: connected,
       unit: "sources",
-      alert: needsSignIn ? `${needsSignIn} need sign-in` : undefined,
     },
     {
       href: "/pipeline",
@@ -63,7 +59,6 @@ export function StepTabs() {
       icon: ListOrdered,
       value: open,
       unit: "open",
-      alert: newFromScan ? `${newFromScan} new from latest scan` : undefined,
     },
     {
       href: "/approvals",
@@ -72,7 +67,6 @@ export function StepTabs() {
       icon: CheckCircle2,
       value: awaiting,
       unit: "awaiting",
-      alert: awaiting ? "Waiting for HoD decision" : undefined,
     },
   ];
 
@@ -103,14 +97,6 @@ export function StepTabs() {
                       {s.unit}
                     </span>
                   </span>
-                  {s.alert && (
-                    <span
-                      title={s.alert}
-                      className="absolute top-0.5 right-0.5 grid size-6 place-items-center rounded-full bg-amber-500 text-[11px] font-bold text-white ring-[3px] ring-card"
-                    >
-                      !
-                    </span>
-                  )}
                 </span>
                 <span className={cn("mt-3 text-sm font-semibold", on ? "text-primary" : "text-foreground")}>{s.title}</span>
                 <span className="mt-0.5 text-xs text-muted-foreground">{s.action}</span>
