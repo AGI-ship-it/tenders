@@ -2,6 +2,8 @@
 
 A clickable prototype showing how an AI agent can scan government and client tender portals, rank the opportunities that fit Al Ghurair Facilities Solutions, route them to service-line Heads of Department for prequalification, and hand qualified ones to Dynamics 365 as leads.
 
+**Live demo:** https://agi-ship-it.github.io/tenders/
+
 > **Prototype with simulated data.** All portals, tenders, buyers, people, scores and integrations are fictional. Nothing connects to external portals, signs in to real services, downloads real tenders or submits bids. Demo state is saved in your browser.
 
 ## The flow
@@ -37,6 +39,10 @@ npm run dev
 ```
 
 Then open http://localhost:3000.
+
+## Deploy
+
+Every push to `main` runs `.github/workflows/deploy-pages.yml`, which builds a static export (`GITHUB_PAGES=true npm run build`) and publishes it to GitHub Pages.
 
 ## Tech
 

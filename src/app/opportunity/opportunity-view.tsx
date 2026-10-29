@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -32,7 +32,7 @@ import { PortalLinkButton } from "@/components/portal-link";
 import { RecommendationBadge, scoreTone } from "@/components/shared";
 
 export function TenderDetail() {
-  const { id } = useParams<{ id: string }>();
+  const id = useSearchParams().get("id") ?? "";
   const demo = useDemo()!;
   const tender = demo.tenders.find((t) => t.id === id);
   const source = demo.sources.find((s) => s.id === tender?.sourceId);

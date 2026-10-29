@@ -593,7 +593,7 @@ function UploadFlow({ onBack, onDone }: { onBack: () => void; onDone: () => void
                 key={t.id}
                 onClick={() => {
                   onDone();
-                  router.push(`/pipeline/${t.id}`);
+                  router.push(`/opportunity?id=${encodeURIComponent(t.id)}`);
                 }}
                 className="flex w-full items-center gap-3 rounded-lg bg-muted/40 px-3 py-2.5 text-left transition-colors hover:bg-muted"
               >

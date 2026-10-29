@@ -191,7 +191,7 @@ function ReviewPanel({ tender }: { tender: Tender }) {
         <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
       </div>
 
-      <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/pipeline/${tender.id}`} />}>
+      <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}`} />}>
         Open full opportunity and AI reasoning <ArrowUpRight />
       </Button>
 
@@ -324,7 +324,7 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
               return (
                 <tr key={t.id} className="align-top hover:bg-muted/30">
                   <td className="max-w-[300px] px-5 py-3">
-                    <Link href={`/pipeline/${t.id}`} className="group">
+                    <Link href={`/opportunity?id=${encodeURIComponent(t.id)}`} className="group">
                       <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
                       <div className="truncate font-medium group-hover:text-primary">{t.title}</div>
                       <div className="text-xs text-muted-foreground">
@@ -387,7 +387,7 @@ function AuditTrail() {
               <td className="px-3 py-3">{e.action}</td>
               <td className="px-3 py-3">
                 {e.tenderId && (
-                  <Link href={`/pipeline/${e.tenderId}`} className="font-mono text-xs text-primary hover:underline">
+                  <Link href={`/opportunity?id=${encodeURIComponent(e.tenderId)}`} className="font-mono text-xs text-primary hover:underline">
                     {e.tenderId}
                   </Link>
                 )}

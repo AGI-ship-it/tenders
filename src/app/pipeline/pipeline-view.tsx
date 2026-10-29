@@ -132,7 +132,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 return (
                   <tr
                     key={t.id}
-                    onClick={() => router.push(`/pipeline/${t.id}`)}
+                    onClick={() => router.push(`/opportunity?id=${encodeURIComponent(t.id)}`)}
                     className={cn(
                       "group cursor-pointer transition-colors hover:bg-secondary/50",
                       t.fromLatestScan && "bg-sky-50/40",
