@@ -419,17 +419,32 @@ export function addUploadedFiles(fileNames: string[]): Tender[] {
 }
 
 export type ScanMode = "discover" | "checkin";
+const PENDING_SCAN_KEY = "agfs-pending-scan";
 let pendingScan: ScanMode | null = null;
 
-/** Asks Scan Portal to start a scan as soon as it opens (after sign-in or first-time setup). */
+/**
+ * Asks Scan Portal to start a scan as soon as it opens (after sign-in or first-time setup). Also kept in
+ * sessionStorage, because on static hosting the move to Scan Portal can be a full page load.
+ */
 export function requestScan(mode: ScanMode) {
   pendingScan = mode;
+  try {
+    sessionStorage.setItem(PENDING_SCAN_KEY, mode);
+  } catch {}
 }
 
 export function peekPendingScan(): ScanMode | null {
-  return pendingScan;
+  if (pendingScan) return pendingScan;
+  try {
+    const v = sessionStorage.getItem(PENDING_SCAN_KEY);
+    if (v === "discover" || v === "checkin") return v;
+  } catch {}
+  return null;
 }
 
 export function clearPendingScan() {
   pendingScan = null;
+  try {
+    sessionStorage.removeItem(PENDING_SCAN_KEY);
+  } catch {}
 }
