@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AGFS Tender Intelligence
 
-## Getting Started
+A clickable prototype showing how an AI agent can scan government and client tender portals, rank the opportunities that fit Al Ghurair Facilities Solutions, route them to service-line Heads of Department for prequalification, and hand qualified ones to Dynamics 365 as leads.
 
-First, run the development server:
+> **Prototype with simulated data.** All portals, tenders, buyers, people, scores and integrations are fictional. Nothing connects to external portals, signs in to real services, downloads real tenders or submits bids. Demo state is saved in your browser.
+
+## The flow
+
+**Sign in → Scan Portal → Opportunities → Approval Center → D365**
+
+1. **Scan Portal.** Signing in runs a scan across connected portals. You see each step (connect, discover, extract, deduplicate, score) and a live log, then the results by source. **Run again** finds new opportunities.
+2. **Opportunities.** One ranked list across every portal. Open an opportunity to see the AI reasoning, then submit it for prequalification.
+3. **Approval Center.** Opportunities are routed automatically to the HoD of their service line. The HoD prequalifies, requests changes or marks them not qualified.
+4. **D365.** Prequalified opportunities are pushed to D365 Lead Management as leads (simulated).
+
+## Highlights
+
+- **Portal sign-in handled properly.** Public portals, password vault, UAE PASS approval on a named person's phone, and CAPTCHA portals read through email alerts. The agent never bypasses a login or CAPTCHA.
+- **Add sources two ways.** Connect a portal through a short guided journey, or upload one or more RFP files.
+- **Explainable AI.** The fit score is a weighted sum of six AGFS criteria (service, geography, contract size, eligibility, strategic value, capacity), with every point traceable. Win probability and margin band are shown separately and labelled as indicative.
+- **Documented decisions.** A decision register (with CSV export) and a full audit trail of agent and human actions.
+- **Roles.** Bid Analyst and Service-line HoD, switchable from the profile menu.
+
+## Demo tips
+
+- **Sign in** on a fresh demo discovers 3 new opportunities. Later sign-ins re-check portals and show what is already tracked.
+- **Reset demo** (profile menu, top right) restores fresh data and replays first-time setup.
+- A good path: open the Dubai health clinics opportunity, click **Why 92?**, **Submit for prequalification**, switch to **HoD**, **Prequalify**, then **Push to D365 as lead**.
+
+## Run locally
+
+Requires Node.js 20 or newer.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Next.js (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Motion · Lucide icons. Colours follow the Al Ghurair design tokens. No backend: state lives in `localStorage`.
 
-## Learn More
+## Where things are
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | What |
+| --- | --- |
+| `src/lib/mock-data.ts` | Fictional portals, tenders, people and service-line HoDs |
+| `src/lib/scoring.ts` | AGFS fit criteria, weights and recommendation rules |
+| `src/lib/store.ts` | Demo state and actions (scan, submit, decide, push to D365) |
+| `src/components/` | Scan panel, step circles, add-source journey, decision panel, D365 push |
+| `src/app/` | Screens: welcome, setup, Scan Portal, Opportunities, Approval Center |
