@@ -33,7 +33,8 @@ import {
 } from "@/components/ui/dialog";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  // Static hosting (GitHub Pages) serves pages with a trailing slash, e.g. "/sources/".
+  const pathname = usePathname().replace(/(.)\/$/, "$1");
   const demo = useDemo();
 
   // The welcome screen is full-screen, without app chrome. First-time setup uses the normal layout.
