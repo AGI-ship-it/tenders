@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, CircleDashed, Fingerprint, Loader2, PauseCircle, Radar, RotateCw, Sparkles } from "lucide-react";
+import { ArrowRight, Check, CircleDashed, Fingerprint, Loader2, PauseCircle, Radar, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { clearPendingScan, completeScan, isScannable, peekPendingScan, useDemo } from "@/lib/store";
@@ -76,7 +76,14 @@ function buildSteps(ready: Source[], blocked: Source[]): Step[] {
  * The scan, played out on the Scan Portal screen: run → live steps → results, then on to Opportunities.
  * Nothing is applied until a run completes, so leaving mid-run changes nothing.
  */
-export function ScanPanel({ onOpenSources }: { onOpenSources: () => void }) {
+export function ScanPanel({
+  onOpenSources,
+  sourcesAction,
+}: {
+  onOpenSources: () => void;
+  /** The "Sources" button, shown in the card header next to Run AI Scan. */
+  sourcesAction: React.ReactNode;
+}) {
   const demo = useDemo()!;
   // A scan requested by sign-in or first-time setup. Read once into state so re-renders can't lose it.
   const [autoStart] = useState(peekPendingScan);
@@ -151,9 +158,19 @@ export function ScanPanel({ onOpenSources }: { onOpenSources: () => void }) {
 
   const progress = phase === "done" ? 100 : steps.length ? Math.round(((step + 0.5) / steps.length) * 100) : 0;
 
+  const runButton = (
+    <Button
+      className="h-10 gap-2 rounded-xl px-5 shadow-md shadow-primary/20 [&_svg:not([class*='size-'])]:size-[17px]"
+      onClick={() => start(true)}
+    >
+      <Sparkles /> Run AI Scan
+    </Button>
+  );
+
   if (phase === "idle") {
     return (
-      <section className="flex flex-col items-center rounded-3xl bg-card px-6 py-12 text-center shadow-soft">
+      <section className="relative flex flex-col items-center rounded-3xl bg-card px-6 py-12 text-center shadow-soft">
+        <div className="absolute top-4 right-4">{sourcesAction}</div>
         <span className="grid size-16 place-items-center rounded-2xl bg-primary/10 text-primary">
           <Radar className="size-8" />
         </span>
@@ -184,7 +201,7 @@ export function ScanPanel({ onOpenSources }: { onOpenSources: () => void }) {
 
   return (
     <section className="overflow-hidden rounded-3xl bg-card shadow-soft">
-      <header className="border-b px-6 pt-5 pb-4">
+      <header className="border-b px-6 py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -204,14 +221,10 @@ export function ScanPanel({ onOpenSources }: { onOpenSources: () => void }) {
           {phase === "running" ? (
             <span className="tabular text-xs text-muted-foreground">{progress}%</span>
           ) : (
-            blocked.length > 0 && (
-              <button
-                onClick={onOpenSources}
-                className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100"
-              >
-                <Fingerprint className="size-3.5" /> {blocked.length} need sign-in
-              </button>
-            )
+            <div className="flex items-center gap-2">
+              {sourcesAction}
+              {runButton}
+            </div>
           )}
         </div>
         {phase === "running" && (
@@ -276,14 +289,9 @@ export function ScanPanel({ onOpenSources }: { onOpenSources: () => void }) {
 
       <footer className="flex items-center justify-between gap-2 border-t bg-muted/30 px-6 py-3">
         {phase === "done" ? (
-          <>
-            <Button variant="outline" onClick={() => start(true)}>
-              <RotateCw /> Run again
-            </Button>
-            <Button size="lg" nativeButton={false} render={<Link href="/pipeline" />}>
-              Next: Review opportunities <ArrowRight />
-            </Button>
-          </>
+          <Button variant="outline" className="ml-auto" nativeButton={false} render={<Link href="/pipeline" />}>
+            Next: Review opportunities <ArrowRight />
+          </Button>
         ) : (
           <Button variant="outline" className="ml-auto" onClick={cancel}>
             Cancel scan
