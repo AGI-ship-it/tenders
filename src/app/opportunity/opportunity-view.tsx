@@ -76,13 +76,13 @@ export function TenderDetail() {
   const history = demo.audit.filter((e) => e.tenderId === tender.id);
 
   return (
-    <div className="space-y-6">
-      <button onClick={goBack} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+    <div className="flex min-h-0 flex-1 flex-col gap-5">
+      <button onClick={goBack} className="inline-flex shrink-0 items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" /> {back.label}
       </button>
 
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="text-xs text-muted-foreground">
             {tender.category} · {tender.buyer} · {tender.emirate}
@@ -93,7 +93,7 @@ export function TenderDetail() {
       </div>
 
       {/* Key facts, as listed on the portal */}
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl shadow-soft bg-zinc-100 md:grid-cols-5">
+      <dl className="grid shrink-0 grid-cols-2 gap-px overflow-hidden rounded-xl shadow-soft bg-zinc-100 md:grid-cols-5">
         <Fact label="Tender ID" value={<span className="font-mono">{tender.sourceRef}</span>} sub={`AGFS ref ${tender.id}`} />
         <Fact label="Bidding opens" value={formatDate(tender.publishedAt)} sub={source?.name} />
         <Fact
@@ -111,10 +111,10 @@ export function TenderDetail() {
         <Fact label="Contract term" value={`${tender.durationMonths} months`} sub={tender.location.split(" (")[0]} />
       </dl>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-        <div className="min-w-0 space-y-6">
+      <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[1fr_340px]">
+        <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto pr-1">
           {/* Three distinct scores */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid shrink-0 gap-4 md:grid-cols-3">
             <ScoreCard
               label="AI fit score"
               value={`${fit}`}
@@ -144,8 +144,8 @@ export function TenderDetail() {
           <RecommendationCard tender={tender} fit={fit} />
 
           {/* Details, progressively disclosed */}
-          <Tabs defaultValue="summary" className="rounded-xl shadow-soft bg-card p-1">
-            <TabsList variant="line" className="w-full justify-start border-b px-3 pt-1">
+          <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col rounded-xl bg-card p-1 shadow-soft">
+            <TabsList variant="line" className="w-full shrink-0 justify-start border-b px-3 pt-1">
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="eligibility">
                 Eligibility
@@ -155,7 +155,7 @@ export function TenderDetail() {
               <TabsTrigger value="evidence">Evidence</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="summary" className="space-y-4 p-5">
+            <TabsContent value="summary" className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
               <p className="text-sm leading-relaxed">{tender.summary}</p>
               <ul className="space-y-2">
                 {tender.scope.map((s) => (
@@ -170,7 +170,7 @@ export function TenderDetail() {
               </div>
             </TabsContent>
 
-            <TabsContent value="eligibility" className="p-2">
+            <TabsContent value="eligibility" className="min-h-0 flex-1 overflow-y-auto p-2">
               <ul className="divide-y">
                 {tender.eligibility.map((e) => (
                   <li key={e.requirement} className="flex gap-3 px-3 py-3">
@@ -184,7 +184,7 @@ export function TenderDetail() {
               </ul>
             </TabsContent>
 
-            <TabsContent value="risks" className="grid gap-6 p-5 md:grid-cols-2">
+            <TabsContent value="risks" className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5 md:grid-cols-2">
               <div className="space-y-3">
                 <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Risks</h3>
                 {tender.risks.map((r) => (
@@ -220,7 +220,7 @@ export function TenderDetail() {
               </div>
             </TabsContent>
 
-            <TabsContent value="evidence" className="space-y-3 p-5">
+            <TabsContent value="evidence" className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
               {tender.evidence.map((e) => (
                 <figure key={e.label} className="rounded-lg border-l-2 border-primary/50 bg-muted/30 py-2.5 pr-3 pl-4">
                   <blockquote className="text-sm">“{e.excerpt}”</blockquote>
@@ -234,8 +234,8 @@ export function TenderDetail() {
         </div>
 
         {/* Right rail */}
-        <aside className="space-y-6">
-          <div className="rounded-xl shadow-soft bg-card p-5 xl:sticky xl:top-20">
+        <aside className="min-h-0">
+          <div className="h-full overflow-y-auto rounded-xl bg-card p-5 shadow-soft">
             <h2 className="mb-4 text-sm font-semibold">Prequalification</h2>
             <DecisionPanel tender={tender} />
             {history.length > 0 && (
@@ -332,7 +332,7 @@ function RecommendationCard({ tender, fit }: { tender: Tender; fit: number }) {
   const rows = fitBreakdown(tender);
 
   return (
-    <div className="overflow-hidden rounded-xl bg-card shadow-soft">
+    <div className="shrink-0 overflow-hidden rounded-xl bg-card shadow-soft">
       <div className="flex gap-4 p-5">
         <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
           <Sparkles className="size-5" />

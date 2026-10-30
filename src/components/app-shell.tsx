@@ -42,8 +42,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen">{demo ? children : null}</div>;
   }
 
-  // On Scan Portal the scan card fills the rest of the window, so the page itself is fixed to the viewport.
-  const fill = pathname === "/sources";
+  // Scan Portal and the opportunity page fit the window; long sections scroll inside their own cards.
+  const fill = pathname === "/sources" || pathname === "/opportunity";
 
   return (
     <div className={cn("flex flex-col", fill ? "h-dvh" : "min-h-screen")}>
