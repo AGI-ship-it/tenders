@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -31,8 +31,26 @@ import { DecisionPanel } from "@/components/decision-panel";
 import { PortalLinkButton } from "@/components/portal-link";
 import { RecommendationBadge, scoreTone } from "@/components/shared";
 
+/** Where "back" returns to, keyed by the ?from= the opening link passed. */
+const BACK: Record<string, { href: string; label: string }> = {
+  pipeline: { href: "/pipeline", label: "Opportunities" },
+  approvals: { href: "/approvals", label: "Approval Center" },
+  sources: { href: "/sources", label: "Scan Portal" },
+};
+
 export function TenderDetail() {
-  const id = useSearchParams().get("id") ?? "";
+  const params = useSearchParams();
+  const router = useRouter();
+  const id = params.get("id") ?? "";
+  const from = params.get("from");
+  const back = BACK[from ?? ""] ?? BACK.pipeline;
+
+  // Return to the exact place we came from (same tab, same open panel); fall back to that screen if this page was
+  // opened directly.
+  function goBack() {
+    if (from && window.history.length > 1) router.back();
+    else router.push(back.href);
+  }
   const demo = useDemo()!;
   const tender = demo.tenders.find((t) => t.id === id);
   const source = demo.sources.find((s) => s.id === tender?.sourceId);
@@ -59,9 +77,9 @@ export function TenderDetail() {
 
   return (
     <div className="space-y-6">
-      <Link href="/pipeline" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Pipeline
-      </Link>
+      <button onClick={goBack} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-4" /> {back.label}
+      </button>
 
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">

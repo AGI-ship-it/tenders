@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -36,6 +36,16 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const linked = params.get("view");
   const linkedView: View | null = linked === "decided" ? "decided" : linked ? "hod" : null;
   const [view, setView] = useState<View>(linkedView ?? "hod");
+  const router = useRouter();
+  const pathname = usePathname();
+  // Mirror tab and open panel in the URL so returning from an opportunity restores them.
+  function syncUrl(v: View, id: string | null) {
+    const q = new URLSearchParams();
+    if (v !== "hod") q.set("view", v);
+    if (id) q.set("id", id);
+    const qs = q.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
   const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
   // Follow new deep links even when this page is already open.
   const linkKey = params.toString();
@@ -68,7 +78,11 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         {tabs.map((t) => (
           <button
             key={t.key}
-            onClick={() => setView(t.key)}
+            onClick={() => {
+              setView(t.key);
+              setSelectedId(null);
+              syncUrl(t.key, null);
+            }}
             className={cn(
               "relative -mb-px flex items-center gap-2 px-3 pb-2.5 text-sm transition-colors",
               view === t.key ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -126,7 +140,10 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                   {items.map((t) => (
                     <li key={t.id}>
                       <button
-                        onClick={() => setSelectedId(t.id)}
+                        onClick={() => {
+                          setSelectedId(t.id);
+                          syncUrl("hod", t.id);
+                        }}
                         className={cn(
                           "w-full rounded-xl bg-muted/40 p-3 text-left transition-all hover:bg-card hover:shadow-soft-lg",
                           t.status === "Awaiting HoD" && "bg-amber-50/70 ring-1 ring-amber-200 ring-inset",
@@ -153,7 +170,14 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         </div>
       )}
 
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelectedId(null)}>
+      <Sheet
+        open={!!selected}
+        onOpenChange={(o) => {
+          if (o) return;
+          setSelectedId(null);
+          syncUrl(view, null);
+        }}
+      >
         <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl data-[side=right]:sm:max-w-xl">
           <SheetTitle className="sr-only">{selected?.title ?? "Opportunity"}</SheetTitle>
           {selected && <ReviewPanel tender={selected} />}
@@ -188,7 +212,7 @@ function ReviewPanel({ tender }: { tender: Tender }) {
         <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
       </div>
 
-      <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}`} />}>
+      <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
         Open full opportunity and AI reasoning <ArrowUpRight />
       </Button>
 
@@ -321,7 +345,7 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
               return (
                 <tr key={t.id} className="align-top hover:bg-muted/30">
                   <td className="max-w-[300px] px-5 py-3">
-                    <Link href={`/opportunity?id=${encodeURIComponent(t.id)}`} className="group">
+                    <Link href={`/opportunity?id=${encodeURIComponent(t.id)}&from=approvals`} className="group">
                       <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
                       <div className="truncate font-medium group-hover:text-primary">{t.title}</div>
                       <div className="text-xs text-muted-foreground">

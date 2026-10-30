@@ -361,7 +361,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
             .map((t, i) => (
               <motion.div key={t.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                 <Link
-                  href={`/opportunity?id=${encodeURIComponent(t.id)}`}
+                  href={`/opportunity?id=${encodeURIComponent(t.id)}&from=sources`}
                   className="group block rounded-xl bg-card p-3 ring-1 ring-border transition-all hover:shadow-soft-lg hover:ring-primary/30"
                 >
                   <div className="flex items-center gap-2">
