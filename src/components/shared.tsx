@@ -2,21 +2,18 @@
 
 import { FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Recommendation, TenderStatus } from "@/lib/types";
+import { prospectStatus } from "@/lib/scoring";
+import type { ProspectStatus, Recommendation, TenderStatus } from "@/lib/types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const STATUS_STYLE: Record<TenderStatus, string> = {
-  New: "bg-sky-50 text-sky-700 ring-sky-200",
-  "Under Review": "bg-slate-50 text-slate-700 ring-slate-200",
-  "Awaiting HoD": "bg-amber-50 text-amber-800 ring-amber-200",
-  "Changes Requested": "bg-orange-50 text-orange-700 ring-orange-200",
+const STATUS_STYLE: Record<ProspectStatus, string> = {
+  "Pending Review": "bg-amber-50 text-amber-800 ring-amber-200",
   Prequalified: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  "Lead in D365": "bg-teal-50 text-teal-700 ring-teal-100",
-  "No-bid": "bg-zinc-100 text-zinc-600 ring-zinc-200",
-  "Not qualified": "bg-rose-50 text-rose-700 ring-rose-200",
+  Rejected: "bg-rose-50 text-rose-700 ring-rose-200",
 };
 
-export function StatusBadge({ status, className }: { status: TenderStatus; className?: string }) {
+export function StatusBadge({ status: workflow, className }: { status: TenderStatus; className?: string }) {
+  const status = prospectStatus(workflow);
   return (
     <span
       className={cn(
@@ -48,6 +45,23 @@ export function RecommendationBadge({ rec, className }: { rec: Recommendation; c
       )}
     >
       {rec}
+    </span>
+  );
+}
+
+/** AI pre-qualification recommendation shown as Yes / No. */
+export function PrequalBadge({ yes, className }: { yes: boolean; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
+        // Muted sage and soft coral rather than the stock green and red.
+        yes ? "bg-[#EAF4EE] text-[#2E6B4F] ring-[#C9E2D3]" : "bg-[#FBEDEA] text-[#A9473D] ring-[#F1D1CB]",
+        className,
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", yes ? "bg-[#4E9A74]" : "bg-[#D2685C]")} />
+      {yes ? "Yes" : "No"}
     </span>
   );
 }

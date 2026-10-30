@@ -1,4 +1,4 @@
-import type { Category, Emirate, Recommendation, Tender } from "./types";
+import type { Category, Emirate, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
 
 // AGFS pre-qualification criteria (illustrative, to be refined with Commercial).
 // The pre-qualification score is a transparent weighted sum: every point is traceable to one of four criteria.
@@ -98,6 +98,12 @@ export function recommendation(t: Tender): Recommendation {
   return "No-bid";
 }
 
+/** AI pre-qualification recommendation as a plain yes / no: Bid and Bid with conditions count as yes. */
+export function aiPrequalified(t: Tender): boolean {
+  const r = recommendation(t);
+  return r === "Bid" || r === "Bid with conditions";
+}
+
 /** Ordering for the pipeline: pre-qualification score, nudged by deal size. */
 export function priorityScore(t: Tender): number {
   const sizeFactor = Math.min(t.valueAED / 100_000_000, 1) * 100;
@@ -108,4 +114,20 @@ export const ACTIVE_STATUSES = ["New", "Under Review", "Awaiting HoD", "Changes 
 
 export function isActive(t: Tender) {
   return (ACTIVE_STATUSES as readonly string[]).includes(t.status);
+}
+
+export const PROSPECT_STATUSES: ProspectStatus[] = ["Pending Review", "Prequalified", "Rejected"];
+
+/** Collapses the workflow state to the status shown to users. */
+export function prospectStatus(status: TenderStatus): ProspectStatus {
+  switch (status) {
+    case "Prequalified":
+    case "Lead in D365":
+      return "Prequalified";
+    case "No-bid":
+    case "Not qualified":
+      return "Rejected";
+    default:
+      return "Pending Review";
+  }
 }

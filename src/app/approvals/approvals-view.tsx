@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
-import { fitScore, recommendation } from "@/lib/scoring";
+import { aiPrequalified, fitScore, recommendation } from "@/lib/scoring";
 import { formatValue, formatDateTime, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -280,8 +280,7 @@ function finalOutcome(t: Tender): "Bid" | "No-bid" {
 }
 
 function aiOutcome(t: Tender): "Bid" | "No-bid" {
-  const r = recommendation(t);
-  return r === "Bid" || r === "Bid with conditions" ? "Bid" : "No-bid";
+  return aiPrequalified(t) ? "Bid" : "No-bid";
 }
 
 function exportCsv(tenders: Tender[]) {

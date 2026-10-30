@@ -30,6 +30,9 @@ export type TenderStatus =
   | "No-bid"
   | "Not qualified";
 
+/** The three statuses shown to users; the workflow states above map onto these. */
+export type ProspectStatus = "Pending Review" | "Prequalified" | "Rejected";
+
 export type CheckStatus = "met" | "partial" | "unmet" | "unknown";
 
 export interface EligibilityItem {

@@ -26,6 +26,14 @@ export function formatDateTime(iso: string) {
   });
 }
 
+export function isToday(iso: string) {
+  return new Date(iso).toDateString() === new Date().toDateString();
+}
+
+export function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function timeAgo(iso: string | null) {
   if (!iso) return "Never";
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);

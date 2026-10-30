@@ -4,14 +4,14 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from "lucide-react";
 import { useDemo } from "@/lib/store";
-import { fitScore, isActive, priorityScore, recommendation } from "@/lib/scoring";
+import { PROSPECT_STATUSES, aiPrequalified, fitScore, isActive, priorityScore, prospectStatus } from "@/lib/scoring";
 import { daysUntil, formatDate, formatValue } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PageHeader, RecommendationBadge, ScoreBar, StatusBadge } from "@/components/shared";
+import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 
 type SortKey = "priority" | "id" | "value" | "deadline" | "fit";
 
@@ -28,7 +28,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
 
   const options = useMemo(() => {
     const uniq = (f: (t: Tender) => string) => [ALL, ...Array.from(new Set(demo.tenders.map(f))).sort()];
-    return { category: uniq((t) => t.category), emirate: uniq((t) => t.emirate), status: uniq((t) => t.status) };
+    return { category: uniq((t) => t.category), emirate: uniq((t) => t.emirate), status: [ALL, ...PROSPECT_STATUSES] };
   }, [demo.tenders]);
 
   const rows = useMemo(() => {
@@ -38,7 +38,8 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         case "priority":
           return priorityScore(t);
         case "fit":
-          return fitScore(t);
+          // Yes before No, then by the score behind it.
+          return (aiPrequalified(t) ? 1000 : 0) + fitScore(t);
         case "value":
           return t.valueAED;
         case "deadline":
@@ -52,7 +53,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         (t) =>
           (category === ALL || t.category === category) &&
           (emirate === ALL || t.emirate === emirate) &&
-          (status === ALL || t.status === status) &&
+          (status === ALL || prospectStatus(t.status) === status) &&
           (!needle || `${t.id} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
       )
       .sort((a, b) => {
@@ -76,7 +77,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
       {!embedded && (
         <PageHeader
           title="Prospects Pipeline"
-          description="Every prospect the agent found, ranked by AI pre-qualification score. Click a row to see why."
+          description="Every prospect the agent found, ranked by AI pre-qualification. Click a row to see why."
         />
       )}
 
@@ -123,9 +124,8 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                   Due date
                 </Th>
                 <Th sortKey="fit" sort={sort} onSort={toggleSort}>
-                  Pre-qual score
+                  Pre-qual recommendation
                 </Th>
-                <th className="px-3 py-3 font-medium">Recommendation</th>
                 <th className="px-3 py-3 pr-5 font-medium">Status</th>
               </tr>
             </thead>
@@ -160,10 +160,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      <ScoreBar score={fitScore(t)} />
-                    </td>
-                    <td className="px-3 py-3">
-                      <RecommendationBadge rec={recommendation(t)} />
+                      <PrequalBadge yes={aiPrequalified(t)} />
                     </td>
                     <td className="px-3 py-3 pr-5">
                       <StatusBadge status={t.status} />
@@ -173,7 +170,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={5} className="px-5 py-14 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>

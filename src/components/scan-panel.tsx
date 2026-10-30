@@ -10,7 +10,7 @@ import { clearPendingScan, completeScan, isScannable, peekPendingScan, useDemo }
 import { PEOPLE } from "@/lib/mock-data";
 import type { LastScan, Source, Tender } from "@/lib/types";
 import { fitScore, recommendation } from "@/lib/scoring";
-import { formatDateTime, formatValue } from "@/lib/format";
+import { formatDateTime, formatTime, formatValue, isToday } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { RecommendationBadge, ScoreBar } from "@/components/shared";
 
@@ -79,10 +79,13 @@ function buildSteps(ready: Source[], blocked: Source[]): Step[] {
 export function ScanPanel({
   onOpenSources,
   sourcesAction,
+  stats,
 }: {
   onOpenSources: () => void;
   /** The "Sources" button, shown in the card header next to Run AI Scan. */
   sourcesAction: React.ReactNode;
+  /** Overall pipeline numbers, shown in the card's top bar. */
+  stats?: React.ReactNode;
 }) {
   const demo = useDemo()!;
   // A scan requested by sign-in or first-time setup. Read once into state so re-renders can't lose it.
@@ -170,7 +173,10 @@ export function ScanPanel({
   if (phase === "idle") {
     return (
       <section className="relative flex flex-1 flex-col items-center justify-center rounded-3xl bg-card px-6 py-12 text-center shadow-soft">
-        <div className="absolute top-4 right-4">{sourcesAction}</div>
+        <div className="absolute top-4 right-4 left-4 flex items-center justify-between gap-3">
+          {stats ?? <span />}
+          {sourcesAction}
+        </div>
         <span className="grid size-16 place-items-center rounded-2xl bg-primary/10 text-primary">
           <Radar className="size-8" />
         </span>
@@ -202,22 +208,30 @@ export function ScanPanel({
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl bg-card shadow-soft">
       <header className="shrink-0 border-b px-6 py-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
               <Radar className="size-4" />
             </span>
             <h2 className="text-base font-semibold">
               {phase === "done" && demo.lastScan ? (
-                <>
-                  Last scan results{" "}
-                  <span className="font-normal text-muted-foreground">· {formatDateTime(demo.lastScan.at)}</span>
-                </>
+                isToday(demo.lastScan.at) ? (
+                  <>
+                    Today&apos;s scan results{" "}
+                    <span className="font-normal text-muted-foreground">· {formatTime(demo.lastScan.at)}</span>
+                  </>
+                ) : (
+                  <>
+                    Last scan results{" "}
+                    <span className="font-normal text-muted-foreground">· {formatDateTime(demo.lastScan.at)}</span>
+                  </>
+                )
               ) : (
                 "Scanning portals…"
               )}
             </h2>
           </div>
+          {stats && <div className="mr-auto ml-2">{stats}</div>}
           {phase === "running" ? (
             <span className="tabular text-xs text-muted-foreground">{progress}%</span>
           ) : (
@@ -302,15 +316,6 @@ export function ScanPanel({
   );
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-xl bg-muted/50 px-3 py-2.5">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="tabular text-lg font-semibold">{value}</div>
-    </div>
-  );
-}
-
 function ScanResults({ scan }: { scan: LastScan }) {
   const demo = useDemo()!;
   const newTenders = scan.newIds.map((id) => demo.tenders.find((t) => t.id === id)).filter((t): t is Tender => !!t);
@@ -323,12 +328,6 @@ function ScanResults({ scan }: { scan: LastScan }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Scanned" value={scan.scanned} />
-        <Stat label="New" value={newTenders.length} />
-        <Stat label="Duplicates" value={scan.duplicates} />
-      </div>
-
       <section className="space-y-2">
         <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">By source</h3>
         <ul className="divide-y rounded-xl bg-card ring-1 ring-border">
