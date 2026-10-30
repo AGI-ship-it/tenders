@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { ArrowUpRight, Bot, Download, Inbox, MessageSquare, Send } from "lucide-react";
+import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
 import { fitScore, recommendation } from "@/lib/scoring";
@@ -18,7 +18,7 @@ import { PageHeader, RecommendationBadge, StatusBadge } from "@/components/share
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
-type View = "hod" | "decided" | "audit";
+type View = "hod" | "decided";
 
 const STATUS_ORDER: Tender["status"][] = [
   "Awaiting HoD",
@@ -34,7 +34,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   // Deep link from "Submit for prequalification": /approvals?view=hod&id=TND-...
   const params = useSearchParams();
   const linked = params.get("view");
-  const linkedView: View | null = linked === "decided" || linked === "audit" ? linked : linked ? "hod" : null;
+  const linkedView: View | null = linked === "decided" ? "decided" : linked ? "hod" : null;
   const [view, setView] = useState<View>(linkedView ?? "hod");
   const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
   // Follow new deep links even when this page is already open.
@@ -55,7 +55,6 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const tabs: { key: View; label: string; count?: number; alert?: boolean }[] = [
     { key: "hod", label: "By HoD", count: awaiting, alert: awaiting > 0 },
     { key: "decided", label: "Decision register", count: decided.length },
-    { key: "audit", label: "Audit trail" },
   ];
 
   return (
@@ -98,9 +97,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         )}
       </div>
 
-      {view === "audit" ? (
-        <AuditTrail />
-      ) : view === "decided" ? (
+      {view === "decided" ? (
         decided.length ? <DecisionRegister tenders={decided} /> : <EmptyState />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -356,47 +353,6 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-function AuditTrail() {
-  const demo = useDemo()!;
-  return (
-    <div className="overflow-hidden rounded-xl shadow-soft bg-card">
-      <table className="w-full text-sm">
-        <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-          <tr>
-            <th className="px-5 py-3 font-medium">When</th>
-            <th className="px-3 py-3 font-medium">Who</th>
-            <th className="px-3 py-3 font-medium">Action</th>
-            <th className="px-3 py-3 font-medium">Tender</th>
-            <th className="px-3 py-3 pr-5 font-medium">Detail</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {demo.audit.map((e) => (
-            <tr key={e.id} className="hover:bg-muted/30">
-              <td className="px-5 py-3 whitespace-nowrap text-muted-foreground">{formatDateTime(e.at)}</td>
-              <td className="px-3 py-3 whitespace-nowrap">
-                <span className="flex items-center gap-1.5">
-                  {e.role === "agent" && <Bot className="size-3.5 text-primary" />}
-                  {e.actor}
-                </span>
-              </td>
-              <td className="px-3 py-3">{e.action}</td>
-              <td className="px-3 py-3">
-                {e.tenderId && (
-                  <Link href={`/opportunity?id=${encodeURIComponent(e.tenderId)}`} className="font-mono text-xs text-primary hover:underline">
-                    {e.tenderId}
-                  </Link>
-                )}
-              </td>
-              <td className="max-w-md px-3 py-3 pr-5 text-xs text-muted-foreground">{e.detail}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

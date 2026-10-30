@@ -20,7 +20,7 @@ A clickable prototype showing how an AI agent can scan government and client ten
 - **Portal sign-in handled properly.** Public portals, password vault, UAE PASS approval on a named person's phone, and CAPTCHA portals read through email alerts. The agent never bypasses a login or CAPTCHA.
 - **Add sources two ways.** Connect a portal through a short guided journey, or upload one or more RFP files.
 - **Explainable AI.** The fit score is a weighted sum of six AGFS criteria (service, geography, contract size, eligibility, strategic value, capacity), with every point traceable. Win probability and margin band are shown separately and labelled as indicative.
-- **Documented decisions.** A decision register (with CSV export) and a full audit trail of agent and human actions.
+- **Documented decisions.** A decision register (with CSV export), plus a short history on each opportunity.
 - **Roles.** Bid Analyst and Service-line HoD, switchable from the profile menu.
 
 ## Demo tips
