@@ -284,10 +284,7 @@ function ScoreCard({ score }: { score: number }) {
 function CriterionCard({ criterion: c }: { criterion: CriterionResult }) {
   return (
     <div className="rounded-xl bg-card p-4 shadow-soft">
-      <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
-        {c.label}
-        <span className="text-[10px] font-normal">weight {c.weight}%</span>
-      </div>
+      <div className="text-xs font-medium text-muted-foreground">{c.label}</div>
       <div className="tabular mt-2 text-xl font-semibold tracking-tight">
         {c.score}
         <span className="text-xs font-normal text-muted-foreground">/100</span>
@@ -300,9 +297,6 @@ function CriterionCard({ criterion: c }: { criterion: CriterionResult }) {
           transition={{ duration: 0.6, ease: "easeOut" }}
         />
       </div>
-      <p className="mt-2 line-clamp-2 text-[11px] leading-snug text-muted-foreground" title={c.rationale}>
-        {c.rationale}
-      </p>
     </div>
   );
 }
