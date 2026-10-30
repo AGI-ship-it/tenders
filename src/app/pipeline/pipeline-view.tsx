@@ -72,13 +72,15 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={embedded ? undefined : "Prospects Pipeline"}
-        description={embedded ? undefined : "Every prospect the agent found, ranked by AI pre-qualification score. Click a row to see why."}
-      />
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {!embedded && (
+        <PageHeader
+          title="Prospects Pipeline"
+          description="Every prospect the agent found, ranked by AI pre-qualification score. Click a row to see why."
+        />
+      )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <div className="relative w-72">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="bg-card pl-8" placeholder="Search prospect ID, title or buyer" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -105,10 +107,11 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-xl shadow-soft bg-card">
-        <div className="overflow-x-auto">
+      {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft">
+        <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+            <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
                 <Th sortKey="priority" sort={sort} onSort={toggleSort} className="pl-5">
                   Prospect

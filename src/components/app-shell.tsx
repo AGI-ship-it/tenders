@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Scan Portal and the prospect page fit the window; long sections scroll inside their own cards.
-  const fill = pathname === "/sources" || pathname === "/opportunity";
+  const fill = pathname === "/sources" || pathname === "/opportunity" || pathname === "/pipeline";
 
   return (
     <div className={cn("flex flex-col", fill ? "h-dvh" : "min-h-screen")}>
