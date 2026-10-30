@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ACCESS_INFO } from "@/components/access";
+import { ACCESS_INFO, PortalOtp } from "@/components/access";
 
 const STEPS = ["Portal", "Sign-in", "What to scan", "Test & connect"];
 
@@ -63,7 +63,7 @@ const METHOD: Record<AccessType, string> = {
 
 const TESTS = ["Reaching portal", "Signing in", "Finding tender listings", "Reading a sample notice"];
 
-type SignIn = "none" | "waiting" | "done";
+type SignIn = "none" | "waiting" | "otp" | "done";
 
 export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [mode, setMode] = useState<"choose" | "portal" | "upload">("choose");
@@ -244,7 +244,9 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
 
                     {access === "Password" &&
                       (signIn === "done" ? (
-                        <Done text={`Credentials for ${username} saved to the vault. The agent never sees the password.`} />
+                        <Done text={`Signed in as ${username} with two-step verification. Credentials saved to the vault; the agent never sees the password.`} />
+                      ) : signIn === "otp" ? (
+                        <PortalOtp portal={name || "the portal"} onVerified={() => setSignIn("done")} />
                       ) : (
                         <div className="grid gap-3">
                           <div className="grid grid-cols-2 gap-3">
@@ -257,8 +259,8 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
                               <Input id="w-pass" className="bg-card" type="password" placeholder="••••••••" autoComplete="off" />
                             </div>
                           </div>
-                          <Button disabled={!username.trim()} onClick={() => setSignIn("done")}>
-                            <KeyRound /> Save to vault
+                          <Button disabled={!username.trim()} onClick={() => setSignIn("otp")}>
+                            <KeyRound /> Sign in to portal
                           </Button>
                         </div>
                       ))}

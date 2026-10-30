@@ -32,6 +32,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+const NAV = [
+  { href: "/dashboard", label: "Dashboard", match: ["/dashboard"] },
+  { href: "/sources", label: "Scan", match: ["/sources", "/onboarding"] },
+  { href: "/pipeline", label: "Pipeline", match: ["/pipeline", "/opportunity"] },
+  { href: "/approvals", label: "Approvals", match: ["/approvals"] },
+  { href: "/portals", label: "Portals", match: ["/portals"] },
+];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   // Static hosting (GitHub Pages) serves pages with a trailing slash, e.g. "/sources/".
   const pathname = usePathname().replace(/(.)\/$/, "$1");
@@ -58,6 +66,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="text-[13px] font-semibold tracking-tight text-primary">Intelligence</div>
             </div>
           </Link>
+          <nav className="ml-6 hidden items-center gap-1 md:flex">
+            {NAV.map((n) => {
+              const on = n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  aria-current={on ? "page" : undefined}
+                  className={cn(
+                    "relative rounded-lg px-3 py-1.5 text-sm transition-colors",
+                    on ? "font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {n.label}
+                  {on && <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-magenta" />}
+                </Link>
+              );
+            })}
+          </nav>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden items-center gap-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50/70 px-2.5 py-1 text-[11px] font-medium text-amber-800 sm:inline-flex">
               <FlaskConical className="size-3.5" /> Demo data

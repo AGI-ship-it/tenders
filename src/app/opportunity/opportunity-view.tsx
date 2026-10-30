@@ -2,25 +2,20 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect } from "react";
+import { motion } from "motion/react";
 import {
   AlertTriangle,
   ArrowLeft,
-  Bot,
   CheckCircle2,
-  ChevronDown,
   CircleDashed,
   CircleHelp,
   FileText,
-  MinusCircle,
   Sparkles,
-  TrendingDown,
-  TrendingUp,
   XCircle,
 } from "lucide-react";
 import { markUnderReview, useDemo } from "@/lib/store";
-import { fitBreakdown, fitScore, recommendation } from "@/lib/scoring";
+import { fitBreakdown, fitScore, recommendation, type CriterionResult } from "@/lib/scoring";
 import { daysUntil, formatAED, formatDate, timeAgo } from "@/lib/format";
 import type { CheckStatus, Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -113,35 +108,16 @@ export function TenderDetail() {
 
       <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[1fr_340px]">
         <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto pr-1">
-          {/* Three distinct scores */}
-          <div className="grid shrink-0 gap-4 md:grid-cols-3">
-            <ScoreCard
-              label="AI fit score"
-              value={`${fit}`}
-              suffix="/100"
-              bar={fit}
-              question="Does it match what AGFS does?"
-              help="Rules-based score across six weighted AGFS criteria. Fully explainable below."
-            />
-            <ScoreCard
-              label="Win probability"
-              value={`${tender.winProbability}%`}
-              bar={tender.winProbability}
-              question="How likely are we to win?"
-              help="Indicative estimate from a separate win/loss model on historical bids (pilot, simulated). Not part of the fit score."
-              tag="Indicative"
-            />
-            <ScoreCard
-              label="Profitability"
-              value={tender.marginBand}
-              question="Is it worth winning?"
-              help={tender.marginNote}
-              tag="Not verified"
-            />
+          {/* AI pre-qualification: overall score and the four criteria behind it */}
+          <div className="grid shrink-0 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <ScoreCard score={fit} />
+            {fitBreakdown(tender).map((c) => (
+              <CriterionCard key={c.key} criterion={c} />
+            ))}
           </div>
 
           {/* Recommendation */}
-          <RecommendationCard tender={tender} fit={fit} />
+          <RecommendationCard tender={tender} />
 
           {/* Details, progressively disclosed */}
           <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col rounded-xl bg-card p-1 shadow-soft">
@@ -274,147 +250,77 @@ function Fact({ label, value, sub, tone }: { label: string; value: React.ReactNo
   );
 }
 
-function ScoreCard({
-  label,
-  value,
-  suffix,
-  bar,
-  question,
-  help,
-  tag,
-}: {
-  label: string;
-  value: string;
-  suffix?: string;
-  bar?: number;
-  question: string;
-  help: string;
-  tag?: string;
-}) {
+function ScoreCard({ score }: { score: number }) {
   return (
-    <div className="rounded-xl shadow-soft bg-card p-4">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-          {label}
-          <Tooltip>
-            <TooltipTrigger render={<button aria-label={`About ${label}`} className="text-muted-foreground/70 hover:text-foreground" />}>
-              <CircleHelp className="size-3.5" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-60">{help}</TooltipContent>
-          </Tooltip>
-        </span>
-        {tag && <span className="rounded bg-amber-50 px-1.5 py-px text-[10px] font-medium text-amber-800">{tag}</span>}
+    <div className="rounded-xl bg-primary p-4 text-primary-foreground shadow-soft">
+      <div className="flex items-center gap-1 text-xs font-medium text-primary-foreground/80">
+        AI pre-qualification
+        <Tooltip>
+          <TooltipTrigger render={<button aria-label="About the pre-qualification score" className="text-primary-foreground/70 hover:text-primary-foreground" />}>
+            <CircleHelp className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-60">
+            Weighted score across four AGFS criteria: service coverage, geography, contract size and ISO certifications.
+            The HoD validates it before anything goes to D365.
+          </TooltipContent>
+        </Tooltip>
       </div>
-      <div className="tabular mt-2 text-2xl font-semibold tracking-tight">
-        {value}
-        {suffix && <span className="text-sm font-normal text-muted-foreground">{suffix}</span>}
+      <div className="tabular mt-2 text-3xl font-semibold tracking-tight">
+        {score}
+        <span className="text-sm font-normal text-primary-foreground/70">/100</span>
       </div>
-      {bar !== undefined ? (
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
-          <motion.div
-            className={cn("h-full rounded-full", scoreTone(bar))}
-            initial={{ width: 0 }}
-            animate={{ width: `${bar}%` }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-          />
-        </div>
-      ) : (
-        <div className="mt-2 h-1" />
-      )}
-      <div className="mt-2.5 text-xs text-muted-foreground">{question}</div>
+      <div className="mt-2 h-1 overflow-hidden rounded-full bg-primary-foreground/20">
+        <motion.div
+          className="h-full rounded-full bg-primary-foreground"
+          initial={{ width: 0 }}
+          animate={{ width: `${score}%` }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+        />
+      </div>
     </div>
   );
 }
 
-function RecommendationCard({ tender, fit }: { tender: Tender; fit: number }) {
-  const [open, setOpen] = useState(false);
-  const rec = recommendation(tender);
-  const rows = fitBreakdown(tender);
-
+function CriterionCard({ criterion: c }: { criterion: CriterionResult }) {
   return (
-    <div className="shrink-0 overflow-hidden rounded-xl bg-card shadow-soft">
-      <div className="flex gap-4 p-5">
-        <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-          <Sparkles className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold">AI recommendation</span>
-            <RecommendationBadge rec={rec} />
-          </div>
-          <p className="text-sm leading-relaxed text-foreground/80">{tender.aiNarrative}</p>
-          <button
-            onClick={() => setOpen((o) => !o)}
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-          >
-            Why {fit}? See how the score was built
-            <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
-          </button>
-        </div>
+    <div className="rounded-xl bg-card p-4 shadow-soft">
+      <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+        {c.label}
+        <span className="text-[10px] font-normal">weight {c.weight}%</span>
       </div>
+      <div className="tabular mt-2 text-xl font-semibold tracking-tight">
+        {c.score}
+        <span className="text-xs font-normal text-muted-foreground">/100</span>
+      </div>
+      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+        <motion.div
+          className={cn("h-full rounded-full", scoreTone(c.score))}
+          initial={{ width: 0 }}
+          animate={{ width: `${c.score}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+      </div>
+      <p className="mt-2 line-clamp-2 text-[11px] leading-snug text-muted-foreground" title={c.rationale}>
+        {c.rationale}
+      </p>
+    </div>
+  );
+}
 
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="overflow-hidden"
-          >
-            <div className="grid gap-6 border-t bg-card/60 p-5 lg:grid-cols-[1fr_240px]">
-              <div className="space-y-3">
-                {rows.map((r) => (
-                  <div key={r.key} className="grid grid-cols-[130px_1fr_64px] items-center gap-3">
-                    <div className="text-sm">
-                      {r.label}
-                      <div className="text-[11px] text-muted-foreground">weight {r.weight}%</div>
-                    </div>
-                    <div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                        <motion.div
-                          className={cn("h-full rounded-full", scoreTone(r.score))}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${r.score}%` }}
-                          transition={{ duration: 0.5 }}
-                        />
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">{r.rationale}</div>
-                    </div>
-                    <div className="tabular text-right text-sm font-medium">
-                      +{r.points}
-                    </div>
-                  </div>
-                ))}
-                <div className="flex justify-between border-t pt-3 text-sm font-semibold">
-                  <span>Fit score</span>
-                  <span className="tabular">{fit} / 100</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <Bot className="size-3.5" /> Win-probability drivers
-                </div>
-                {tender.winDrivers.map((d) => (
-                  <div key={d.label} className="flex items-start gap-2 text-xs">
-                    {d.effect === "positive" ? (
-                      <TrendingUp className="mt-px size-3.5 shrink-0 text-emerald-600" />
-                    ) : d.effect === "negative" ? (
-                      <TrendingDown className="mt-px size-3.5 shrink-0 text-rose-600" />
-                    ) : (
-                      <MinusCircle className="mt-px size-3.5 shrink-0 text-muted-foreground" />
-                    )}
-                    {d.label}
-                  </div>
-                ))}
-                <p className="pt-2 text-[11px] text-muted-foreground">
-                  Separate from the fit score. A human makes the final decision.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+function RecommendationCard({ tender }: { tender: Tender }) {
+  return (
+    <div className="flex shrink-0 gap-4 rounded-xl bg-card p-5 shadow-soft">
+      <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+        <Sparkles className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold">AI recommendation</span>
+          <RecommendationBadge rec={recommendation(tender)} />
+          <span className="text-xs text-muted-foreground">· HoD validates before upload to D365</span>
+        </div>
+        <p className="text-sm leading-relaxed text-foreground/80">{tender.aiNarrative}</p>
+      </div>
     </div>
   );
 }

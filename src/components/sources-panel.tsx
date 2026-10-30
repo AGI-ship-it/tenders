@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
+  ArrowRight,
   Building2,
   CheckCircle2,
   FileUp,
@@ -79,9 +81,14 @@ export function SourcesSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                 </TooltipContent>
               </Tooltip>
             </SheetDescription>
-            <Button className="mt-3 w-full" onClick={() => setAddOpen(true)}>
-              <Plus /> Add source
-            </Button>
+            <div className="mt-3 flex gap-2">
+              <Button className="flex-1" onClick={() => setAddOpen(true)}>
+                <Plus /> Add source
+              </Button>
+              <Button variant="outline" nativeButton={false} render={<Link href="/portals" />} onClick={() => onOpenChange(false)}>
+                Portal configuration <ArrowRight />
+              </Button>
+            </div>
           </SheetHeader>
 
           <ul className="flex-1 divide-y overflow-y-auto">

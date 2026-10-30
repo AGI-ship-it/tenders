@@ -78,7 +78,7 @@ export function SignInDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
-  const [phase, setPhase] = useState<"form" | "waiting" | "done">("form");
+  const [phase, setPhase] = useState<"form" | "waiting" | "otp" | "done">("form");
   const [user, setUser] = useState("");
 
   function close(o: boolean) {
@@ -98,7 +98,8 @@ export function SignInDialog({
       setPhase("waiting");
       window.setTimeout(finish, 2600);
     } else {
-      finish();
+      // Password portals then ask for their own second factor.
+      setPhase("otp");
     }
   }
 
@@ -109,7 +110,7 @@ export function SignInDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{uaePass ? "Approve with UAE PASS" : "Save portal credentials"}</DialogTitle>
+          <DialogTitle>{uaePass ? "Approve with UAE PASS" : "Sign in to portal"}</DialogTitle>
           <DialogDescription>
             {source.name}. Simulated: no request is sent and nothing is stored.
           </DialogDescription>
@@ -158,6 +159,8 @@ export function SignInDialog({
           </div>
         )}
 
+        {phase === "otp" && <PortalOtp portal={source.name} onVerified={finish} />}
+
         {phase === "done" && (
           <div className="flex flex-col items-center py-6 text-center">
             <CheckCircle2 className="size-10 text-emerald-600" />
@@ -178,11 +181,16 @@ export function SignInDialog({
                   </>
                 ) : (
                   <>
-                    <KeyRound /> Save to vault
+                    <KeyRound /> Sign in
                   </>
                 )}
               </Button>
             </>
+          )}
+          {phase === "otp" && (
+            <Button variant="outline" onClick={() => close(false)}>
+              Cancel
+            </Button>
           )}
           {phase === "done" && <Button onClick={() => close(false)}>Done</Button>}
         </DialogFooter>
@@ -246,5 +254,55 @@ export function AiSourceTag({ source }: { source: Source }) {
         Found and connected by the AI agent from AGFS tender history and known buyer portals (simulated).
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+const DEMO_OTP = "482913";
+
+/**
+ * The portal's own second-factor prompt after a password sign-in (simulated). Any 6 digits verify.
+ * In production the agent asks the named person for a code whenever the portal requires one.
+ */
+export function PortalOtp({ portal, onVerified }: { portal: string; onVerified: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function verify() {
+    setBusy(true);
+    window.setTimeout(onVerified, 700);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-3 rounded-lg bg-muted/40 p-3 text-sm">
+        <Smartphone className="mt-0.5 size-5 shrink-0 text-primary" />
+        <div>
+          <div className="font-medium">Verification required by {portal}</div>
+          <p className="text-xs text-muted-foreground">The portal sent a 6-digit code to +971 •• ••• 4821.</p>
+        </div>
+      </div>
+      <Input
+        autoFocus
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        placeholder="••••••"
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+        className="tabular h-11 bg-card text-center text-lg tracking-[0.5em]"
+        aria-label="Portal verification code"
+      />
+      <div className="flex items-center justify-between">
+        <button type="button" onClick={() => setCode(DEMO_OTP)} className="text-xs font-medium text-primary hover:underline">
+          Use demo code
+        </button>
+        <Button size="sm" disabled={code.length !== 6 || busy} onClick={verify}>
+          {busy ? <Loader2 className="animate-spin" /> : <ShieldCheck />} Verify
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        When the portal asks for a code again, the agent asks {PEOPLE.analyst.name} rather than signing in alone.
+      </p>
+    </div>
   );
 }

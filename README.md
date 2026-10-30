@@ -8,26 +8,44 @@ A clickable prototype showing how an AI agent can scan government and client ten
 
 ## The flow
 
-**Sign in → Scan Portal → Opportunities → Approval Center → D365**
+**Scan → Pipeline → HoD validation → D365**
 
-1. **Scan Portal.** Signing in runs a scan across connected portals. You see each step (connect, discover, extract, deduplicate, score) and a live log, then the results by source. **Run again** finds new opportunities.
-2. **Opportunities.** One ranked list across every portal. Open an opportunity to see the AI reasoning, then submit it for prequalification.
-3. **Approval Center.** Opportunities are routed automatically to the HoD of their service line. The HoD prequalifies, requests changes or marks them not qualified.
-4. **D365.** Prequalified opportunities are pushed to D365 Lead Management as leads (simulated).
+1. **Scan.** Signing in runs a scan across connected portals: connect, discover, extract, deduplicate, score, with a live log, then results by source. **Run AI Scan** finds new tender opportunities.
+2. **Pipeline.** One consolidated, ranked list of tender opportunities. AI performs the initial pre-qualification and scoring; open any opportunity to see why.
+3. **Approvals.** Each opportunity is routed to the HoD of its service line, who validates the AI recommendation: prequalify, request changes or mark not qualified.
+4. **D365.** Only HoD-validated opportunities are uploaded to Dynamics 365 Lead Management as leads (simulated). D365 remains the source of truth for leads and opportunities.
 
-## Highlights
+Views: **Dashboard**, **Scan**, **Pipeline**, **Approvals** and **Portal configuration**.
 
-- **Portal sign-in handled properly.** Public portals, password vault, UAE PASS approval on a named person's phone, and CAPTCHA portals read through email alerts. The agent never bypasses a login or CAPTCHA.
-- **Add sources two ways.** Connect a portal through a short guided journey, or upload one or more RFP files.
-- **Explainable AI.** The fit score is a weighted sum of six AGFS criteria (service, geography, contract size, eligibility, strategic value, capacity), with every point traceable. Win probability and margin band are shown separately and labelled as indicative.
-- **Documented decisions.** A decision register (with CSV export), plus a short history on each opportunity.
-- **Roles.** Bid Analyst and Service-line HoD, switchable from the profile menu.
+## Pre-qualification
+
+The AI pre-qualification score (0 to 100) is a weighted sum of four criteria, each traceable on the opportunity page:
+
+| Criterion | Weight |
+| --- | --- |
+| Service coverage | 40% |
+| Geography | 20% |
+| Contract size | 20% |
+| ISO certifications | 20% |
+
+Contracts below AED 5M are always a no-bid. A missing ISO certificate or unmet mandatory requirement means "Bid with conditions" at best. Weights and AGFS's ISO list are in `src/lib/scoring.ts` and are to be refined with Commercial.
+
+## Portal access
+
+- **Public** portals are read automatically.
+- **Password** portals: a person signs in once, including the portal's **two-step verification code**; credentials go to a vault the agent never sees.
+- **UAE PASS** portals: a named person approves sign-in on their phone.
+- **CAPTCHA** portals: the agent never solves CAPTCHAs; it reads the portal's email alerts instead.
+- Sources can also be **RFP files uploaded** one at a time or several at once.
 
 ## Demo tips
 
-- **Sign in** on a fresh demo discovers 3 new opportunities. Later sign-ins re-check portals and show what is already tracked.
-- **Reset demo** (profile menu, top right) restores fresh data and replays first-time setup.
-- A good path: open the Dubai health clinics opportunity, click **Why 92?**, **Submit for prequalification**, switch to **HoD**, **Prequalify**, then **Push to D365 as lead**.
+- **Sign in** on a fresh demo discovers 3 new opportunities; later sign-ins re-check portals.
+- On **Portals**, sign in to *Ajman e-Procurement Portal* to see a portal login with two-step verification, and to *Federal e-Procurement Portal* for UAE PASS.
+- Suggested path: open the Dubai health clinics opportunity → **Submit for prequalification** → switch to **HoD** (profile menu) → **Prequalify** → **Push to D365 as lead**.
+- **Reset demo** (profile menu) restores fresh data and replays first-time setup.
+
+The prompts used to build the prototype are in [`docs/PROMPTS.md`](docs/PROMPTS.md).
 
 ## Run locally
 
@@ -53,7 +71,7 @@ Next.js (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Motion · Luc
 | Path | What |
 | --- | --- |
 | `src/lib/mock-data.ts` | Fictional portals, tenders, people and service-line HoDs |
-| `src/lib/scoring.ts` | AGFS fit criteria, weights and recommendation rules |
+| `src/lib/scoring.ts` | Pre-qualification criteria, weights, AGFS ISO list and recommendation rules |
 | `src/lib/store.ts` | Demo state and actions (scan, submit, decide, push to D365) |
 | `src/components/` | Scan panel, step circles, add-source journey, decision panel, D365 push |
-| `src/app/` | Screens: welcome, setup, Scan Portal, Opportunities, Approval Center |
+| `src/app/` | Screens: sign-in, setup, Dashboard, Scan, Pipeline, opportunity detail, Approvals, Portal configuration |

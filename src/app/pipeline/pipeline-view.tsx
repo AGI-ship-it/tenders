@@ -75,7 +75,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
     <div className="space-y-6">
       <PageHeader
         title={embedded ? undefined : "Opportunities Pipeline"}
-        description={embedded ? undefined : "Every opportunity the agent found, ranked by fit, win likelihood and size. Click a row to see the AI reasoning."}
+        description={embedded ? undefined : "Every opportunity the agent found, ranked by AI pre-qualification score. Click a row to see why."}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -120,7 +120,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                   Due date
                 </Th>
                 <Th sortKey="fit" sort={sort} onSort={toggleSort}>
-                  AI fit
+                  Pre-qual score
                 </Th>
                 <th className="px-3 py-3 font-medium">Recommendation</th>
                 <th className="px-3 py-3 pr-5 font-medium">Status</th>

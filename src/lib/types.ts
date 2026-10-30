@@ -50,11 +50,6 @@ export interface Evidence {
   excerpt: string;
 }
 
-export interface WinDriver {
-  label: string;
-  effect: "positive" | "negative" | "neutral";
-}
-
 export interface Comment {
   id: string;
   author: string;
@@ -102,14 +97,8 @@ export interface Tender {
   summary: string;
   scope: string[];
   eligibility: EligibilityItem[];
-  strategicScore: number;
-  strategicNote: string;
-  capacityScore: number;
-  capacityNote: string;
-  winProbability: number;
-  winDrivers: WinDriver[];
-  marginBand: string;
-  marginNote: string;
+  /** ISO certifications the tender requires bidders to hold. */
+  isoRequired: string[];
   risks: Risk[];
   assumptions: string[];
   evidence: Evidence[];

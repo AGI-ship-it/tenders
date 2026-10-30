@@ -7,14 +7,14 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
-import { fitScore, recommendation } from "@/lib/scoring";
+import { fitBreakdown, fitScore, recommendation } from "@/lib/scoring";
 import { formatValue, formatDateTime, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DecisionPanel } from "@/components/decision-panel";
-import { PageHeader, RecommendationBadge, StatusBadge } from "@/components/shared";
+import { PageHeader, RecommendationBadge, ScoreBar, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
@@ -128,7 +128,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold">{line.hod}</div>
-                    <div className="truncate text-xs text-muted-foreground">HoD · {line.name}</div>
+                    <div className="truncate text-xs text-muted-foreground">Owner · HoD, {line.name}</div>
                   </div>
                   {waiting > 0 && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
@@ -152,7 +152,9 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                       >
                         <div className="line-clamp-2 text-sm font-medium">{t.title}</div>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <span className="tabular text-xs text-muted-foreground">{formatValue(t)}</span>
+                          <span className="tabular text-xs text-muted-foreground">
+                            {formatValue(t)} · <span className="font-semibold text-foreground">{fitScore(t)}</span>/100
+                          </span>
                           <StatusBadge status={t.status} />
                         </div>
                       </button>
@@ -201,10 +203,14 @@ function ReviewPanel({ tender }: { tender: Tender }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Mini label="AI fit" value={`${fitScore(tender)}/100`} />
-        <Mini label="Win probability" value={`${tender.winProbability}%`} hint="Indicative" />
-        <Mini label="Margin band" value={tender.marginBand} hint="Not verified" />
+      <div className="grid grid-cols-5 gap-2">
+        <div className="rounded-lg bg-primary px-3 py-2.5 text-primary-foreground">
+          <div className="text-[11px] text-primary-foreground/80">Pre-qual score</div>
+          <div className="tabular mt-0.5 text-lg font-semibold">{fitScore(tender)}</div>
+        </div>
+        {fitBreakdown(tender).map((c) => (
+          <Mini key={c.key} label={c.label} value={`${c.score}`} />
+        ))}
       </div>
 
       <div className="flex items-start gap-3 rounded-lg bg-secondary/60 p-3.5">
@@ -229,7 +235,7 @@ function ReviewPanel({ tender }: { tender: Tender }) {
 function Mini({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-lg border px-3 py-2.5">
-      <div className="text-[11px] text-muted-foreground">
+      <div className="truncate text-[11px] text-muted-foreground" title={label}>
         {label}
         {hint && <span className="ml-1 text-amber-700">· {hint}</span>}
       </div>
@@ -296,7 +302,7 @@ function aiOutcome(t: Tender): "Bid" | "No-bid" {
 
 function exportCsv(tenders: Tender[]) {
   const header = [
-    "Tender ID", "Title", "Buyer", "Value (AED)", "AI fit", "AI recommendation", "Proposed",
+    "Tender ID", "Title", "Buyer", "Value (AED)", "Pre-qualification score", "AI recommendation", "Proposed",
     "Final decision", "Decided by", "Decided at", "Rationale", "Submitted by", "Submission note",
   ];
   const rows = tenders.map((t) => [
@@ -333,6 +339,7 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
           <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-5 py-3 font-medium">Tender</th>
+              <th className="px-3 py-3 font-medium">Pre-qual score</th>
               <th className="px-3 py-3 font-medium">AI said</th>
               <th className="px-3 py-3 font-medium">Decision</th>
               <th className="px-3 py-3 font-medium">HoD</th>
@@ -349,9 +356,12 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
                       <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
                       <div className="truncate font-medium group-hover:text-primary">{t.title}</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatValue(t)} · fit {fitScore(t)}
+                        {formatValue(t)}
                       </div>
                     </Link>
+                  </td>
+                  <td className="px-3 py-3">
+                    <ScoreBar score={fitScore(t)} />
                   </td>
                   <td className="px-3 py-3">
                     <RecommendationBadge rec={recommendation(t)} />

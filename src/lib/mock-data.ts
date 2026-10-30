@@ -107,6 +107,21 @@ export function seedSources(): Source[] {
       tendersFound: 9,
     },
     {
+      id: "src-ajm",
+      addedBy: "ai",
+      access: "Password",
+      accessState: "Action needed",
+      name: "Ajman e-Procurement Portal",
+      kind: "Government",
+      url: "https://ajm-eprocure.demo.example/tenders",
+      method: "Simulated supplier-portal connector",
+      schedule: "Daily, 06:00 GST",
+      lastScanAt: hoursAgo(74),
+      status: "Needs attention",
+      statusNote: "Saved login expired. Sign in again with the portal's two-step verification.",
+      tendersFound: 3,
+    },
+    {
       id: "src-meridian",
       addedBy: "ai",
       access: "Password",
@@ -161,11 +176,11 @@ function genericEligibility(statuses: CheckStatus[]): EligibilityItem[] {
   }));
 }
 
-type Base = Omit<
-  Tender,
-  "risks" | "assumptions" | "evidence" | "comments" | "winDrivers" | "marginNote"
-> &
-  Partial<Pick<Tender, "risks" | "assumptions" | "evidence" | "winDrivers" | "marginNote">>;
+type Base = Omit<Tender, "risks" | "assumptions" | "evidence" | "comments" | "isoRequired"> &
+  Partial<Pick<Tender, "risks" | "assumptions" | "evidence" | "isoRequired">>;
+
+/** ISO certifications most FM tenders ask for. */
+const STANDARD_ISO = ["ISO 9001", "ISO 14001", "ISO 45001"];
 
 function tender(b: Base): Tender {
   return {
@@ -182,12 +197,8 @@ function tender(b: Base): Tender {
       { label: "Scope of services", location: "RFP Section 3", excerpt: b.scope[0] ?? "" },
       { label: "Contract term", location: "RFP Section 1.4", excerpt: `Contract duration of ${b.durationMonths} months.` },
     ],
-    winDrivers: [
-      { label: "Buyer category historically competitive", effect: "neutral" },
-      { label: "Comparable AGFS references", effect: "positive" },
-    ],
-    marginNote: "Indicative band from category benchmarks. Not a verified margin; requires Estimation cost build-up.",
     comments: [],
+    isoRequired: STANDARD_ISO,
     ...b,
   };
 }
@@ -237,12 +248,6 @@ export function uploadedOpportunity(fileName: string, id: string, sourceId: stri
     summary: `Extracted from the uploaded file “${fileName}” (simulated). Confirm buyer, scope, value and dates against the original document.`,
     scope: ["Scope to be confirmed from the uploaded document."],
     eligibility: genericEligibility(["met", "met", "unknown", "met", "unknown"]),
-    strategicScore: 60,
-    strategicNote: "Default until the document is reviewed.",
-    capacityScore: 60,
-    capacityNote: "Default until the document is reviewed.",
-    winProbability: 40,
-    marginBand: "To be estimated",
     evidence: [{ label: "Source file", location: fileName, excerpt: "Uploaded manually to Opportunity Scanning." }],
     aiNarrative: `Service line and emirate inferred from the file name. Review the document to confirm before submitting for prequalification.`,
     status: "New",
@@ -256,6 +261,7 @@ export function scanTenders(nowISO: string): Tender[] {
   return [
     tender({
       id: "TND-2026-0412",
+      isoRequired: ["ISO 9001", "ISO 14001", "ISO 45001", "ISO 41001"],
       title: "Integrated FM services for 14 primary health clinics",
       buyer: "Gulf Crescent Healthcare Network",
       buyerType: "Semi-government",
@@ -283,20 +289,6 @@ export function scanTenders(nowISO: string): Tender[] {
         { requirement: "Infection-control trained supervisors (min. 6)", status: "met", note: "8 certified supervisors in HR records (demo)." },
         { requirement: "Bid bond 2% of tender value", status: "met", note: "Within Treasury pre-approved limits." },
       ],
-      strategicScore: 85,
-      strategicNote: "Healthcare is a 2027 growth vertical; opens a framework buyer with 40+ further sites.",
-      capacityScore: 65,
-      capacityNote: "Dubai soft-services crews at 88% utilisation; mobilisation needs 45 new hires.",
-      winProbability: 58,
-      winDrivers: [
-        { label: "Evaluation weighted 60% technical", effect: "positive" },
-        { label: "AGFS healthcare references", effect: "positive" },
-        { label: "Incumbent re-bidding (fictional: Pinnacle FM)", effect: "negative" },
-        { label: "Expected 5 to 7 competing bidders", effect: "neutral" },
-      ],
-      marginBand: "9% to 12%",
-      marginNote:
-        "Indicative band from comparable healthcare IFM contracts (demo). Not a verified margin; requires Estimation cost build-up.",
       risks: [
         { title: "Healthcare reference threshold", severity: "Medium", mitigation: "Raise a clarification on aggregation of references before 18 Nov." },
         { title: "Mobilisation of 45 new hires in 30 days", severity: "Medium", mitigation: "Pre-engage recruitment agency; phase site takeover over 6 weeks." },
@@ -322,6 +314,7 @@ export function scanTenders(nowISO: string): Tender[] {
     }),
     tender({
       id: "TND-2026-0418",
+      isoRequired: ["ISO 9001", "ISO 14001", "ISO 45001", "ISO 50001"],
       title: "Hard FM and MEP maintenance for government office towers",
       buyer: "Emirates Civic Facilities Authority",
       buyerType: "Government",
@@ -350,17 +343,6 @@ export function scanTenders(nowISO: string): Tender[] {
         { requirement: "Three high-rise MEP references", status: "met", note: "Four qualifying references (demo)." },
         { requirement: "Performance bond 10%", status: "partial", note: "Above standard limit; Treasury approval needed." },
       ],
-      strategicScore: 80,
-      strategicNote: "Anchor government client in Abu Dhabi; five-year term.",
-      capacityScore: 40,
-      capacityNote: "Chiller-plant engineers fully allocated; needs specialist subcontractor.",
-      winProbability: 34,
-      winDrivers: [
-        { label: "Large contract, high competition", effect: "negative" },
-        { label: "ICV score below threshold", effect: "negative" },
-        { label: "Strong high-rise MEP references", effect: "positive" },
-      ],
-      marginBand: "6% to 9%",
       risks: [
         { title: "ICV certificate below threshold", severity: "High", mitigation: "Explore JV with higher-ICV partner or ICV improvement plan; otherwise no-bid." },
         { title: "10% performance bond", severity: "Medium", mitigation: "Seek Treasury exception before bid decision." },
@@ -384,6 +366,7 @@ export function scanTenders(nowISO: string): Tender[] {
     }),
     tender({
       id: "TND-2026-0421",
+      isoRequired: ["ISO 9001", "ISO 14001"],
       title: "Landscaping and irrigation maintenance for residential community",
       buyer: "Meridian Properties",
       buyerType: "Private client",
@@ -409,17 +392,6 @@ export function scanTenders(nowISO: string): Tender[] {
         { requirement: "Two residential landscaping references", status: "partial", note: "References are IFM bundles, not standalone landscaping." },
         { requirement: "Ras Al Khaimah municipality landscaping permit", status: "unmet", note: "Not held by AGFS." },
       ],
-      strategicScore: 20,
-      strategicNote: "Small standalone scope; limited cross-sell.",
-      capacityScore: 30,
-      capacityNote: "No standing team in Ras Al Khaimah.",
-      winProbability: 22,
-      winDrivers: [
-        { label: "Lowest-price evaluation", effect: "negative" },
-        { label: "Local specialist competitors", effect: "negative" },
-        { label: "Existing client relationship", effect: "positive" },
-      ],
-      marginBand: "3% to 5%",
       risks: [
         { title: "Below minimum contract value", severity: "High", mitigation: "Decline; offer to include in future IFM bundle for this client." },
         { title: "Missing local permit", severity: "High", mitigation: "Would need local subcontractor." },
@@ -440,9 +412,8 @@ export function scanTenders(nowISO: string): Tender[] {
 type Brief = Pick<
   Tender,
   | "id" | "title" | "buyer" | "buyerType" | "sourceId" | "sourceRef" | "category" | "emirate" | "location"
-  | "valueAED" | "durationMonths" | "deadline" | "summary" | "strategicScore" | "capacityScore" | "winProbability"
-  | "marginBand" | "aiNarrative"
-> & { scope: string[]; checks: CheckStatus[] };
+  | "valueAED" | "durationMonths" | "deadline" | "summary" | "aiNarrative"
+> & { scope: string[]; checks: CheckStatus[]; isoRequired?: string[] };
 
 /** Shorter fictional tenders used for re-runs of the scan. */
 function briefTender(b: Brief, nowISO: string): Tender {
@@ -451,8 +422,6 @@ function briefTender(b: Brief, nowISO: string): Tender {
     ...rest,
     publishedAt: nowISO.slice(0, 10),
     eligibility: genericEligibility(checks),
-    strategicNote: "Assessed from buyer profile and AGFS sector priorities (demo).",
-    capacityNote: "Based on current crew utilisation in the emirate (demo).",
     status: "New",
     discoveredAt: nowISO,
     fromLatestScan: true,
@@ -484,10 +453,6 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Four-year integrated FM for a 31-building campus including student housing, labs and sports facilities.",
           scope: ["Hard and soft services across academic and residential buildings.", "Lab and cleanroom environment maintenance.", "Events and term-break deep cleaning."],
           checks: ["met", "met", "met", "met", "partial"],
-          strategicScore: 80,
-          capacityScore: 65,
-          winProbability: 49,
-          marginBand: "8% to 11%",
           aiNarrative: "Strong IFM fit in an active market, inside the value band. Education references support the bid; vendor registration needs renewal.",
         },
         nowISO,
@@ -509,10 +474,6 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Daily cleaning, washroom hygiene and pantry services for twelve free-zone office blocks.",
           scope: ["Daily office and washroom cleaning.", "Pantry and consumables management.", "Quarterly deep cleans."],
           checks: ["met", "met", "met", "met", "met"],
-          strategicScore: 60,
-          capacityScore: 75,
-          winProbability: 55,
-          marginBand: "7% to 9%",
           aiNarrative: "Good soft-services fit in Dubai with all eligibility met. Price-led evaluation is expected.",
         },
         nowISO,
@@ -534,10 +495,6 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Planned and reactive MEP maintenance for four residential towers, including chillers and fire systems.",
           scope: ["HVAC, chiller and pump maintenance.", "Fire-life-safety system upkeep.", "24/7 reactive call-outs."],
           checks: ["met", "met", "met", "partial", "met"],
-          strategicScore: 70,
-          capacityScore: 60,
-          winProbability: 52,
-          marginBand: "8% to 10%",
           aiNarrative: "Existing client relationship and strong MEP fit in a priority location. Bond terms need Treasury confirmation.",
         },
         nowISO,
@@ -547,6 +504,7 @@ export function scanBatches(nowISO: string): Tender[][] {
       briefTender(
         {
           id: "TND-2026-0436",
+          isoRequired: ["ISO 9001", "ISO 14001", "ISO 45001", "ISO 41001"],
           title: "Integrated FM for government service centres",
           buyer: "Emirates Civic Facilities Authority",
           buyerType: "Government",
@@ -561,10 +519,6 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Integrated FM for nine customer service centres with high public footfall.",
           scope: ["Front-of-house cleaning and hygiene.", "MEP maintenance and helpdesk.", "Security system upkeep (excludes guarding)."],
           checks: ["met", "met", "met", "met", "met"],
-          strategicScore: 85,
-          capacityScore: 60,
-          winProbability: 46,
-          marginBand: "8% to 10%",
           aiNarrative: "High-fit government IFM in a priority market with all eligibility met. Good anchor for the Abu Dhabi pipeline.",
         },
         nowISO,
@@ -586,10 +540,6 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Integrated pest management across seven hotels.",
           scope: ["Monthly integrated pest management.", "Emergency call-outs within 4 hours."],
           checks: ["met", "met", "partial", "met", "met"],
-          strategicScore: 35,
-          capacityScore: 50,
-          winProbability: 35,
-          marginBand: "4% to 6%",
           aiNarrative: "Below the AGFS minimum contract value. Recommend no-bid and offer pest control as part of a wider FM bundle.",
         },
         nowISO,
@@ -597,6 +547,7 @@ export function scanBatches(nowISO: string): Tender[][] {
       briefTender(
         {
           id: "TND-2026-0442",
+          isoRequired: ["ISO 9001", "ISO 14001"],
           title: "Landscaping and irrigation for community parks",
           buyer: "Coastal Districts Municipality",
           buyerType: "Government",
@@ -611,10 +562,6 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Soft landscaping, irrigation and play-area maintenance for fourteen community parks.",
           scope: ["Soft landscaping and seasonal planting.", "Irrigation network maintenance.", "Play-area safety inspections."],
           checks: ["met", "met", "partial", "met", "met"],
-          strategicScore: 55,
-          capacityScore: 55,
-          winProbability: 41,
-          marginBand: "6% to 8%",
           aiNarrative: "Moderate fit: landscaping is usually delivered inside IFM bundles. Worth reviewing given the government client.",
         },
         nowISO,
@@ -647,12 +594,6 @@ export function seedTenders(): Tender[] {
         "Supply of consumables and hygiene products.",
       ],
       eligibility: genericEligibility(["met", "met", "met", "met", "partial"]),
-      strategicScore: 70,
-      strategicNote: "Education sector framework with renewal option.",
-      capacityScore: 70,
-      capacityNote: "Sharjah crews available from January.",
-      winProbability: 52,
-      marginBand: "7% to 10%",
       aiNarrative:
         "Strong soft-services fit in an active market and within the value band. Vendor registration with the directorate needs renewal before submission.",
       status: "Under Review",
@@ -680,19 +621,8 @@ export function seedTenders(): Tender[] {
         "Helpdesk integrated with operator control centre.",
       ],
       eligibility: genericEligibility(["met", "met", "partial", "met", "met"]),
-      strategicScore: 90,
-      strategicNote: "Flagship transport reference; high visibility.",
-      capacityScore: 45,
-      capacityNote: "24/7 shift model needs 160 additional staff.",
-      winProbability: 29,
-      winDrivers: [
-        { label: "Very large bidder field expected", effect: "negative" },
-        { label: "No prior transit references", effect: "negative" },
-        { label: "Strong IFM credentials", effect: "positive" },
-      ],
-      marginBand: "5% to 8%",
       aiNarrative:
-        "High strategic value and solid fit, but limited transit references and significant mobilisation risk reduce win likelihood.",
+        "Solid IFM fit in a priority market and inside the value band. Limited transit references; the HoD should confirm a transit-specialist partner.",
       status: "Awaiting HoD",
       discoveredAt: hoursAgo(24 * 26),
       approval: {
@@ -724,12 +654,6 @@ export function seedTenders(): Tender[] {
         "Washroom attendants during trading hours.",
       ],
       eligibility: genericEligibility(["met", "met", "met", "met", "met"]),
-      strategicScore: 75,
-      strategicNote: "Retail portfolio expansion; existing client relationship.",
-      capacityScore: 80,
-      capacityNote: "Dubai crews available; adjacent to existing sites.",
-      winProbability: 61,
-      marginBand: "8% to 11%",
       aiNarrative: "Excellent fit with an existing client in Dubai. All eligibility criteria met.",
       status: "Prequalified",
       discoveredAt: hoursAgo(24 * 37),
@@ -762,12 +686,6 @@ export function seedTenders(): Tender[] {
       summary: "Integrated pest management for five municipal fish and produce markets.",
       scope: ["Monthly integrated pest management.", "Emergency call-outs within 4 hours."],
       eligibility: genericEligibility(["met", "met", "partial", "met", "unmet"]),
-      strategicScore: 20,
-      strategicNote: "Low strategic relevance.",
-      capacityScore: 40,
-      capacityNote: "No local team.",
-      winProbability: 30,
-      marginBand: "4% to 6%",
       aiNarrative: "Below minimum contract value and outside operating footprint.",
       status: "No-bid",
       discoveredAt: hoursAgo(24 * 29),
@@ -785,6 +703,7 @@ export function seedTenders(): Tender[] {
     }),
     tender({
       id: "TND-2026-0333",
+      isoRequired: ["ISO 9001", "ISO 45001", "ISO 18788"],
       title: "Security guarding for hotel portfolio",
       buyer: "Desert Rose Hospitality",
       buyerType: "Private client",
@@ -800,12 +719,6 @@ export function seedTenders(): Tender[] {
       summary: "Licensed security guarding and CCTV monitoring for seven hotels.",
       scope: ["Licensed guarding 24/7.", "CCTV monitoring room staffing.", "Event security support."],
       eligibility: genericEligibility(["partial", "met", "partial", "met", "met"]),
-      strategicScore: 50,
-      strategicNote: "Could open IFM conversation with hospitality group.",
-      capacityScore: 50,
-      capacityNote: "Requires licensed security partner.",
-      winProbability: 40,
-      marginBand: "5% to 7%",
       aiNarrative: "Service is outside AGFS self-delivered lines; viable only with a licensed partner.",
       status: "Changes Requested",
       discoveredAt: hoursAgo(24 * 24),
@@ -838,12 +751,6 @@ export function seedTenders(): Tender[] {
       summary: "Collection, segregation and recycling reporting for a 60-tenant logistics park.",
       scope: ["Scheduled collection and segregation.", "Monthly recycling and diversion reporting."],
       eligibility: genericEligibility(["met", "met", "partial", "met", "met"]),
-      strategicScore: 55,
-      strategicNote: "Sustainability reference opportunity.",
-      capacityScore: 60,
-      capacityNote: "Partner fleet required.",
-      winProbability: 45,
-      marginBand: "6% to 8%",
       aiNarrative: "Moderate fit; partner-delivered service in a priority geography.",
       status: "New",
       discoveredAt: hoursAgo(24 * 10),
@@ -865,12 +772,6 @@ export function seedTenders(): Tender[] {
       summary: "Planned and reactive maintenance for three district cooling plants.",
       scope: ["Chiller and cooling-tower maintenance.", "Water treatment and performance reporting."],
       eligibility: genericEligibility(["met", "met", "met", "partial", "met"]),
-      strategicScore: 65,
-      strategicNote: "Builds district-cooling credentials.",
-      capacityScore: 55,
-      capacityNote: "Specialist engineers partly available.",
-      winProbability: 48,
-      marginBand: "7% to 9%",
       aiNarrative: "Good hard FM fit; bid bond requires Treasury confirmation.",
       status: "Under Review",
       discoveredAt: hoursAgo(24 * 28),
@@ -898,7 +799,7 @@ function seedAudit(): AuditEvent[] {
   ];
 }
 
-export const DEMO_VERSION = 10;
+export const DEMO_VERSION = 12;
 
 export function seedState(): DemoState {
   return {
@@ -920,6 +821,7 @@ export function seedState(): DemoState {
         { sourceId: "src-dxb", outcome: "scanned" },
         { sourceId: "src-auh", outcome: "scanned" },
         { sourceId: "src-shj", outcome: "scanned" },
+        { sourceId: "src-ajm", outcome: "sign-in" },
         { sourceId: "src-meridian", outcome: "scanned" },
         { sourceId: "src-inbox", outcome: "paused" },
       ],
