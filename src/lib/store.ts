@@ -92,7 +92,7 @@ export interface ScanResult {
 /** Applies the outcome of a simulated scan. Deduplicates on tender ID. */
 /**
  * Applies a simulated scan. A discovering scan takes the next batch of fictional tenders not yet in the pipeline
- * (deduplicated on tender ID). A check-in scan (on sign-in) finds nothing new and reports the open opportunities it
+ * (deduplicated on tender ID). A check-in scan (on sign-in) finds nothing new and reports the open prospects it
  * matched instead.
  */
 export function completeScan({ discover = true }: { discover?: boolean } = {}): ScanResult {
@@ -103,7 +103,7 @@ export function completeScan({ discover = true }: { discover?: boolean } = {}): 
   const batch = discover ? scanBatches(at).find((b) => b.some((t) => !existing.has(t.id))) ?? [] : [];
   const fresh = batch.filter((t) => !existing.has(t.id));
   const matched = [...s.tenders].filter(isActive).sort((x, y) => priorityScore(y) - priorityScore(x));
-  // Duplicates are re-postings of opportunities already in the pipeline.
+  // Duplicates are re-postings of prospects already in the pipeline.
   const duplicates = Math.min(matched.length, 4) + (batch.length - fresh.length);
 
   const portals = s.sources.filter((src) => src.kind !== "Upload");
@@ -172,7 +172,7 @@ export function markUnderReview(id: string) {
   });
 }
 
-/** Submits an opportunity for prequalification; it is routed to the HoD of its service line. */
+/** Submits a prospect for prequalification; it is routed to the HoD of its service line. */
 export function submitForApproval(id: string, input: { proposed: ApprovalRecord["proposed"]; note: string }) {
   setState((s) => {
     const by = PEOPLE[s.role].name;
@@ -206,7 +206,7 @@ export function decide(
 ) {
   setState((s) => {
     const t = s.tenders.find((x) => x.id === id);
-    // In the demo, the HoD role acts on behalf of whichever HoD the opportunity is routed to.
+    // In the demo, the HoD role acts on behalf of whichever HoD the prospect is routed to.
     const by = s.role === "approver" && t ? serviceLineFor(t.category).hod : PEOPLE[s.role].name;
     const proposed = t?.approval?.proposed ?? "Bid";
     const status: Tender["status"] =
@@ -349,7 +349,7 @@ export function completeOnboarding() {
   setState((s) => ({ ...s, onboarded: true }));
 }
 
-/** Simulated push of a prequalified opportunity to Dynamics 365 lead management. No real API call. */
+/** Simulated push of a prequalified prospect to Dynamics 365 lead management. No real API call. */
 export function pushToD365(id: string): string {
   const leadId = `LEAD-${Math.floor(10000 + Math.random() * 89999)}`;
   setState((s) => {
@@ -374,7 +374,7 @@ export function pushToD365(id: string): string {
 
 const UPLOAD_SOURCE_ID = "src-uploads";
 
-/** Adds uploaded RFP files as opportunities. Only file names are used; no content leaves the browser. */
+/** Adds uploaded RFP files as prospects. Only file names are used; no content leaves the browser. */
 export function addUploadedFiles(fileNames: string[]): Tender[] {
   const at = now();
   let added: Tender[] = [];

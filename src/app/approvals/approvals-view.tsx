@@ -38,7 +38,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const [view, setView] = useState<View>(linkedView ?? "hod");
   const router = useRouter();
   const pathname = usePathname();
-  // Mirror tab and open panel in the URL so returning from an opportunity restores them.
+  // Mirror tab and open panel in the URL so returning from a prospect restores them.
   function syncUrl(v: View, id: string | null) {
     const q = new URLSearchParams();
     if (v !== "hod") q.set("view", v);
@@ -70,8 +70,8 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={embedded ? undefined : "Opportunities for Prequalification"}
-        description={embedded ? undefined : "Each opportunity is routed to the HoD of its service line. Prequalified opportunities are pushed to D365 as leads."}
+        title={embedded ? undefined : "Prospects for Prequalification"}
+        description={embedded ? undefined : "Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to D365 as leads."}
       />
 
       <div className="flex items-center gap-1 border-b">
@@ -106,7 +106,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         ))}
         {notSubmitted > 0 && (
           <Link href="/pipeline" className="ml-auto pb-2.5 text-xs text-muted-foreground hover:text-primary">
-            {notSubmitted} opportunities not yet submitted →
+            {notSubmitted} prospects not yet submitted →
           </Link>
         )}
       </div>
@@ -181,7 +181,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         }}
       >
         <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl data-[side=right]:sm:max-w-xl">
-          <SheetTitle className="sr-only">{selected?.title ?? "Opportunity"}</SheetTitle>
+          <SheetTitle className="sr-only">{selected?.title ?? "Prospect"}</SheetTitle>
           {selected && <ReviewPanel tender={selected} />}
         </SheetContent>
       </Sheet>
@@ -215,7 +215,7 @@ function ReviewPanel({ tender }: { tender: Tender }) {
       </div>
 
       <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
-        Open full opportunity and AI reasoning <ArrowUpRight />
+        Open full prospect and AI reasoning <ArrowUpRight />
       </Button>
 
       <div className="rounded-xl bg-muted/30 p-4">

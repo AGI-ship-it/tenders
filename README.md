@@ -1,6 +1,6 @@
 # AGFS Tender Intelligence
 
-A clickable prototype showing how an AI agent can scan government and client tender portals, rank the opportunities that fit Al Ghurair Facilities Solutions, route them to service-line Heads of Department for prequalification, and hand qualified ones to Dynamics 365 as leads.
+A clickable prototype showing how an AI agent can scan government and client tender portals, rank the prospects that fit Al Ghurair Facilities Solutions, route them to service-line Heads of Department for prequalification, and hand qualified ones to Dynamics 365 as leads.
 
 **Live demo:** https://agi-ship-it.github.io/tenders/
 
@@ -10,16 +10,16 @@ A clickable prototype showing how an AI agent can scan government and client ten
 
 **Scan → Pipeline → HoD validation → D365**
 
-1. **Scan.** Signing in runs a scan across connected portals: connect, discover, extract, deduplicate, score, with a live log, then results by source. **Run AI Scan** finds new tender opportunities.
-2. **Pipeline.** One consolidated, ranked list of tender opportunities. AI performs the initial pre-qualification and scoring; open any opportunity to see why.
-3. **Approvals.** Each opportunity is routed to the HoD of its service line, who validates the AI recommendation: prequalify, request changes or mark not qualified.
-4. **D365.** Only HoD-validated opportunities are uploaded to Dynamics 365 Lead Management as leads (simulated). D365 remains the source of truth for leads and opportunities.
+1. **Scan.** Signing in runs a scan across connected portals: connect, discover, extract, deduplicate, score, with a live log, then results by source. **Run AI Scan** finds new tender prospects.
+2. **Pipeline.** One consolidated, ranked list of tender prospects. AI performs the initial pre-qualification and scoring; open any prospect to see why.
+3. **Approvals.** Each prospect is routed to the HoD of its service line, who validates the AI recommendation: prequalify, request changes or mark not qualified.
+4. **D365.** Only HoD-validated prospects are uploaded to Dynamics 365 Lead Management as leads (simulated). D365 remains the source of truth for leads and opportunities.
 
 Views: **Dashboard** (scan and workflow overview), **Pipeline**, **Approvals** and **Portal configuration**.
 
 ## Pre-qualification
 
-The AI pre-qualification score (0 to 100) is a weighted sum of four criteria, each traceable on the opportunity page:
+The AI pre-qualification score (0 to 100) is a weighted sum of four criteria, each traceable on the prospect page:
 
 | Criterion | Weight |
 | --- | --- |
@@ -40,9 +40,9 @@ Contracts below AED 5M are always a no-bid. A missing ISO certificate or unmet m
 
 ## Demo tips
 
-- **Sign in** on a fresh demo discovers 3 new opportunities; later sign-ins re-check portals.
+- **Sign in** on a fresh demo discovers 3 new prospects; later sign-ins re-check portals.
 - On **Portals**, sign in to *Ajman e-Procurement Portal* to see a portal login with two-step verification, and to *Federal e-Procurement Portal* for UAE PASS.
-- Suggested path: open the Dubai health clinics opportunity → **Submit for prequalification** → switch to **HoD** (profile menu) → **Prequalify** → **Push to D365 as lead**.
+- Suggested path: open the Dubai health clinics prospect → **Submit for prequalification** → switch to **HoD** (profile menu) → **Prequalify** → **Push to D365 as lead**.
 - **Reset demo** (profile menu) restores fresh data and replays first-time setup.
 
 The prompts used to build the prototype are in [`docs/PROMPTS.md`](docs/PROMPTS.md).
@@ -74,4 +74,4 @@ Next.js (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Motion · Luc
 | `src/lib/scoring.ts` | Pre-qualification criteria, weights, AGFS ISO list and recommendation rules |
 | `src/lib/store.ts` | Demo state and actions (scan, submit, decide, push to D365) |
 | `src/components/` | Scan panel, step circles, add-source journey, decision panel, D365 push |
-| `src/app/` | Screens: sign-in, setup, Dashboard, Scan, Pipeline, opportunity detail, Approvals, Portal configuration |
+| `src/app/` | Screens: sign-in, setup, Dashboard, Scan, Pipeline, prospect detail, Approvals, Portal configuration |

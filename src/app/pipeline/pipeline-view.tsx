@@ -56,7 +56,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
           (!needle || `${t.id} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
       )
       .sort((a, b) => {
-        // In priority order, open opportunities always rank above decided ones.
+        // In priority order, open prospects always rank above decided ones.
         if (sort.key === "priority" && isActive(a) !== isActive(b)) return isActive(a) ? -1 : 1;
         const av = value(a);
         const bv = value(b);
@@ -74,14 +74,14 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={embedded ? undefined : "Opportunities Pipeline"}
-        description={embedded ? undefined : "Every opportunity the agent found, ranked by AI pre-qualification score. Click a row to see why."}
+        title={embedded ? undefined : "Prospects Pipeline"}
+        description={embedded ? undefined : "Every prospect the agent found, ranked by AI pre-qualification score. Click a row to see why."}
       />
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-72">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="bg-card pl-8" placeholder="Search opportunity ID, title or buyer" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input className="bg-card pl-8" placeholder="Search prospect ID, title or buyer" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <Filter label="Service" value={category} onChange={setCategory} options={options.category} />
         <Filter label="Emirate" value={emirate} onChange={setEmirate} options={options.emirate} />
@@ -101,7 +101,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
           </Button>
         )}
         <span className="ml-auto text-xs text-muted-foreground">
-          {rows.length} of {demo.tenders.length} opportunities
+          {rows.length} of {demo.tenders.length} prospects
         </span>
       </div>
 
@@ -111,7 +111,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
             <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
                 <Th sortKey="priority" sort={sort} onSort={toggleSort} className="pl-5">
-                  Opportunity
+                  Prospect
                 </Th>
                 <Th sortKey="value" sort={sort} onSort={toggleSort} className="text-right">
                   Value
@@ -171,7 +171,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-14 text-center text-sm text-muted-foreground">
-                    No opportunities match these filters.
+                    No prospects match these filters.
                   </td>
                 </tr>
               )}

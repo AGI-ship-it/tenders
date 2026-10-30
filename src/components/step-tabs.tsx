@@ -28,7 +28,7 @@ function FlowLine() {
 }
 
 /**
- * Scan Portal → Opportunities → Approval Center. Each circle shows its key number and opens its screen below.
+ * Scan Portal → Prospects → Approval Center. Each circle shows its key number and opens its screen below.
  */
 export function StepTabs() {
   // First-time setup belongs to step 1, so Scan Portal shows as selected there.
@@ -54,7 +54,7 @@ export function StepTabs() {
     },
     {
       href: "/pipeline",
-      title: "Opportunities",
+      title: "Prospects",
       action: "Review & send for approval",
       icon: ListOrdered,
       value: open,

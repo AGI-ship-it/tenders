@@ -22,7 +22,7 @@ import {
 
 const STEPS = ["Connecting to Dynamics 365", "Creating lead record", "Attaching RFP summary and evidence"];
 
-/** How opportunity fields land in the D365 Lead entity. */
+/** How prospect fields land in the D365 Lead entity. */
 function mapping(t: Tender) {
   const line = serviceLineFor(t.category);
   return [
@@ -94,7 +94,7 @@ function PushDialog({ tender, open, onOpenChange }: { tender: Tender; open: bool
           <div className="overflow-hidden rounded-lg border text-sm">
             <div className="grid grid-cols-[130px_1fr] bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
               <span>D365 lead field</span>
-              <span>Value from opportunity</span>
+              <span>Value from prospect</span>
             </div>
             <dl className="divide-y">
               {mapping(tender).map(([k, v]) => (

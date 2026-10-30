@@ -18,7 +18,7 @@ export function WelcomeView() {
 
   function signIn() {
     setRole("analyst");
-    // Signing in always runs a scan. A fresh workspace discovers new opportunities; after that, sign-in re-checks
+    // Signing in always runs a scan. A fresh workspace discovers new prospects; after that, sign-in re-checks
     // portals and shows what's already tracked. (First-time setup can be replayed with Reset demo.)
     requestScan(demo.onboarded ? "checkin" : "discover");
     if (!demo.onboarded) completeOnboarding();
@@ -38,7 +38,7 @@ export function WelcomeView() {
         </div>
         <h1 className="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">AGFS Tender Intelligence</h1>
         <p className="mt-3 max-w-md text-muted-foreground">
-          Scan tender portals every day, rank the opportunities that fit, and prequalify them with service-line HoDs.
+          Scan tender portals every day, rank the prospects that fit, and prequalify them with service-line HoDs.
         </p>
 
         <Button

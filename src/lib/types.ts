@@ -70,7 +70,7 @@ export interface ApprovalRecord {
   decisionComment?: string;
 }
 
-/** Simulated record of an opportunity pushed to Dynamics 365 lead management. */
+/** Simulated record of a prospect pushed to Dynamics 365 lead management. */
 export interface D365Lead {
   leadId: string;
   pushedBy: string;
@@ -149,7 +149,7 @@ export interface LastScan {
   scanned: number;
   duplicates: number;
   newIds: string[];
-  /** Opportunities the scan matched that were already in the pipeline (shown when nothing new was found). */
+  /** Prospects the scan matched that were already in the pipeline (shown when nothing new was found). */
   foundIds?: string[];
   runs: { sourceId: string; outcome: "scanned" | "sign-in" | "paused" }[];
 }

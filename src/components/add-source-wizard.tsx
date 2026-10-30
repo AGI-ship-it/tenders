@@ -158,7 +158,7 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
               </DialogHeader>
               <div className="grid gap-3 p-6 sm:grid-cols-2">
                 <ModeCard icon={Globe} title="Connect a portal" body="Government or client tender portal, scanned on schedule." onClick={() => setMode("portal")} />
-                <ModeCard icon={FileUp} title="Upload RFP files" body="One or several files. Each becomes an opportunity." onClick={() => setMode("upload")} />
+                <ModeCard icon={FileUp} title="Upload RFP files" body="One or several files. Each becomes a prospect." onClick={() => setMode("upload")} />
               </div>
             </>
           ) : (
@@ -504,7 +504,7 @@ function UploadFlow({ onBack, onDone }: { onBack: () => void; onDone: () => void
       const created = addUploadedFiles(files.map((f) => f.name));
       setAdded(created);
       setPhase("done");
-      toast.success(`${created.length} ${created.length === 1 ? "opportunity" : "opportunities"} added from uploads`, {
+      toast.success(`${created.length} ${created.length === 1 ? "prospect" : "prospects"} added from uploads`, {
         description: "Simulated extraction from file names.",
       });
     }, files.length * 800 + 300);
@@ -514,7 +514,7 @@ function UploadFlow({ onBack, onDone }: { onBack: () => void; onDone: () => void
     <>
       <DialogHeader className="border-b px-6 pt-5 pb-4">
         <DialogTitle>Upload RFP files</DialogTitle>
-        <DialogDescription>Add one file or several. The agent extracts each into an opportunity and scores it.</DialogDescription>
+        <DialogDescription>Add one file or several. The agent extracts each into a prospect and scores it.</DialogDescription>
       </DialogHeader>
 
       <div className="min-h-[300px] space-y-4 px-6 py-5">
@@ -589,7 +589,7 @@ function UploadFlow({ onBack, onDone }: { onBack: () => void; onDone: () => void
 
         {phase === "done" && (
           <div className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">Added to the Opportunities Pipeline</div>
+            <div className="text-xs font-medium text-muted-foreground">Added to the Prospects Pipeline</div>
             {added.map((t) => (
               <button
                 key={t.id}

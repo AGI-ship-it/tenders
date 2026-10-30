@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen">{demo ? children : null}</div>;
   }
 
-  // Scan Portal and the opportunity page fit the window; long sections scroll inside their own cards.
+  // Scan Portal and the prospect page fit the window; long sections scroll inside their own cards.
   const fill = pathname === "/sources" || pathname === "/opportunity";
 
   return (
@@ -146,8 +146,8 @@ function ProfileMenu({ role }: { role: Role }) {
                 toast.success(`Now acting as ${PEOPLE[v as Role].name}`, {
                   description:
                     v === "approver"
-                      ? "You can prequalify opportunities routed to HoDs."
-                      : "You can review opportunities and submit for prequalification.",
+                      ? "You can prequalify prospects routed to HoDs."
+                      : "You can review prospects and submit for prequalification.",
                 });
               }}
             >
@@ -162,7 +162,7 @@ function ProfileMenu({ role }: { role: Role }) {
                 <ShieldCheck className="size-4 text-pink-700" />
                 <div>
                   <div className="text-sm">Service-line HoD</div>
-                  <div className="text-xs text-muted-foreground">Prequalifies opportunities routed to their line</div>
+                  <div className="text-xs text-muted-foreground">Prequalifies prospects routed to their line</div>
                 </div>
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>

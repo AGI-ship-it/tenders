@@ -28,7 +28,7 @@ import { RecommendationBadge } from "@/components/shared";
 
 /** Where "back" returns to, keyed by the ?from= the opening link passed. */
 const BACK: Record<string, { href: string; label: string }> = {
-  pipeline: { href: "/pipeline", label: "Opportunities" },
+  pipeline: { href: "/pipeline", label: "Prospects" },
   approvals: { href: "/approvals", label: "Approval Center" },
   sources: { href: "/sources", label: "Scan Portal" },
 };

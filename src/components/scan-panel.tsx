@@ -73,7 +73,7 @@ function buildSteps(ready: Source[], blocked: Source[]): Step[] {
 }
 
 /**
- * The scan, played out on the Scan Portal screen: run → live steps → results, then on to Opportunities.
+ * The scan, played out on the Scan Portal screen: run → live steps → results, then on to Prospects.
  * Nothing is applied until a run completes, so leaving mid-run changes nothing.
  */
 export function ScanPanel({
@@ -144,7 +144,7 @@ export function ScanPanel({
         setStep(plan.length);
         setPhase("done");
         toast.success(
-          r.newTenders.length ? `${r.newTenders.length} new opportunities added` : "Scan complete: portals checked",
+          r.newTenders.length ? `${r.newTenders.length} new prospects added` : "Scan complete: portals checked",
           { description: `${r.duplicates} duplicates skipped · simulated scan` },
         );
       }, t + 300),
@@ -290,7 +290,7 @@ export function ScanPanel({
       <footer className="flex shrink-0 items-center justify-between gap-2 border-t bg-muted/30 px-6 py-3">
         {phase === "done" ? (
           <Button variant="outline" className="ml-auto" nativeButton={false} render={<Link href="/pipeline" />}>
-            Next: Review opportunities <ArrowRight />
+            Next: Review prospects <ArrowRight />
           </Button>
         ) : (
           <Button variant="outline" className="ml-auto" onClick={cancel}>
@@ -357,7 +357,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
 
       <section className="space-y-2">
         <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          {newTenders.length ? "New opportunities" : "Opportunities found"}
+          {newTenders.length ? "New prospects" : "Prospects found"}
         </h3>
         {list.length === 0 ? (
           <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">

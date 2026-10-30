@@ -19,7 +19,7 @@ export const PEOPLE = {
   approver: { name: "Omar Rahman", title: "HoD, Integrated FM", initials: "OR" },
 } as const;
 
-/** Service lines and their Heads of Department. Opportunities are routed by service category. */
+/** Service lines and their Heads of Department. Prospects are routed by service category. */
 export const SERVICE_LINES: { id: string; name: string; hod: string; initials: string; categories: Category[] }[] = [
   { id: "ifm", name: "Integrated FM", hod: "Omar Rahman", initials: "OR", categories: ["Integrated FM"] },
   { id: "hard", name: "Hard FM & MEP", hod: "Layla Mansour", initials: "LM", categories: ["Hard FM / MEP"] },
@@ -221,7 +221,7 @@ const EMIRATE_HINTS: [RegExp, Emirate][] = [
 ];
 
 /**
- * Builds an opportunity from an uploaded RFP file. Only the file name is used: category and emirate are guessed
+ * Builds a prospect from an uploaded RFP file. Only the file name is used: category and emirate are guessed
  * from it, and everything else is a clearly labelled placeholder until the document is reviewed.
  */
 export function uploadedOpportunity(fileName: string, id: string, sourceId: string, nowISO: string): Tender {
@@ -248,7 +248,7 @@ export function uploadedOpportunity(fileName: string, id: string, sourceId: stri
     summary: `Extracted from the uploaded file “${fileName}” (simulated). Confirm buyer, scope, value and dates against the original document.`,
     scope: ["Scope to be confirmed from the uploaded document."],
     eligibility: genericEligibility(["met", "met", "unknown", "met", "unknown"]),
-    evidence: [{ label: "Source file", location: fileName, excerpt: "Uploaded manually to Opportunity Scanning." }],
+    evidence: [{ label: "Source file", location: fileName, excerpt: "Uploaded manually to Prospect Scanning." }],
     aiNarrative: `Service line and emirate inferred from the file name. Review the document to confirm before submitting for prequalification.`,
     status: "New",
     discoveredAt: nowISO,

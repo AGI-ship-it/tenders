@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AGFS Tender Intelligence (Demo)",
   description:
-    "Clickable prototype: AI opportunity scanning, ranking, HoD prequalification and D365 lead hand-off. All data simulated.",
+    "Clickable prototype: AI prospect scanning, ranking, HoD prequalification and D365 lead hand-off. All data simulated.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
