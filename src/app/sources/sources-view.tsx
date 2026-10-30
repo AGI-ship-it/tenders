@@ -15,7 +15,7 @@ export function SourcesView() {
   const needsSignIn = demo.sources.some((s) => s.accessState === "Action needed" && s.status !== "Paused");
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 flex-1 flex-col">
       <ScanPanel
         onOpenSources={() => setSourcesOpen(true)}
         sourcesAction={

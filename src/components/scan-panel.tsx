@@ -169,7 +169,7 @@ export function ScanPanel({
 
   if (phase === "idle") {
     return (
-      <section className="relative flex flex-col items-center rounded-3xl bg-card px-6 py-12 text-center shadow-soft">
+      <section className="relative flex flex-1 flex-col items-center justify-center rounded-3xl bg-card px-6 py-12 text-center shadow-soft">
         <div className="absolute top-4 right-4">{sourcesAction}</div>
         <span className="grid size-16 place-items-center rounded-2xl bg-primary/10 text-primary">
           <Radar className="size-8" />
@@ -200,8 +200,8 @@ export function ScanPanel({
   }
 
   return (
-    <section className="overflow-hidden rounded-3xl bg-card shadow-soft">
-      <header className="border-b px-6 py-4">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl bg-card shadow-soft">
+      <header className="shrink-0 border-b px-6 py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -238,7 +238,7 @@ export function ScanPanel({
         )}
       </header>
 
-      <div className="px-6 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         {phase === "running" ? (
           <div className="grid gap-6 md:grid-cols-[240px_1fr]">
             <ol className="space-y-3">
@@ -287,7 +287,7 @@ export function ScanPanel({
         )}
       </div>
 
-      <footer className="flex items-center justify-between gap-2 border-t bg-muted/30 px-6 py-3">
+      <footer className="flex shrink-0 items-center justify-between gap-2 border-t bg-muted/30 px-6 py-3">
         {phase === "done" ? (
           <Button variant="outline" className="ml-auto" nativeButton={false} render={<Link href="/pipeline" />}>
             Next: Review opportunities <ArrowRight />

@@ -42,8 +42,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen">{demo ? children : null}</div>;
   }
 
+  // On Scan Portal the scan card fills the rest of the window, so the page itself is fixed to the viewport.
+  const fill = pathname === "/sources";
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className={cn("flex flex-col", fill ? "h-dvh" : "min-h-screen")}>
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
         <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center gap-4 px-6 lg:px-10">
           <Link href="/sources" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
@@ -64,8 +67,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="app-canvas flex-1 px-6 py-8 lg:px-10">
-        <div className="mx-auto w-full max-w-[1320px]">
+      <main className={cn("app-canvas flex-1 px-6 py-8 lg:px-10", fill && "flex min-h-0 flex-col overflow-y-auto pb-6")}>
+        <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex min-h-[520px] flex-1 flex-col")}>
           {demo ? (
             <>
               {(STEP_ROUTES.includes(pathname) || pathname === "/onboarding") && <StepTabs />}

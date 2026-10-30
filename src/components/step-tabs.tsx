@@ -71,7 +71,7 @@ export function StepTabs() {
   ];
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 shrink-0">
       <ol className="mx-auto flex max-w-4xl items-start px-2 pt-2 pb-1">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);
