@@ -33,8 +33,7 @@ import {
 } from "@/components/ui/dialog";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", match: ["/dashboard"] },
-  { href: "/sources", label: "Scan", match: ["/sources", "/onboarding"] },
+  { href: "/sources", label: "Dashboard", match: ["/sources", "/onboarding"] },
   { href: "/pipeline", label: "Pipeline", match: ["/pipeline", "/opportunity"] },
   { href: "/approvals", label: "Approvals", match: ["/approvals"] },
   { href: "/portals", label: "Portals", match: ["/portals"] },

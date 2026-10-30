@@ -15,7 +15,7 @@ A clickable prototype showing how an AI agent can scan government and client ten
 3. **Approvals.** Each opportunity is routed to the HoD of its service line, who validates the AI recommendation: prequalify, request changes or mark not qualified.
 4. **D365.** Only HoD-validated opportunities are uploaded to Dynamics 365 Lead Management as leads (simulated). D365 remains the source of truth for leads and opportunities.
 
-Views: **Dashboard**, **Scan**, **Pipeline**, **Approvals** and **Portal configuration**.
+Views: **Dashboard** (scan and workflow overview), **Pipeline**, **Approvals** and **Portal configuration**.
 
 ## Pre-qualification
 
