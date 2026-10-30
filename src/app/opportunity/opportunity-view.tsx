@@ -15,7 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { markUnderReview, useDemo } from "@/lib/store";
-import { fitBreakdown, fitScore, recommendation, type CriterionResult } from "@/lib/scoring";
+import { fitScore, recommendation } from "@/lib/scoring";
 import { daysUntil, formatAED, formatDate, timeAgo } from "@/lib/format";
 import type { CheckStatus, Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecisionPanel } from "@/components/decision-panel";
 import { PortalLinkButton } from "@/components/portal-link";
-import { RecommendationBadge, scoreTone } from "@/components/shared";
+import { RecommendationBadge } from "@/components/shared";
 
 /** Where "back" returns to, keyed by the ?from= the opening link passed. */
 const BACK: Record<string, { href: string; label: string }> = {
@@ -108,16 +108,11 @@ export function TenderDetail() {
 
       <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[1fr_340px]">
         <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto pr-1">
-          {/* AI pre-qualification: overall score and the four criteria behind it */}
-          <div className="grid shrink-0 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {/* AI pre-qualification score with the AI recommendation beside it */}
+          <div className="grid shrink-0 gap-4 md:grid-cols-[220px_1fr]">
             <ScoreCard score={fit} />
-            {fitBreakdown(tender).map((c) => (
-              <CriterionCard key={c.key} criterion={c} />
-            ))}
+            <RecommendationCard tender={tender} />
           </div>
-
-          {/* Recommendation */}
-          <RecommendationCard tender={tender} />
 
           {/* Details, progressively disclosed */}
           <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col rounded-xl bg-card p-1 shadow-soft">
@@ -281,29 +276,9 @@ function ScoreCard({ score }: { score: number }) {
   );
 }
 
-function CriterionCard({ criterion: c }: { criterion: CriterionResult }) {
-  return (
-    <div className="rounded-xl bg-card p-4 shadow-soft">
-      <div className="text-xs font-medium text-muted-foreground">{c.label}</div>
-      <div className="tabular mt-2 text-xl font-semibold tracking-tight">
-        {c.score}
-        <span className="text-xs font-normal text-muted-foreground">/100</span>
-      </div>
-      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
-        <motion.div
-          className={cn("h-full rounded-full", scoreTone(c.score))}
-          initial={{ width: 0 }}
-          animate={{ width: `${c.score}%` }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function RecommendationCard({ tender }: { tender: Tender }) {
   return (
-    <div className="flex shrink-0 gap-4 rounded-xl bg-card p-5 shadow-soft">
+    <div className="flex gap-4 rounded-xl bg-card p-5 shadow-soft">
       <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
         <Sparkles className="size-5" />
       </div>

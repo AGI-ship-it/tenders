@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
-import { fitBreakdown, fitScore, recommendation } from "@/lib/scoring";
+import { fitScore, recommendation } from "@/lib/scoring";
 import { formatValue, formatDateTime, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -203,19 +203,15 @@ function ReviewPanel({ tender }: { tender: Tender }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-[110px_1fr] gap-3">
         <div className="rounded-lg bg-primary px-3 py-2.5 text-primary-foreground">
           <div className="text-[11px] text-primary-foreground/80">Pre-qual score</div>
-          <div className="tabular mt-0.5 text-lg font-semibold">{fitScore(tender)}</div>
+          <div className="tabular mt-0.5 text-2xl font-semibold">{fitScore(tender)}</div>
         </div>
-        {fitBreakdown(tender).map((c) => (
-          <Mini key={c.key} label={c.label} value={`${c.score}`} />
-        ))}
-      </div>
-
-      <div className="flex items-start gap-3 rounded-lg bg-secondary/60 p-3.5">
-        <RecommendationBadge rec={recommendation(tender)} className="mt-0.5" />
-        <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
+        <div className="flex items-start gap-3 rounded-lg bg-secondary/60 p-3.5">
+          <RecommendationBadge rec={recommendation(tender)} className="mt-0.5" />
+          <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
+        </div>
       </div>
 
       <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
@@ -228,18 +224,6 @@ function ReviewPanel({ tender }: { tender: Tender }) {
       </div>
 
       <Comments tender={tender} />
-    </div>
-  );
-}
-
-function Mini({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-lg border px-3 py-2.5">
-      <div className="truncate text-[11px] text-muted-foreground" title={label}>
-        {label}
-        {hint && <span className="ml-1 text-amber-700">· {hint}</span>}
-      </div>
-      <div className="tabular mt-0.5 text-sm font-semibold">{value}</div>
     </div>
   );
 }
