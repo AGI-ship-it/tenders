@@ -209,27 +209,27 @@
   --popover: #24202a;
   --popover-foreground: #ede7e3;
   /* Muted brand purple: blends with the dark surfaces yet keeps white text on it readable. */
-  --primary: #8560bf;
+  --primary: #6c5594;
   --primary-foreground: #ffffff;
-  --secondary: color-mix(in oklch, var(--ag-purple-600) 14%, var(--tint-base));
-  --secondary-foreground: #c8b3e6;
+  --secondary: color-mix(in oklch, #6c5594 18%, var(--tint-base));
+  --secondary-foreground: #bfb0d6;
   --muted: #2a2630;
   --muted-foreground: #aa9d95;
-  --accent: color-mix(in oklch, var(--ag-purple-600) 14%, var(--tint-base));
-  --accent-foreground: #c8b3e6;
+  --accent: color-mix(in oklch, #6c5594 18%, var(--tint-base));
+  --accent-foreground: #bfb0d6;
   --destructive: oklch(0.704 0.191 22.216);
   --border: rgb(255 255 255 / 0.09);
   --input: rgb(255 255 255 / 0.16);
-  --ring: #8560bf;
+  --ring: #6c5594;
   --magenta: var(--ag-magenta-400);
-  --chart-1: #8560bf;
+  --chart-1: #6c5594;
   --chart-2: var(--ag-magenta-400);
   --chart-3: var(--ag-teal-400);
   --chart-4: var(--ag-orange-400);
   --chart-5: var(--ag-gold-400);
   --sidebar: #1d1a20;
   --sidebar-foreground: #ede7e3;
-  --sidebar-primary: #8560bf;
+  --sidebar-primary: #6c5594;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #2a2630;
   --sidebar-accent-foreground: #ede7e3;
@@ -294,6 +294,11 @@
 
 .dark .app-canvas {
   background: var(--background);
+}
+/* Purple text (titles, links, counts) uses a soft lavender so it reads on dark without glowing;
+   purple fills (buttons, the selected step) keep the deeper muted purple. */
+.dark .text-primary {
+  color: #b4a3cf;
 }
 /* Dots behind the stepper: a faint warm white so they texture the band without shouting. */
 .dark .dot-grid::before {
