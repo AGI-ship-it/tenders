@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, FlaskConical, LogOut, Radar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+/** Screens only the Bid Analyst uses; an HoD signed in is sent to Approvals instead. */
+const ANALYST_ONLY = ["/sources", "/onboarding", "/pipeline", "/portals"];
+
+const HOD_NAV = [{ href: "/approvals", label: "Approvals", match: ["/approvals", "/opportunity"] }];
+
 const NAV = [
   { href: "/sources", label: "Dashboard", match: ["/sources", "/onboarding"] },
   { href: "/pipeline", label: "Pipeline", match: ["/pipeline", "/opportunity"] },
@@ -41,6 +46,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Static hosting (GitHub Pages) serves pages with a trailing slash, e.g. "/sources/".
   const pathname = usePathname().replace(/(.)\/$/, "$1");
   const demo = useDemo();
+  const router = useRouter();
+  const isHod = demo?.role === "approver";
+  const blocked = isHod && ANALYST_ONLY.includes(pathname);
+  useEffect(() => {
+    if (blocked) router.replace("/approvals");
+  }, [blocked, router]);
+  const nav = isHod ? HOD_NAV : NAV;
 
   // The welcome screen is full-screen, without app chrome. First-time setup uses the normal layout.
   if (pathname === "/") {
@@ -54,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className={cn("flex flex-col", fill ? "h-dvh" : "min-h-screen")}>
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
         <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center gap-4 px-6 lg:px-10">
-          <Link href="/sources" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+          <Link href={isHod ? "/approvals" : "/sources"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
             <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
               <Radar className="size-5" />
             </div>
@@ -64,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
           <nav className="ml-6 hidden items-center gap-1 md:flex">
-            {NAV.map((n) => {
+            {nav.map((n) => {
               const on = n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
               return (
                 <Link
@@ -93,9 +105,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className={cn("app-canvas flex-1 px-6 py-8 lg:px-10", fill && "flex min-h-0 flex-col overflow-y-auto pb-6")}>
         <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex min-h-[520px] flex-1 flex-col")}>
-          {demo ? (
+          {demo && !blocked ? (
             <>
-              {(STEP_ROUTES.includes(pathname) || pathname === "/onboarding") && <StepTabs />}
+              {!isHod && (STEP_ROUTES.includes(pathname) || pathname === "/onboarding") && <StepTabs />}
               {children}
             </>
           ) : (

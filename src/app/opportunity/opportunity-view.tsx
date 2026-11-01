@@ -37,7 +37,6 @@ export function TenderDetail() {
   const router = useRouter();
   const id = params.get("id") ?? "";
   const from = params.get("from");
-  const back = BACK[from ?? ""] ?? BACK.pipeline;
 
   // Return to the exact place we came from (same tab, same open panel); fall back to that screen if this page was
   // opened directly.
@@ -46,6 +45,8 @@ export function TenderDetail() {
     else router.push(back.href);
   }
   const demo = useDemo()!;
+  // An HoD has no Prospects screen, so their default way back is Approvals.
+  const back = BACK[from ?? ""] ?? (demo.role === "approver" ? BACK.approvals : BACK.pipeline);
   const tender = demo.tenders.find((t) => t.id === id);
   const source = demo.sources.find((s) => s.id === tender?.sourceId);
 
