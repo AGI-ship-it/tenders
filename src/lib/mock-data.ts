@@ -16,7 +16,7 @@ import type {
 // ---------------------------------------------------------------------------
 
 export const PEOPLE = {
-  analyst: { name: "Sara Haddad", title: "Bid Analyst, Commercial", initials: "SH" },
+  analyst: { name: "Cassandra Haddad", title: "Bid Analyst, Commercial", initials: "CH" },
   approver: { name: "Omar Rahman", title: "HoD, Integrated FM", initials: "OR" },
 } as const;
 
@@ -635,7 +635,7 @@ export function seedTenders(): Tender[] {
       discoveredAt: hoursAgo(24 * 26),
       approval: {
         proposed: "Prequalify",
-        submittedBy: "Sara Haddad",
+        submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(20),
         reviewer: "Omar Rahman (HoD, Integrated FM)",
         note: "Recommend bidding with a transit-specialist subcontractor for station systems. Mobilisation plan attached in bid folder.",
@@ -667,7 +667,7 @@ export function seedTenders(): Tender[] {
       discoveredAt: hoursAgo(24 * 37),
       approval: {
         proposed: "Prequalify",
-        submittedBy: "Sara Haddad",
+        submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(24 * 30),
         reviewer: "Faisal Karim (HoD, Soft Services)",
         note: "Strong fit, existing client.",
@@ -699,7 +699,7 @@ export function seedTenders(): Tender[] {
       discoveredAt: hoursAgo(24 * 29),
       approval: {
         proposed: "Reject",
-        submittedBy: "Sara Haddad",
+        submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(24 * 27),
         reviewer: "Faisal Karim (HoD, Soft Services)",
         note: "Below value threshold and outside footprint.",
@@ -732,7 +732,7 @@ export function seedTenders(): Tender[] {
       discoveredAt: hoursAgo(24 * 24),
       approval: {
         proposed: "Prequalify",
-        submittedBy: "Sara Haddad",
+        submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(24 * 6),
         reviewer: "Nadia Yousef (HoD, Security & Specialist)",
         note: "Propose bidding with a licensed security partner.",
@@ -798,16 +798,16 @@ function seedAudit(): AuditEvent[] {
     detail,
   });
   return [
-    e(20, "Sara Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
+    e(20, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
     e(26, AGENT_NAME, "agent", "Daily scan completed", undefined, "4 sources scanned, 2 new tenders, 4 duplicates skipped (simulated)."),
     e(24 * 5, "Nadia Yousef", "approver", "Requested changes", "TND-2026-0333", "Please name the partner and confirm margin split."),
-    e(24 * 6, "Sara Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0333"),
+    e(24 * 6, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0333"),
     e(24 * 27 - 3, "Faisal Karim", "approver", "Confirmed rejection", "TND-2026-0340", "Agree, not relevant for AGFS."),
     e(24 * 29, "Faisal Karim", "approver", "Prequalified", "TND-2026-0351", "Relevant for the IFM service line."),
   ];
 }
 
-export const DEMO_VERSION = 13;
+export const DEMO_VERSION = 14;
 
 export function seedState(): DemoState {
   return {
