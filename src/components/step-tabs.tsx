@@ -67,7 +67,7 @@ export function StepTabs() {
   ];
 
   return (
-    <div className="shrink-0 border-b bg-zinc-50/60 pt-5 pb-3">
+    <div className="dot-grid shrink-0 border-b bg-zinc-50/60 pt-5 pb-3">
       <ol className="mx-auto flex max-w-4xl items-start px-2 pt-2 pb-1">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);

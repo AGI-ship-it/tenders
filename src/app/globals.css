@@ -239,21 +239,25 @@
   html {
     @apply font-sans;
   }
-  /* Main content canvas: light grey with a faint dot grid that fades out downwards. */
+  /* Main content canvas: plain light grey. */
   .app-canvas {
-    position: relative;
-    isolation: isolate;
     background: color-mix(in oklch, var(--ag-grey-200) 55%, white);
   }
-  .app-canvas::before {
+  /* Faint dot grid behind the stepper, fading out towards the sides. */
+  .dot-grid {
+    position: relative;
+    isolation: isolate;
+  }
+  .dot-grid::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background-image: radial-gradient(color-mix(in oklch, var(--ag-purple-200) 25%, var(--ag-grey-400)) 1px, transparent 1.2px);
-    background-size: 20px 20px;
-    mask-image: linear-gradient(to bottom, black 0, black 360px, transparent 900px);
+    background-image: radial-gradient(color-mix(in oklch, var(--ag-purple-200) 30%, var(--ag-grey-400)) 1px, transparent 1.2px);
+    background-size: 18px 18px;
+    background-position: center;
+    mask-image: radial-gradient(ellipse 60% 120% at 50% 50%, black 30%, transparent 100%);
   }
   .tabular {
     font-variant-numeric: tabular-nums;
