@@ -177,7 +177,7 @@ export function TenderDetail() {
 
             <TabsContent value="risks" className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5 md:grid-cols-2">
               <div className="space-y-3">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Risks</h3>
+                <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">Risks</h3>
                 {tender.risks.map((r) => (
                   <div key={r.title} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between gap-2">
@@ -198,7 +198,7 @@ export function TenderDetail() {
                 ))}
               </div>
               <div className="space-y-3">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Commercial assumptions</h3>
+                <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">Commercial assumptions</h3>
                 <ul className="space-y-2">
                   {tender.assumptions.map((a) => (
                     <li key={a} className="flex gap-2.5 text-sm">
@@ -231,7 +231,7 @@ export function TenderDetail() {
             <DecisionPanel tender={tender} />
             {history.length > 0 && (
               <div className="mt-6 border-t pt-4">
-                <h3 className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">History</h3>
+                <h3 className="mb-3 text-xs font-bold tracking-wide text-foreground uppercase">History</h3>
                 <ol className="space-y-3">
                   {history.slice(0, 5).map((e) => (
                     <li key={e.id} className="flex gap-2.5 text-xs">
@@ -295,7 +295,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
         </div>
       </div>
 
-      <h3 className="mt-4 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <h3 className="mt-4 mb-2 text-xs font-bold tracking-wide text-foreground uppercase">
         Why {yes ? "Yes" : "No"}
       </h3>
       <ul className="grid gap-2 sm:grid-cols-2">
