@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ALL, FilterSelect } from "@/components/filter-select";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { DecisionPanel } from "@/components/decision-panel";
 import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -85,15 +86,8 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         </>
       ) : (
         <>
-          {notSubmitted > 0 && (
-            <div className="-mt-3 flex shrink-0 justify-end">
-              <Link href="/pipeline" className="text-xs text-muted-foreground hover:text-primary">
-                {notSubmitted} prospects not yet submitted →
-              </Link>
-            </div>
-          )}
           {routed.length ? (
-            <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
+            <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod notSubmitted={notSubmitted} />
           ) : (
             <EmptyState text="No prospects have been routed to an HoD yet." />
           )}
@@ -241,11 +235,14 @@ function Register({
   onOpen,
   selectedId,
   showHod,
+  notSubmitted,
 }: {
   tenders: Tender[];
   onOpen: (id: string) => void;
   selectedId: string | null;
   showHod: boolean;
+  /** Prospects not yet sent to an HoD; linked to the Pipeline in the toolbar. */
+  notSubmitted?: number;
 }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState(ALL);
@@ -263,6 +260,7 @@ function Register({
     )
     .sort(registerOrder);
   const filtered = Boolean(needle) || status !== ALL || hod !== ALL || ai !== ALL;
+  const pager = usePagination(sorted, `${q}|${status}|${hod}|${ai}`);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -295,10 +293,12 @@ function Register({
             <X /> Clear
           </Button>
         )}
-        <span className="ml-auto text-xs text-muted-foreground">
-          {sorted.length} of {tenders.length} prospects
-        </span>
-        <Button variant="outline" onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
+        {notSubmitted ? (
+          <Link href="/pipeline" className="ml-auto text-xs text-muted-foreground hover:text-primary">
+            {notSubmitted} prospects not yet submitted →
+          </Link>
+        ) : null}
+        <Button variant="outline" className={cn(!notSubmitted && "ml-auto")} onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
           <Download /> Export CSV
         </Button>
       </div>
@@ -319,7 +319,7 @@ function Register({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {sorted.map((t) => {
+              {pager.pageItems.map((t) => {
                 const line = serviceLineFor(t.category);
                 const pending = PENDING.includes(t.status);
                 const days = daysUntil(t.deadline);
@@ -397,6 +397,7 @@ function Register({
             </tbody>
           </table>
         </div>
+        <TablePagination {...pager} overall={tenders.length} />
       </div>
     </div>
   );

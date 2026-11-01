@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ALL, FilterSelect } from "@/components/filter-select";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 
 type SortKey = "priority" | "id" | "value" | "deadline" | "fit";
@@ -65,6 +66,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         return sort.dir === "asc" ? c : -c;
       });
   }, [demo.tenders, q, category, emirate, status, sort]);
+  const pager = usePagination(rows, `${q}|${category}|${emirate}|${status}|${sort.key}|${sort.dir}`);
 
   const filtered = q || category !== ALL || emirate !== ALL || status !== ALL;
 
@@ -103,9 +105,6 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
             <X /> Clear
           </Button>
         )}
-        <span className="ml-auto text-xs text-muted-foreground">
-          {rows.length} of {demo.tenders.length} prospects
-        </span>
       </div>
 
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
@@ -131,7 +130,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {rows.map((t) => {
+              {pager.pageItems.map((t) => {
                 const days = daysUntil(t.deadline);
                 return (
                   <tr
@@ -182,6 +181,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
             </tbody>
           </table>
         </div>
+        <TablePagination {...pager} overall={demo.tenders.length} />
       </div>
     </div>
   );
