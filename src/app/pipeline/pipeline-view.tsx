@@ -126,7 +126,8 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 <Th sortKey="fit" sort={sort} onSort={toggleSort}>
                   Pre-qual recommendation
                 </Th>
-                <th className="px-3 py-3 pr-5 font-medium">Status</th>
+                <th className="px-3 py-3 font-medium">Status</th>
+                <th className="px-3 py-3 pr-5 font-medium">Decision</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -162,16 +163,18 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                     <td className="px-3 py-3">
                       <PrequalBadge yes={aiPrequalified(t)} />
                     </td>
-                    <td className="px-3 py-3 pr-5 whitespace-nowrap">
+                    <td className="px-3 py-3">
                       <StatusBadge status={t.status} />
-                      <StatusDetail tender={t} />
+                    </td>
+                    <td className="px-3 py-3 pr-5 whitespace-nowrap">
+                      <Decision tender={t} />
                     </td>
                   </tr>
                 );
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={6} className="px-5 py-14 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>
@@ -184,33 +187,45 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   );
 }
 
-/** Where a prospect stands in the HoD workflow, shown under its status. */
-function StatusDetail({ tender: t }: { tender: Tender }) {
+/** Who holds the decision on a prospect, or who made it and when. */
+function Decision({ tender: t }: { tender: Tender }) {
   const hod = serviceLineFor(t.category).hod;
-  let text: string | null = null;
-  let tone = "text-muted-foreground";
+  const a = t.approval;
+  const decidedOn = a?.decidedAt ? formatDate(a.decidedAt) : undefined;
+  let main: string;
+  let sub: string | undefined;
+  let tone = "text-foreground";
   switch (t.status) {
     case "New":
     case "Under Review":
-      text = "Not yet submitted";
+      main = "Not yet submitted";
+      tone = "text-muted-foreground";
       break;
     case "Awaiting HoD":
-      text = `Awaiting ${hod}${t.approval ? ` · sent ${timeAgo(t.approval.submittedAt).toLowerCase()}` : ""}`;
+      main = `Awaiting ${hod}`;
+      sub = a ? `Sent ${timeAgo(a.submittedAt).toLowerCase()}` : undefined;
       tone = "text-orange-700";
       break;
     case "Changes Requested":
-      text = `Changes requested by ${hod}`;
+      main = `Changes requested by ${a?.decidedBy ?? hod}`;
+      sub = decidedOn;
       tone = "text-orange-700";
       break;
     case "Prequalified":
-      text = "Ready to push to D365";
-      break;
     case "Lead in D365":
-      text = t.lead ? `Lead ${t.lead.leadId}` : "Lead in D365";
+      main = `Approved by ${a?.decidedBy ?? hod}`;
+      sub = [decidedOn, t.lead ? `Lead ${t.lead.leadId}` : "Ready to push to D365"].filter(Boolean).join(" · ");
       break;
+    default:
+      main = a?.decidedBy ? `Rejected by ${a.decidedBy}` : "Rejected";
+      sub = decidedOn;
   }
-  if (!text) return null;
-  return <div className={cn("mt-1.5 text-[11px]", tone)}>{text}</div>;
+  return (
+    <>
+      <div className={cn("text-sm", tone)}>{main}</div>
+      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+    </>
+  );
 }
 
 function Th({
