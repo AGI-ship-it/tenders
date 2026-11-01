@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { AGENT_NAME, DEMO_VERSION, actingPerson, hodLabel, scanBatches, seedState, serviceLineFor, uploadedOpportunity } from "./mock-data";
+import { AGENT_NAME, DEMO_VERSION, actingPerson, hodLabel, scanBatches, seedState, serviceLineFor } from "./mock-data";
 import { isActive, priorityScore } from "./scoring";
 import type { ApprovalRecord, AuditEvent, DemoState, Role, Source, Tender } from "./types";
 
@@ -371,52 +371,6 @@ export function pushToD365(id: string): string {
     };
   });
   return leadId;
-}
-
-const UPLOAD_SOURCE_ID = "src-uploads";
-
-/** Adds uploaded RFP files as prospects. Only file names are used; no content leaves the browser. */
-export function addUploadedFiles(fileNames: string[]): Tender[] {
-  const at = now();
-  let added: Tender[] = [];
-  setState((s) => {
-    const max = Math.max(500, ...s.tenders.map((t) => Number(t.id.split("-").pop()) || 0));
-    added = fileNames.map((f, i) => uploadedOpportunity(f, `TND-2026-${String(max + 1 + i).padStart(4, "0")}`, UPLOAD_SOURCE_ID, at));
-    const existing = s.sources.find((x) => x.id === UPLOAD_SOURCE_ID);
-    const uploadSource: Source = existing
-      ? { ...existing, lastScanAt: at, tendersFound: existing.tendersFound + added.length }
-      : {
-          id: UPLOAD_SOURCE_ID,
-          name: "Uploaded RFP files",
-          kind: "Upload",
-          addedBy: "user",
-          access: "Public",
-          accessState: "Ready",
-          url: "Manual upload",
-          method: "File upload",
-          schedule: "On upload",
-          lastScanAt: at,
-          status: "Connected",
-          tendersFound: added.length,
-        };
-    const by = currentUser(s).name;
-    return {
-      ...s,
-      tenders: [...added, ...s.tenders.map((t) => ({ ...t, fromLatestScan: false }))],
-      sources: existing ? s.sources.map((x) => (x.id === UPLOAD_SOURCE_ID ? uploadSource : x)) : [...s.sources, uploadSource],
-      audit: [
-        event({
-          actor: by,
-          role: s.role,
-          action: `Uploaded ${added.length} RFP file${added.length === 1 ? "" : "s"}`,
-          detail: fileNames.join(", "),
-        }),
-        ...added.map((t) => event({ actor: AGENT_NAME, role: "agent", action: "Extracted and scored uploaded file", tenderId: t.id })),
-        ...s.audit,
-      ],
-    };
-  });
-  return added;
 }
 
 export type ScanMode = "discover" | "checkin";

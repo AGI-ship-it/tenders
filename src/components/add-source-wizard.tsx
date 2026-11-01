@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowLeft,
@@ -9,8 +8,6 @@ import {
   Building2,
   Check,
   CheckCircle2,
-  FileText,
-  FileUp,
   Fingerprint,
   Globe,
   KeyRound,
@@ -19,13 +16,12 @@ import {
   ShieldCheck,
   Smartphone,
   Store,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { addSource, addUploadedFiles } from "@/lib/store";
+import { addSource } from "@/lib/store";
 import { PEOPLE } from "@/lib/mock-data";
-import type { AccessType, Category, Emirate, Source, Tender } from "@/lib/types";
+import type { AccessType, Category, Emirate, Source } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +62,6 @@ const TESTS = ["Reaching portal", "Signing in", "Finding tender listings", "Read
 type SignIn = "none" | "waiting" | "otp" | "done";
 
 export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const [mode, setMode] = useState<"choose" | "portal" | "upload">("choose");
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("https://");
@@ -93,7 +88,6 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
   function reset() {
     timers.current.forEach((t) => window.clearTimeout(t));
     timers.current = [];
-    setMode("choose");
     setStep(0);
     setName("");
     setUrl("https://");
@@ -144,29 +138,6 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
 
   function toggle<T>(list: T[], v: T, set: (l: T[]) => void) {
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
-  }
-
-  if (mode !== "portal") {
-    return (
-      <Dialog open={open} onOpenChange={close}>
-        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
-          {mode === "choose" ? (
-            <>
-              <DialogHeader className="border-b px-6 pt-5 pb-4">
-                <DialogTitle>Add a source</DialogTitle>
-                <DialogDescription>Connect a portal the agent scans every day, or upload RFP files you already have.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-3 p-6 sm:grid-cols-2">
-                <ModeCard icon={Globe} title="Connect a portal" body="Government or client tender portal, scanned on schedule." onClick={() => setMode("portal")} />
-                <ModeCard icon={FileUp} title="Upload RFP files" body="One or several files. Each becomes a prospect." onClick={() => setMode("upload")} />
-              </div>
-            </>
-          ) : (
-            <UploadFlow onBack={() => setMode("choose")} onDone={() => close(false)} />
-          )}
-        </DialogContent>
-      </Dialog>
-    );
   }
 
   return (
@@ -371,8 +342,8 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
         </div>
 
         <div className="flex items-center justify-between border-t bg-muted/30 px-6 py-3">
-          <Button variant="ghost" onClick={() => (step === 0 ? setMode("choose") : setStep((s) => s - 1))}>
-            <ArrowLeft /> Back
+          <Button variant="ghost" onClick={() => (step === 0 ? close(false) : setStep((s) => s - 1))}>
+            <ArrowLeft /> {step === 0 ? "Cancel" : "Back"}
           </Button>
           {step < STEPS.length - 1 ? (
             <Button disabled={!canNext} onClick={() => setStep((s) => s + 1)}>
@@ -452,186 +423,5 @@ function Done({ text }: { text: string }) {
       <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
       {text}
     </div>
-  );
-}
-
-function ModeCard({ icon: Icon, title, body, onClick }: { icon: typeof Globe; title: string; body: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex flex-col items-start gap-3 rounded-xl bg-muted/40 p-5 text-left transition-all hover:bg-card hover:shadow-soft-lg"
-    >
-      <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
-        <Icon className="size-5" />
-      </span>
-      <div>
-        <div className="font-medium">{title}</div>
-        <div className="mt-0.5 text-sm text-muted-foreground">{body}</div>
-      </div>
-      <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
-        Choose <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-      </span>
-    </button>
-  );
-}
-
-const ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.zip";
-
-function formatSize(bytes: number) {
-  return bytes > 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1000))} KB`;
-}
-
-/** Upload one or many RFP files. Only names are used; files are never read or sent anywhere. */
-function UploadFlow({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
-  const router = useRouter();
-  const [files, setFiles] = useState<{ name: string; size: number }[]>([]);
-  const [drag, setDrag] = useState(false);
-  const [phase, setPhase] = useState<"pick" | "extracting" | "done">("pick");
-  const [progress, setProgress] = useState(0);
-  const [added, setAdded] = useState<Tender[]>([]);
-  const input = useRef<HTMLInputElement>(null);
-
-  function take(list: FileList | null) {
-    if (!list) return;
-    const next = Array.from(list).map((f) => ({ name: f.name, size: f.size }));
-    setFiles((cur) => [...cur, ...next.filter((n) => !cur.some((c) => c.name === n.name))]);
-  }
-
-  function extract() {
-    setPhase("extracting");
-    files.forEach((_, i) => window.setTimeout(() => setProgress(i + 1), (i + 1) * 800));
-    window.setTimeout(() => {
-      const created = addUploadedFiles(files.map((f) => f.name));
-      setAdded(created);
-      setPhase("done");
-      toast.success(`${created.length} ${created.length === 1 ? "prospect" : "prospects"} added from uploads`, {
-        description: "Simulated extraction from file names.",
-      });
-    }, files.length * 800 + 300);
-  }
-
-  return (
-    <>
-      <DialogHeader className="border-b px-6 pt-5 pb-4">
-        <DialogTitle>Upload RFP files</DialogTitle>
-        <DialogDescription>Add one file or several. The agent extracts each into a prospect and scores it.</DialogDescription>
-      </DialogHeader>
-
-      <div className="min-h-[300px] space-y-4 px-6 py-5">
-        {phase === "pick" && (
-          <>
-            <button
-              type="button"
-              onClick={() => input.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDrag(true);
-              }}
-              onDragLeave={() => setDrag(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDrag(false);
-                take(e.dataTransfer.files);
-              }}
-              className={cn(
-                "flex w-full flex-col items-center rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors",
-                drag ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/40",
-              )}
-            >
-              <FileUp className="size-7 text-primary" />
-              <span className="mt-2 text-sm font-medium">Drop files here or click to browse</span>
-              <span className="mt-0.5 text-xs text-muted-foreground">PDF, Word, Excel or ZIP · one or many</span>
-            </button>
-            <input ref={input} type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => take(e.target.files)} />
-
-            {files.length > 0 && (
-              <ul className="divide-y rounded-xl bg-muted/40">
-                {files.map((f) => (
-                  <li key={f.name} className="flex items-center gap-3 px-3 py-2 text-sm">
-                    <FileText className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                    <span className="text-xs text-muted-foreground">{formatSize(f.size)}</span>
-                    <button
-                      aria-label={`Remove ${f.name}`}
-                      onClick={() => setFiles((cur) => cur.filter((c) => c.name !== f.name))}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="text-xs text-muted-foreground">Demo: only file names are used. Files are not read or uploaded anywhere.</p>
-          </>
-        )}
-
-        {phase === "extracting" && (
-          <ol className="space-y-2.5">
-            {files.map((f, i) => (
-              <li key={f.name} className="flex items-center gap-2.5 text-sm">
-                {i < progress ? (
-                  <CheckCircle2 className="size-4 text-emerald-600" />
-                ) : i === progress ? (
-                  <Loader2 className="size-4 animate-spin text-primary" />
-                ) : (
-                  <span className="grid size-4 place-items-center">
-                    <span className="size-1.5 rounded-full bg-muted-foreground/40" />
-                  </span>
-                )}
-                <span className={cn("truncate", i > progress && "text-muted-foreground")}>
-                  {i < progress ? "Extracted" : i === progress ? "Extracting" : "Waiting"} · {f.name}
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-
-        {phase === "done" && (
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">Added to the Prospects Pipeline</div>
-            {added.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => {
-                  onDone();
-                  router.push(`/opportunity?id=${encodeURIComponent(t.id)}&from=sources`);
-                }}
-                className="flex w-full items-center gap-3 rounded-lg bg-muted/40 px-3 py-2.5 text-left transition-colors hover:bg-muted"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{t.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {t.id} · {t.category} · {t.emirate}
-                  </div>
-                </div>
-                <ArrowRight className="size-4 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between border-t bg-muted/30 px-6 py-3">
-        {phase === "pick" ? (
-          <>
-            <Button variant="ghost" onClick={onBack}>
-              <ArrowLeft /> Back
-            </Button>
-            <Button disabled={!files.length} onClick={extract}>
-              Extract {files.length || ""} file{files.length === 1 ? "" : "s"} <ArrowRight />
-            </Button>
-          </>
-        ) : phase === "done" ? (
-          <Button className="ml-auto" onClick={onDone}>
-            Done
-          </Button>
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            Extracting {progress} of {files.length}…
-          </span>
-        )}
-      </div>
-    </>
   );
 }

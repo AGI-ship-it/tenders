@@ -212,59 +212,6 @@ function tender(b: Base): Tender {
   };
 }
 
-const FILE_HINTS: [RegExp, Category][] = [
-  [/clean|hygien|housekeep/i, "Cleaning & Hygiene"],
-  [/mep|hvac|hard|chiller|electric|plumb/i, "Hard FM / MEP"],
-  [/secur|guard|cctv/i, "Security Services"],
-  [/landscap|irrigat/i, "Landscaping"],
-  [/pest/i, "Pest Control"],
-  [/waste|recycl/i, "Waste Management"],
-];
-const EMIRATE_HINTS: [RegExp, Emirate][] = [
-  [/abu.?dhabi|auh/i, "Abu Dhabi"],
-  [/sharjah|shj/i, "Sharjah"],
-  [/ajman/i, "Ajman"],
-  [/ras.?al.?khaimah|rak/i, "Ras Al Khaimah"],
-  [/fujairah/i, "Fujairah"],
-  [/umm.?al.?quwain|uaq/i, "Umm Al Quwain"],
-];
-
-/**
- * Builds a prospect from an uploaded RFP file. Only the file name is used: category and emirate are guessed
- * from it, and everything else is a clearly labelled placeholder until the document is reviewed.
- */
-export function uploadedOpportunity(fileName: string, id: string, sourceId: string, nowISO: string): Tender {
-  const base = fileName.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
-  const title = base ? base.charAt(0).toUpperCase() + base.slice(1) : "Uploaded RFP";
-  const category = FILE_HINTS.find(([re]) => re.test(fileName))?.[1] ?? "Integrated FM";
-  const emirate = EMIRATE_HINTS.find(([re]) => re.test(fileName))?.[1] ?? "Dubai";
-  const deadline = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
-  return tender({
-    id,
-    title,
-    buyer: "To be confirmed from document",
-    buyerType: "Government",
-    sourceId,
-    sourceRef: fileName,
-    category,
-    emirate,
-    location: `${emirate} (from file name)`,
-    valueAED: 20_000_000,
-    valueDisclosed: false,
-    durationMonths: 36,
-    publishedAt: nowISO.slice(0, 10),
-    deadline,
-    summary: `Extracted from the uploaded file “${fileName}” (simulated). Confirm buyer, scope, value and dates against the original document.`,
-    scope: ["Scope to be confirmed from the uploaded document."],
-    eligibility: genericEligibility(["met", "met", "unknown", "met", "unknown"]),
-    evidence: [{ label: "Source file", location: fileName, excerpt: "Uploaded manually to Prospect Scanning." }],
-    aiNarrative: `Service line and emirate inferred from the file name. Review the document to confirm before submitting for prequalification.`,
-    status: "New",
-    discoveredAt: nowISO,
-    fromLatestScan: true,
-  });
-}
-
 /** Tenders the agent finds on the next "AI scan". */
 export function scanTenders(nowISO: string): Tender[] {
   return [
