@@ -161,6 +161,8 @@ export interface LastScan {
 export interface DemoState {
   version: number;
   role: Role;
+  /** Service line of the HoD being acted as when role is "approver". */
+  hodLine?: string;
   tenders: Tender[];
   sources: Source[];
   audit: AuditEvent[];

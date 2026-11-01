@@ -7,8 +7,8 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
-import { aiPrequalified } from "@/lib/scoring";
-import { formatValue, formatDateTime, timeAgo } from "@/lib/format";
+import { aiPrequalified, prospectStatus } from "@/lib/scoring";
+import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,9 @@ import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
-type View = "hod" | "decided";
+type View = "register" | "hod";
+
+const PENDING: Tender["status"][] = ["Awaiting HoD", "Changes Requested"];
 
 const STATUS_ORDER: Tender["status"][] = [
   "Awaiting HoD",
@@ -34,14 +36,14 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   // Deep link from "Submit for prequalification": /approvals?view=hod&id=TND-...
   const params = useSearchParams();
   const linked = params.get("view");
-  const linkedView: View | null = linked === "decided" ? "decided" : linked ? "hod" : null;
-  const [view, setView] = useState<View>(linkedView ?? "hod");
+  const linkedView: View | null = linked === "hod" ? "hod" : linked === "register" ? "register" : null;
+  const [view, setView] = useState<View>(linkedView ?? "register");
   const router = useRouter();
   const pathname = usePathname();
   // Mirror tab and open panel in the URL so returning from a prospect restores them.
   function syncUrl(v: View, id: string | null) {
     const q = new URLSearchParams();
-    if (v !== "hod") q.set("view", v);
+    if (v !== "register") q.set("view", v);
     if (id) q.set("id", id);
     const qs = q.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -56,15 +58,23 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
     setSelectedId(params.get("id"));
   }
 
+  const isHod = demo.role === "approver";
+  const myLine = SERVICE_LINES.find((l) => l.id === demo.hodLine) ?? SERVICE_LINES[0];
   const routed = demo.tenders.filter((t) => t.approval);
-  const decided = demo.tenders.filter((t) => ["Prequalified", "Lead in D365", "No-bid", "Not qualified"].includes(t.status));
+  const mine = routed.filter((t) => myLine.categories.includes(t.category));
   const notSubmitted = demo.tenders.filter((t) => ["New", "Under Review"].includes(t.status)).length;
   const awaiting = routed.filter((t) => t.status === "Awaiting HoD").length;
+  const myAwaiting = mine.filter((t) => t.status === "Awaiting HoD").length;
   const selected = demo.tenders.find((t) => t.id === selectedId);
 
+  function open(id: string) {
+    setSelectedId(id);
+    syncUrl(view, id);
+  }
+
   const tabs: { key: View; label: string; count?: number; alert?: boolean }[] = [
+    { key: "register", label: "Register", count: routed.length },
     { key: "hod", label: "By HoD", count: awaiting, alert: awaiting > 0 },
-    { key: "decided", label: "Decision register", count: decided.length },
   ];
 
   return (
@@ -74,102 +84,78 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         description={embedded ? undefined : "Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to D365 as leads."}
       />
 
-      <div className="flex items-center gap-1 border-b">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => {
-              setView(t.key);
-              setSelectedId(null);
-              syncUrl(t.key, null);
-            }}
-            className={cn(
-              "relative -mb-px flex items-center gap-2 px-3 pb-2.5 text-sm transition-colors",
-              view === t.key ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t.label}
-            {t.count !== undefined && (
-              <span
-                className={cn(
-                  "tabular rounded-full px-1.5 text-[11px] font-semibold",
-                  t.alert ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground",
-                )}
-              >
-                {t.count}
+      {isHod ? (
+        // HoD view: only the prospects routed to this HoD's service line.
+        <>
+          <div className="flex items-center gap-3 border-b pb-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
+              {myLine.initials}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold">Routed to you · {myLine.hod}</div>
+              <div className="text-xs text-muted-foreground">HoD, {myLine.name}</div>
+            </div>
+            {myAwaiting > 0 && (
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                {myAwaiting} pending your review
               </span>
             )}
-            {view === t.key && (
-              <motion.span layoutId="approval-tab" className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
-            )}
-          </button>
-        ))}
-        {notSubmitted > 0 && (
-          <Link href="/pipeline" className="ml-auto pb-2.5 text-xs text-muted-foreground hover:text-primary">
-            {notSubmitted} prospects not yet submitted →
-          </Link>
-        )}
-      </div>
-
-      {view === "decided" ? (
-        decided.length ? <DecisionRegister tenders={decided} /> : <EmptyState />
+          </div>
+          {mine.length ? (
+            <Register tenders={mine} onOpen={open} selectedId={selectedId} showHod={false} />
+          ) : (
+            <EmptyState text="Nothing has been routed to you yet." />
+          )}
+        </>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {SERVICE_LINES.map((line) => {
-            const items = routed
-              .filter((t) => line.categories.includes(t.category))
-              .sort((x, y) => STATUS_ORDER.indexOf(x.status) - STATUS_ORDER.indexOf(y.status));
-            const waiting = items.filter((t) => t.status === "Awaiting HoD").length;
-            return (
-              <section key={line.id} className="flex flex-col rounded-2xl bg-card p-3 shadow-soft">
-                <header className="flex items-center gap-2.5 px-1 pb-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
-                    {line.initials}
+        <>
+          <div className="flex items-center gap-1 border-b">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => {
+                  setView(t.key);
+                  setSelectedId(null);
+                  syncUrl(t.key, null);
+                }}
+                className={cn(
+                  "relative -mb-px flex items-center gap-2 px-3 pb-2.5 text-sm transition-colors",
+                  view === t.key ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+                {t.count !== undefined && (
+                  <span
+                    className={cn(
+                      "tabular rounded-full px-1.5 text-[11px] font-semibold",
+                      t.alert ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {t.count}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">{line.hod}</div>
-                    <div className="truncate text-xs text-muted-foreground">Owner · HoD, {line.name}</div>
-                  </div>
-                  {waiting > 0 && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                      {waiting} waiting
-                    </span>
-                  )}
-                </header>
-                <ul className="flex-1 space-y-2">
-                  {items.map((t) => (
-                    <li key={t.id}>
-                      <button
-                        onClick={() => {
-                          setSelectedId(t.id);
-                          syncUrl("hod", t.id);
-                        }}
-                        className={cn(
-                          "w-full rounded-xl bg-muted/40 p-3 text-left transition-all hover:bg-card hover:shadow-soft-lg",
-                          t.status === "Awaiting HoD" && "bg-amber-50/70 ring-1 ring-amber-200 ring-inset",
-                          selectedId === t.id && "ring-2 ring-primary/30",
-                        )}
-                      >
-                        <div className="line-clamp-2 text-sm font-medium">{t.title}</div>
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          <span className="tabular flex items-center gap-1.5 text-xs text-muted-foreground">
-                            {formatValue(t)} · AI <PrequalBadge yes={aiPrequalified(t)} className="px-2 py-0 text-[11px]" />
-                          </span>
-                          <StatusBadge status={t.status} />
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                  {items.length === 0 && (
-                    <li className="rounded-xl border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
-                      Nothing routed yet
-                    </li>
-                  )}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
+                )}
+                {view === t.key && (
+                  <motion.span layoutId="approval-tab" className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
+            {notSubmitted > 0 && (
+              <Link href="/pipeline" className="ml-auto pb-2.5 text-xs text-muted-foreground hover:text-primary">
+                {notSubmitted} prospects not yet submitted →
+              </Link>
+            )}
+          </div>
+
+          {view === "register" ? (
+            routed.length ? (
+              <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
+            ) : (
+              <EmptyState text="No prospects have been routed to an HoD yet." />
+            )
+          ) : (
+            <HodBoard routed={routed} onOpen={open} selectedId={selectedId} />
+          )}
+        </>
       )}
 
       <Sheet
@@ -185,6 +171,65 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
           {selected && <ReviewPanel tender={selected} />}
         </SheetContent>
       </Sheet>
+    </div>
+  );
+}
+
+/** One column per service line and its HoD, with the status of each routed prospect. */
+function HodBoard({ routed, onOpen, selectedId }: { routed: Tender[]; onOpen: (id: string) => void; selectedId: string | null }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {SERVICE_LINES.map((line) => {
+        const items = routed
+          .filter((t) => line.categories.includes(t.category))
+          .sort((x, y) => STATUS_ORDER.indexOf(x.status) - STATUS_ORDER.indexOf(y.status));
+        const waiting = items.filter((t) => t.status === "Awaiting HoD").length;
+        return (
+          <section key={line.id} className="flex flex-col rounded-2xl bg-card p-3 shadow-soft">
+            <header className="flex items-center gap-2.5 px-1 pb-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
+                {line.initials}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">{line.hod}</div>
+                <div className="truncate text-xs text-muted-foreground">Owner · HoD, {line.name}</div>
+              </div>
+              {waiting > 0 && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                  {waiting} waiting
+                </span>
+              )}
+            </header>
+            <ul className="flex-1 space-y-2">
+              {items.map((t) => (
+                <li key={t.id}>
+                  <button
+                    onClick={() => onOpen(t.id)}
+                    className={cn(
+                      "w-full rounded-xl bg-muted/40 p-3 text-left transition-all hover:bg-card hover:shadow-soft-lg",
+                      t.status === "Awaiting HoD" && "bg-amber-50/70 ring-1 ring-amber-200 ring-inset",
+                      selectedId === t.id && "ring-2 ring-primary/30",
+                    )}
+                  >
+                    <div className="line-clamp-2 text-sm font-medium">{t.title}</div>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="tabular flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {formatValue(t)} · AI <PrequalBadge yes={aiPrequalified(t)} className="px-2 py-0 text-[11px]" />
+                      </span>
+                      <StatusBadge status={t.status} />
+                    </div>
+                  </button>
+                </li>
+              ))}
+              {items.length === 0 && (
+                <li className="rounded-xl border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
+                  Nothing routed yet
+                </li>
+              )}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -277,12 +322,13 @@ function agreesWithAi(t: Tender): boolean {
 
 function exportCsv(tenders: Tender[]) {
   const header = [
-    "Tender ID", "Title", "Buyer", "Value (AED)", "AI pre-qualification", "Proposed",
-    "Final decision", "Decided by", "Decided at", "Rationale", "Submitted by", "Submission note",
+    "Tender ID", "Title", "Buyer", "Value (AED)", "Due date", "AI pre-qualification", "HoD", "Proposed",
+    "Status", "Decided by", "Decided at", "Rationale", "D365 lead", "Submitted by", "Submission note",
   ];
   const rows = tenders.map((t) => [
-    t.id, t.title, t.buyer, t.valueAED, aiPrequalified(t) ? "Yes" : "No", t.approval?.proposed ?? "",
-    t.status, t.approval?.decidedBy ?? "", t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "",
+    t.id, t.title, t.buyer, t.valueAED, t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No",
+    serviceLineFor(t.category).hod, t.approval?.proposed ?? "", prospectStatus(t.status), t.approval?.decidedBy ?? "",
+    t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "", t.lead?.leadId ?? "",
     t.approval?.submittedBy ?? "", t.approval?.note ?? "",
   ]);
   const csv = [header, ...rows]
@@ -294,63 +340,121 @@ function exportCsv(tenders: Tender[]) {
   a.download = "agfs-prequalification-register.csv";
   a.click();
   URL.revokeObjectURL(url);
-  toast.success("Decision register exported", { description: `${tenders.length} decisions · CSV` });
+  toast.success("Register exported", { description: `${tenders.length} prospects · CSV` });
 }
 
-function DecisionRegister({ tenders }: { tenders: Tender[] }) {
-  const sorted = [...tenders].sort((a, b) => (b.approval?.decidedAt ?? "").localeCompare(a.approval?.decidedAt ?? ""));
+/** Pending first (soonest due date first), then decided (most recent first). */
+function registerOrder(a: Tender, b: Tender) {
+  const pa = PENDING.includes(a.status);
+  const pb = PENDING.includes(b.status);
+  if (pa !== pb) return pa ? -1 : 1;
+  if (pa) return a.deadline.localeCompare(b.deadline);
+  return (b.approval?.decidedAt ?? "").localeCompare(a.approval?.decidedAt ?? "");
+}
+
+/** Register of routed prospects: who they are assigned to, their status and, once prequalified, the D365 lead. */
+function Register({
+  tenders,
+  onOpen,
+  selectedId,
+  showHod,
+}: {
+  tenders: Tender[];
+  onOpen: (id: string) => void;
+  selectedId: string | null;
+  showHod: boolean;
+}) {
+  const sorted = [...tenders].sort(registerOrder);
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground">
-          Every HoD prequalification decision, with who decided and why.
+          {showHod
+            ? "Every prospect routed for prequalification, the HoD it is assigned to and where it stands."
+            : "Prospects routed to your service line. Open one to prequalify or reject it."}
         </p>
         <Button variant="outline" onClick={() => exportCsv(sorted)}>
           <Download /> Export CSV
         </Button>
       </div>
-      <div className="overflow-hidden rounded-xl shadow-soft bg-card">
+      <div className="overflow-hidden rounded-xl bg-card shadow-soft">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
-              <th className="px-5 py-3 font-medium">Tender</th>
-              <th className="px-3 py-3 font-medium">AI said</th>
-              <th className="px-3 py-3 font-medium">Decision</th>
-              <th className="px-3 py-3 font-medium">HoD</th>
-              <th className="px-3 py-3 pr-5 font-medium">Rationale</th>
+              <th className="px-5 py-3 font-medium">Prospect</th>
+              <th className="px-3 py-3 font-medium">Due date</th>
+              <th className="px-3 py-3 font-medium">AI pre-qual</th>
+              {showHod && <th className="px-3 py-3 font-medium">HoD</th>}
+              <th className="px-3 py-3 font-medium">Status</th>
+              <th className="px-3 py-3 pr-5 font-medium">D365 lead</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {sorted.map((t) => {
+              const line = serviceLineFor(t.category);
+              const pending = PENDING.includes(t.status);
+              const days = daysUntil(t.deadline);
               const agrees = agreesWithAi(t);
               return (
-                <tr key={t.id} className="align-top hover:bg-muted/30">
-                  <td className="max-w-[300px] px-5 py-3">
-                    <Link href={`/opportunity?id=${encodeURIComponent(t.id)}&from=approvals`} className="group">
-                      <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
-                      <div className="truncate font-medium group-hover:text-primary">{t.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatValue(t)}
-                      </div>
-                    </Link>
+                <tr
+                  key={t.id}
+                  onClick={() => onOpen(t.id)}
+                  className={cn(
+                    "cursor-pointer align-top transition-colors hover:bg-muted/30",
+                    t.status === "Awaiting HoD" && "bg-amber-50/40",
+                    selectedId === t.id && "bg-primary/5",
+                  )}
+                >
+                  <td className="max-w-[320px] px-5 py-3">
+                    <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
+                    <div className="truncate font-medium">{t.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t.buyer} · {formatValue(t)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    {formatDate(t.deadline)}
+                    <div className={cn("text-xs", days <= 14 && days > 0 ? "text-orange-700" : "text-muted-foreground")}>
+                      {days > 0 ? `${days} days left` : "Closed"}
+                    </div>
                   </td>
                   <td className="px-3 py-3">
                     <PrequalBadge yes={aiPrequalified(t)} />
                   </td>
-                  <td className="px-3 py-3">
-                    <StatusBadge status={t.status} />
-                    <div className={cn("mt-1.5 text-[11px] font-medium", agrees ? "text-muted-foreground" : "text-magenta")}>
-                      {agrees ? "Matches AI" : "Overrides AI"}
-                    </div>
-                  </td>
+                  {showHod && (
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      {line.hod}
+                      <div className="text-xs text-muted-foreground">{line.name}</div>
+                    </td>
+                  )}
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {t.approval?.decidedBy}
-                    <div className="text-xs text-muted-foreground">
-                      {t.approval?.decidedAt && formatDateTime(t.approval.decidedAt)}
+                    <StatusBadge status={t.status} />
+                    <div className="mt-1.5 text-[11px] text-muted-foreground">
+                      {pending ? (
+                        t.status === "Changes Requested" ? (
+                          "Changes requested"
+                        ) : (
+                          t.approval && `Submitted ${timeAgo(t.approval.submittedAt)}`
+                        )
+                      ) : (
+                        <span className={cn("font-medium", !agrees && "text-magenta")}>
+                          {agrees ? "Matches AI" : "Overrides AI"}
+                          {t.approval?.decidedAt && <span className="font-normal text-muted-foreground"> · {formatDate(t.approval.decidedAt)}</span>}
+                        </span>
+                      )}
                     </div>
                   </td>
-                  <td className="max-w-sm px-3 py-3 pr-5 text-xs text-muted-foreground">
-                    {t.approval?.decisionComment || "No comment"}
+                  <td className="px-3 py-3 pr-5 whitespace-nowrap">
+                    {t.lead ? (
+                      <>
+                        <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
+                        <div className="text-xs text-muted-foreground">{formatDate(t.lead.pushedAt)}</div>
+                      </>
+                    ) : t.status === "Prequalified" ? (
+                      <span className="text-xs text-muted-foreground">Ready to push</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -362,11 +466,11 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ text }: { text: string }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed bg-card py-16 text-center">
       <Inbox className="size-8 text-muted-foreground/60" />
-      <p className="mt-3 max-w-sm text-sm text-muted-foreground">No HoD decisions yet.</p>
+      <p className="mt-3 max-w-sm text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }

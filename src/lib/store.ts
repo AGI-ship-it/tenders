@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { AGENT_NAME, DEMO_VERSION, PEOPLE, hodLabel, scanBatches, seedState, serviceLineFor, uploadedOpportunity } from "./mock-data";
+import { AGENT_NAME, DEMO_VERSION, actingPerson, hodLabel, scanBatches, seedState, serviceLineFor, uploadedOpportunity } from "./mock-data";
 import { isActive, priorityScore } from "./scoring";
 import type { ApprovalRecord, AuditEvent, DemoState, Role, Source, Tender } from "./types";
 
@@ -53,8 +53,8 @@ export function useDemo(): DemoState | null {
 const now = () => new Date().toISOString();
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export function currentUser(role: Role) {
-  return PEOPLE[role];
+export function currentUser(s: Pick<DemoState, "role" | "hodLine">) {
+  return actingPerson(s.role, s.hodLine);
 }
 
 function event(e: Omit<AuditEvent, "id" | "at">): AuditEvent {
@@ -65,8 +65,9 @@ function patchTender(s: DemoState, id: string, fn: (t: Tender) => Tender): Tende
   return s.tenders.map((t) => (t.id === id ? fn(t) : t));
 }
 
-export function setRole(role: Role) {
-  setState((s) => ({ ...s, role }));
+/** Switches the demo role; for the HoD role, hodLine picks which service line's HoD to act as. */
+export function setRole(role: Role, hodLine?: string) {
+  setState((s) => ({ ...s, role, hodLine: hodLine ?? s.hodLine }));
 }
 
 export function resetDemo() {
@@ -165,7 +166,7 @@ export function markUnderReview(id: string) {
       ...s,
       tenders: patchTender(s, id, (x) => ({ ...x, status: "Under Review" })),
       audit: [
-        event({ actor: PEOPLE[s.role].name, role: s.role, action: "Opened for review", tenderId: id }),
+        event({ actor: currentUser(s).name, role: s.role, action: "Opened for review", tenderId: id }),
         ...s.audit,
       ],
     };
@@ -175,7 +176,7 @@ export function markUnderReview(id: string) {
 /** Submits a prospect for prequalification; it is routed to the HoD of its service line. */
 export function submitForApproval(id: string, input: { proposed: ApprovalRecord["proposed"]; note: string }) {
   setState((s) => {
-    const by = PEOPLE[s.role].name;
+    const by = currentUser(s).name;
     const category = s.tenders.find((t) => t.id === id)?.category;
     const reviewer = category ? hodLabel(category) : "HoD";
     return {
@@ -207,7 +208,7 @@ export function decide(
   setState((s) => {
     const t = s.tenders.find((x) => x.id === id);
     // In the demo, the HoD role acts on behalf of whichever HoD the prospect is routed to.
-    const by = s.role === "approver" && t ? serviceLineFor(t.category).hod : PEOPLE[s.role].name;
+    const by = currentUser(s).name;
     const proposed = t?.approval?.proposed ?? "Prequalify";
     const status: Tender["status"] =
       decision === "Changes Requested"
@@ -248,7 +249,7 @@ export function decide(
 
 export function addComment(id: string, text: string) {
   setState((s) => {
-    const by = PEOPLE[s.role].name;
+    const by = currentUser(s).name;
     return {
       ...s,
       tenders: patchTender(s, id, (t) => ({
@@ -282,7 +283,7 @@ export function addSource({
       },
     ],
     audit: [
-      event({ actor: PEOPLE[s.role].name, role: s.role, action: "Connected source portal", detail: `${src.name} (simulated)` }),
+      event({ actor: currentUser(s).name, role: s.role, action: "Connected source portal", detail: `${src.name} (simulated)` }),
       ...s.audit,
     ],
   }));
@@ -334,7 +335,7 @@ export function authoriseSource(id: string) {
       ),
       audit: [
         event({
-          actor: PEOPLE[s.role].name,
+          actor: currentUser(s).name,
           role: s.role,
           action: src.access === "UAE PASS" ? "Approved UAE PASS sign-in" : "Saved portal credentials to vault",
           detail: `${src.name} (simulated)`,
@@ -355,7 +356,7 @@ export function pushToD365(id: string): string {
   setState((s) => {
     const t = s.tenders.find((x) => x.id === id);
     if (!t) return s;
-    const by = s.role === "approver" ? serviceLineFor(t.category).hod : PEOPLE[s.role].name;
+    const by = currentUser(s).name;
     return {
       ...s,
       tenders: patchTender(s, id, (x) => ({
@@ -398,7 +399,7 @@ export function addUploadedFiles(fileNames: string[]): Tender[] {
           status: "Connected",
           tendersFound: added.length,
         };
-    const by = PEOPLE[s.role].name;
+    const by = currentUser(s).name;
     return {
       ...s,
       tenders: [...added, ...s.tenders.map((t) => ({ ...t, fromLatestScan: false }))],

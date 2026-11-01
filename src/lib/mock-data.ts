@@ -5,6 +5,7 @@ import type {
   CheckStatus,
   DemoState,
   EligibilityItem,
+  Role,
   Source,
   Tender,
 } from "./types";
@@ -35,6 +36,13 @@ export const SERVICE_LINES: { id: string; name: string; hod: string; initials: s
 
 export function serviceLineFor(category: Category) {
   return SERVICE_LINES.find((l) => l.categories.includes(category)) ?? SERVICE_LINES[0];
+}
+
+/** The person the demo user is acting as: the Bid Analyst, or the HoD of the chosen service line. */
+export function actingPerson(role: Role, hodLine?: string): { name: string; title: string; initials: string } {
+  if (role === "analyst") return PEOPLE.analyst;
+  const l = SERVICE_LINES.find((x) => x.id === hodLine) ?? SERVICE_LINES[0];
+  return { name: l.hod, title: `HoD, ${l.name}`, initials: l.initials };
 }
 
 export function hodLabel(category: Category) {
@@ -805,6 +813,7 @@ export function seedState(): DemoState {
   return {
     version: DEMO_VERSION,
     role: "analyst",
+    hodLine: "ifm",
     tenders: seedTenders(),
     sources: seedSources(),
     audit: seedAudit(),

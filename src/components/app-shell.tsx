@@ -7,7 +7,7 @@ import { ChevronDown, FlaskConical, LogOut, Radar, RotateCcw, ShieldCheck, UserR
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDemo, resetDemo, setRole } from "@/lib/store";
-import { PEOPLE } from "@/lib/mock-data";
+import { SERVICE_LINES, actingPerson } from "@/lib/mock-data";
 import { STEP_ROUTES, StepTabs } from "@/components/step-tabs";
 import type { Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -88,7 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="hidden items-center gap-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50/70 px-2.5 py-1 text-[11px] font-medium text-amber-800 sm:inline-flex">
               <FlaskConical className="size-3.5" /> Demo data
             </span>
-            {demo && <ProfileMenu role={demo.role} />}
+            {demo && <ProfileMenu role={demo.role} hodLine={demo.hodLine} />}
           </div>
         </div>
       </header>
@@ -109,8 +109,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ProfileMenu({ role }: { role: Role }) {
-  const person = PEOPLE[role];
+function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
+  const person = actingPerson(role, hodLine);
+  const value = role === "analyst" ? "analyst" : `hod:${hodLine ?? SERVICE_LINES[0].id}`;
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
 
@@ -140,14 +141,14 @@ function ProfileMenu({ role }: { role: Role }) {
           <DropdownMenuGroup>
             <DropdownMenuLabel>Switch demo role</DropdownMenuLabel>
             <DropdownMenuRadioGroup
-              value={role}
+              value={value}
               onValueChange={(v) => {
-                setRole(v as Role);
-                toast.success(`Now acting as ${PEOPLE[v as Role].name}`, {
-                  description:
-                    v === "approver"
-                      ? "You can prequalify prospects routed to HoDs."
-                      : "You can review prospects and submit for prequalification.",
+                const line = v.startsWith("hod:") ? v.slice(4) : undefined;
+                setRole(line ? "approver" : "analyst", line);
+                toast.success(`Now acting as ${actingPerson(line ? "approver" : "analyst", line).name}`, {
+                  description: line
+                    ? "You see the prospects routed to you and can prequalify them."
+                    : "You see every routed prospect in the register and submit for prequalification.",
                 });
               }}
             >
@@ -158,13 +159,15 @@ function ProfileMenu({ role }: { role: Role }) {
                   <div className="text-xs text-muted-foreground">Reviews AI output, submits for prequalification</div>
                 </div>
               </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="approver">
-                <ShieldCheck className="size-4 text-pink-700" />
-                <div>
-                  <div className="text-sm">Service-line HoD</div>
-                  <div className="text-xs text-muted-foreground">Prequalifies prospects routed to their line</div>
-                </div>
-              </DropdownMenuRadioItem>
+              {SERVICE_LINES.map((l) => (
+                <DropdownMenuRadioItem key={l.id} value={`hod:${l.id}`}>
+                  <ShieldCheck className="size-4 text-pink-700" />
+                  <div>
+                    <div className="text-sm">{l.hod}</div>
+                    <div className="text-xs text-muted-foreground">HoD, {l.name}</div>
+                  </div>
+                </DropdownMenuRadioItem>
+              ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

@@ -6,7 +6,7 @@ import { ArrowLeftRight, Check, CloudUpload, MessageSquareWarning, Send, ShieldC
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { decide, setRole, submitForApproval, useDemo } from "@/lib/store";
-import { PEOPLE, hodLabel, serviceLineFor } from "@/lib/mock-data";
+import { actingPerson, hodLabel, serviceLineFor } from "@/lib/mock-data";
 import { aiPrequalified } from "@/lib/scoring";
 import { formatDateTime } from "@/lib/format";
 import type { ApprovalRecord, Tender } from "@/lib/types";
@@ -33,6 +33,7 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
   const [submitOpen, setSubmitOpen] = useState(false);
   const role = demo.role;
   const a = tender.approval;
+  const line = serviceLineFor(tender.category);
 
   return (
     <div className="space-y-4">
@@ -53,10 +54,10 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
         ))}
 
       {tender.status === "Awaiting HoD" &&
-        (role === "approver" ? (
+        (role === "approver" && demo.hodLine === line.id ? (
           <DecisionActions tender={tender} />
         ) : (
-          <RoleHint text={`Waiting for ${a?.reviewer.split(" (")[0] ?? "the HoD"} to prequalify.`} target="approver" />
+          <RoleHint text={`Waiting for ${line.hod} to prequalify.`} target="approver" hodLine={line.id} />
         ))}
 
       {tender.status === "Prequalified" && <PushToD365Button tender={tender} />}
@@ -77,7 +78,8 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
   );
 }
 
-function RoleHint({ text, target }: { text: string; target: "analyst" | "approver" }) {
+function RoleHint({ text, target, hodLine }: { text: string; target: "analyst" | "approver"; hodLine?: string }) {
+  const person = actingPerson(target, hodLine);
   return (
     <div className="rounded-lg border border-dashed bg-muted/30 p-3 text-sm">
       <p className="text-muted-foreground">{text}</p>
@@ -86,11 +88,11 @@ function RoleHint({ text, target }: { text: string; target: "analyst" | "approve
         size="sm"
         className="mt-2.5 w-full"
         onClick={() => {
-          setRole(target);
-          toast.success(`Now acting as ${PEOPLE[target].name}`, { description: "Demo role switched." });
+          setRole(target, hodLine);
+          toast.success(`Now acting as ${person.name}`, { description: "Demo role switched." });
         }}
       >
-        <ArrowLeftRight /> Switch to {target === "approver" ? "HoD" : "Bid Analyst"} role
+        <ArrowLeftRight /> Switch to {target === "approver" ? person.name : "Bid Analyst"}
       </Button>
     </div>
   );
@@ -201,7 +203,7 @@ function SubmitDialog({
   function submit() {
     submitForApproval(tender.id, { proposed, note: note.trim() });
     toast.success(`Routed to ${line.hod}`, {
-      description: `HoD, ${line.name}. Switch to the HoD role to continue the demo.`,
+      description: `HoD, ${line.name}. Switch to ${line.hod} to continue the demo.`,
     });
     onOpenChange(false);
     setNote("");
