@@ -310,6 +310,7 @@ function Register({
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-5 py-3 font-medium">Prospect</th>
+                <th className="px-3 py-3 text-right font-medium">Value</th>
                 <th className="px-3 py-3 font-medium">Due date</th>
                 <th className="px-3 py-3 font-medium">AI pre-qual</th>
                 {showHod && <th className="px-3 py-3 font-medium">HoD</th>}
@@ -336,10 +337,9 @@ function Register({
                     <td className="max-w-[320px] px-5 py-3">
                       <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
                       <div className="truncate font-medium">{t.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {t.buyer} · {formatValue(t)}
-                      </div>
+                      <div className="truncate text-xs text-muted-foreground">{t.buyer}</div>
                     </td>
+                    <td className="tabular px-3 py-3 text-right whitespace-nowrap font-medium">{formatValue(t)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {formatDate(t.deadline)}
                       <div className={cn("text-xs", days <= 14 && days > 0 ? "text-orange-700" : "text-muted-foreground")}>
@@ -389,7 +389,7 @@ function Register({
               })}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={showHod ? 6 : 5} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={showHod ? 7 : 6} className="px-5 py-12 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>
