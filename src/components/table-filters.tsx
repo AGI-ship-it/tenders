@@ -45,7 +45,7 @@ export function TableHeader({
   count,
   search,
   onSearch,
-  searchPlaceholder = "Search prospect ID, title or buyer",
+  searchPlaceholder = "Search ID, title or buyer",
   children,
 }: {
   title: string;
@@ -61,7 +61,7 @@ export function TableHeader({
       <h2 className="text-sm font-bold text-primary">{title}</h2>
       <span className="tabular rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">{count}</span>
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        <div className="relative w-64">
+        <div className="relative w-72">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="bg-card pr-8 pl-8" placeholder={searchPlaceholder} value={search} onChange={(e) => onSearch(e.target.value)} />
           {search && (
