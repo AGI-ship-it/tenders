@@ -312,7 +312,7 @@ function Register({
             </Link>
           ) : null}
           <FilterMenu facets={facets} filters={filters} />
-          <Button onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
+          <Button size="lg" onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
             Export CSV <Download />
           </Button>
         </TableHeader>

@@ -299,11 +299,11 @@ export function ScanPanel({
 
       <footer className="flex shrink-0 items-center justify-between gap-2 border-t bg-muted/30 px-6 py-3">
         {phase === "done" ? (
-          <Button variant="secondary" className="ml-auto" nativeButton={false} render={<Link href="/pipeline" />}>
+          <Button variant="secondary" size="lg" className="ml-auto" nativeButton={false} render={<Link href="/pipeline" />}>
             Next: Review prospects <ArrowRight />
           </Button>
         ) : (
-          <Button variant="outline" className="ml-auto" onClick={cancel}>
+          <Button variant="outline" size="lg" className="ml-auto" onClick={cancel}>
             Cancel scan
           </Button>
         )}

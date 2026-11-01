@@ -92,7 +92,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <TableHeader title="All prospects" count={rows.length} search={q} onSearch={setQ}>
           <FilterMenu facets={facets} filters={filters} />
-          <Button onClick={() => exportCsv(rows)} disabled={!rows.length}>
+          <Button size="lg" onClick={() => exportCsv(rows)} disabled={!rows.length}>
             Export CSV <Download />
           </Button>
         </TableHeader>

@@ -176,10 +176,10 @@ export function DecisionActions({ tender }: { tender: Tender }) {
         <Check /> {tender.approval?.proposed === "Reject" ? "Confirm rejection" : "Prequalify"}
       </Button>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" onClick={() => act("Changes Requested")}>
+        <Button variant="outline" size="lg" onClick={() => act("Changes Requested")}>
           <MessageSquareWarning /> Request changes
         </Button>
-        <Button variant="destructive" onClick={() => act("Rejected")}>
+        <Button variant="destructive" size="lg" onClick={() => act("Rejected")}>
           <X /> Not qualified
         </Button>
       </div>

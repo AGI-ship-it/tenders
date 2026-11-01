@@ -16,6 +16,7 @@ import { cn } from "cn"
  *   link         Inline text action.
  *
  * Sizes (one scale, shared radius): xs 28 · sm 32 · default 36 · lg 40 · xl 48 px tall;
+ * Page and toolbar actions use lg (40) so buttons side by side line up; default is for dialogs and compact panels.
  * icon-sm 32 · icon 36 · icon-lg 40 px square.
  *
  * Icons: leading for the action itself (Sparkles Run AI Scan, Plus Add source);
