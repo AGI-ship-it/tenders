@@ -131,6 +131,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Row spacing shared with the table Filter menu. */
+const MENU_ITEM = "gap-2.5 rounded-lg px-2.5 py-2 text-sm";
+
 function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
   const person = actingPerson(role, hodLine);
   const router = useRouter();
@@ -159,24 +162,29 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
           </span>
           <ChevronDown className="size-4 text-muted-foreground" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuContent align="end" className="w-72 rounded-xl p-1.5">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>
-              <div className="text-sm font-medium text-foreground">{person.name}</div>
-              <div className="text-xs font-normal text-muted-foreground">{person.title}</div>
+            <DropdownMenuLabel className="px-2.5 py-2">
+              <div className="text-sm font-semibold text-foreground">{person.name}</div>
+              <div className="mt-0.5 text-xs font-normal text-muted-foreground">{person.title}</div>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            checked={resolvedTheme === "dark"}
-            onCheckedChange={(on) => setTheme(on ? "dark" : "light")}
-          >
-            <Moon /> Dark mode
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuItem onClick={() => setResetOpen(true)}>
-            <RotateCcw /> Reset demo
-          </DropdownMenuItem>
+          <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
+          <div className="space-y-0.5">
+            <DropdownMenuCheckboxItem
+              className={cn(MENU_ITEM, "pr-9")}
+              checked={resolvedTheme === "dark"}
+              onCheckedChange={(on) => setTheme(on ? "dark" : "light")}
+            >
+              <Moon /> Dark mode
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuItem className={MENU_ITEM} onClick={() => setResetOpen(true)}>
+              <RotateCcw /> Reset demo
+            </DropdownMenuItem>
+          </div>
+          <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
           <DropdownMenuItem
+            className={MENU_ITEM}
             onClick={() => {
               router.push("/");
               toast("Logged out", { description: "Sign in as the Bid Analyst or an HoD. Your demo progress is saved in this browser." });
