@@ -197,19 +197,19 @@ function CheckboxOption({ checked, onToggle, children }: { checked: boolean; onT
 export function FilterChips({ facets, filters }: { facets: Facet[]; filters: ReturnType<typeof useTableFilters> }) {
   if (!filters.count) return null;
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b px-5 py-2.5">
+    <div className="flex shrink-0 flex-wrap items-center gap-2 border-b px-5 py-2.5">
       {facets.flatMap((f) =>
         (filters.values[f.key] ?? []).map((o) => (
           <span
             key={`${f.key}:${o}`}
-            className="inline-flex items-center gap-1 rounded-full bg-primary/8 py-0.5 pr-1 pl-2.5 text-xs text-primary ring-1 ring-primary/20 ring-inset"
+            className="inline-flex h-7 items-center gap-1.5 rounded-full bg-primary/8 pr-1.5 pl-3 text-xs text-primary ring-1 ring-primary/20 ring-inset"
           >
             <span className="text-muted-foreground">{f.label}:</span>
             <span className="font-medium">{o}</span>
             <button
               aria-label={`Remove ${f.label}: ${o}`}
               onClick={() => filters.remove(f.key, o)}
-              className="grid size-4 place-items-center rounded-full hover:bg-primary/15"
+              className="grid size-5 place-items-center rounded-full hover:bg-primary/15"
             >
               <X className="size-3" />
             </button>
