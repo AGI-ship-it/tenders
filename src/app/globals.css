@@ -208,27 +208,28 @@
   --card-foreground: #ede7e3;
   --popover: #24202a;
   --popover-foreground: #ede7e3;
-  --primary: #a56cf0;
+  /* Muted brand purple: blends with the dark surfaces yet keeps white text on it readable. */
+  --primary: #8560bf;
   --primary-foreground: #ffffff;
-  --secondary: color-mix(in oklch, var(--ag-purple-400) 16%, var(--tint-base));
-  --secondary-foreground: #d7b8fb;
+  --secondary: color-mix(in oklch, var(--ag-purple-600) 14%, var(--tint-base));
+  --secondary-foreground: #c8b3e6;
   --muted: #2a2630;
   --muted-foreground: #aa9d95;
-  --accent: color-mix(in oklch, var(--ag-purple-400) 16%, var(--tint-base));
-  --accent-foreground: #d7b8fb;
+  --accent: color-mix(in oklch, var(--ag-purple-600) 14%, var(--tint-base));
+  --accent-foreground: #c8b3e6;
   --destructive: oklch(0.704 0.191 22.216);
   --border: rgb(255 255 255 / 0.09);
   --input: rgb(255 255 255 / 0.16);
-  --ring: var(--ag-purple-400);
+  --ring: #8560bf;
   --magenta: var(--ag-magenta-400);
-  --chart-1: #a56cf0;
+  --chart-1: #8560bf;
   --chart-2: var(--ag-magenta-400);
   --chart-3: var(--ag-teal-400);
   --chart-4: var(--ag-orange-400);
   --chart-5: var(--ag-gold-400);
   --sidebar: #1d1a20;
   --sidebar-foreground: #ede7e3;
-  --sidebar-primary: #a56cf0;
+  --sidebar-primary: #8560bf;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #2a2630;
   --sidebar-accent-foreground: #ede7e3;
@@ -293,6 +294,10 @@
 
 .dark .app-canvas {
   background: var(--background);
+}
+/* Dots behind the stepper: a faint warm white so they texture the band without shouting. */
+.dark .dot-grid::before {
+  background-image: radial-gradient(rgb(237 231 227 / 0.07) 1px, transparent 1.2px);
 }
 
 @layer base {
