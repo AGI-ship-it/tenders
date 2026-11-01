@@ -79,11 +79,11 @@ export function TenderDetail() {
 
       {/* Header */}
       <div className="flex shrink-0 flex-wrap items-start justify-between gap-4">
-        <div className="space-y-2">
-          <div className="text-sm font-medium text-foreground/70">
+        <div className="space-y-1">
+          <h1 className="max-w-3xl text-2xl font-semibold tracking-tight">{tender.title}</h1>
+          <div className="text-sm text-muted-foreground">
             {tender.category} · {tender.buyer} · {tender.emirate}
           </div>
-          <h1 className="max-w-3xl text-2xl font-semibold tracking-tight">{tender.title}</h1>
         </div>
         <PortalLinkButton tender={tender} source={source} />
       </div>
