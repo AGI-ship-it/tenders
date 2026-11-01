@@ -272,7 +272,8 @@ const LINE_TAB =
 function PrequalCard({ tender }: { tender: Tender }) {
   const yes = aiPrequalified(tender);
   return (
-    <div className="shrink-0 border-b p-4 sm:p-6">
+    // AI recommendation: a soft purple wash and a thin purple-to-magenta edge set it apart without shouting.
+    <div className="relative shrink-0 border-b bg-linear-to-br from-purple-50 via-purple-50/50 to-card p-4 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-linear-to-b before:from-primary/70 before:to-magenta/50 sm:p-6">
       <div className="flex gap-4">
         <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <Sparkles className="size-5" />
@@ -300,7 +301,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
       </h3>
       <ul className="grid gap-2 sm:grid-cols-2">
         {fitBreakdown(tender).map((c) => (
-          <li key={c.key} className="flex gap-2.5 rounded-lg bg-muted/40 px-3 py-2.5">
+          <li key={c.key} className="flex gap-2.5 rounded-lg bg-card/80 px-3 py-2.5 ring-1 ring-primary/10">
             <CheckIcon status={criterionStatus(c)} />
             <div className="min-w-0 text-sm">
               <div className="font-medium">{c.label}</div>
