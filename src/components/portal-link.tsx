@@ -39,8 +39,8 @@ export function PortalLinkButton({ tender, source }: { tender: Tender; source: S
 
   return (
     <>
-      <Button variant="outline" size="lg" onClick={() => setOpen(true)}>
-        <ExternalLink /> Open on portal
+      <Button size="lg" onClick={() => setOpen(true)}>
+        Open on portal <ExternalLink />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">

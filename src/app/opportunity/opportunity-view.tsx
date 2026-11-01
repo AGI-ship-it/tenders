@@ -77,8 +77,10 @@ export function TenderDetail() {
         <ArrowLeft className="size-4" /> {back.label}
       </button>
 
+      {/* One section: header, key facts, then the assessment beside the prequalification rail. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-card shadow-soft sm:rounded-3xl">
       {/* Header */}
-      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
         <div className="space-y-1">
           <h1 className="max-w-3xl text-2xl font-semibold tracking-tight">{tender.title}</h1>
           <div className="text-sm text-muted-foreground">
@@ -89,7 +91,7 @@ export function TenderDetail() {
       </div>
 
       {/* Key facts, as listed on the portal */}
-      <dl className="grid shrink-0 grid-cols-2 gap-px overflow-hidden rounded-xl shadow-soft bg-zinc-100 md:grid-cols-5">
+      <dl className="grid shrink-0 grid-cols-2 gap-px border-y bg-border md:grid-cols-5">
         <Fact label="Tender ID" value={<span className="font-mono">{tender.sourceRef}</span>} sub={`AGFS ref ${tender.id}`} />
         <Fact label="Bidding opens" value={formatDate(tender.publishedAt)} sub={source?.name} />
         <Fact
@@ -107,14 +109,14 @@ export function TenderDetail() {
         <Fact label="Contract term" value={`${tender.durationMonths} months`} sub={tender.location.split(" (")[0]} />
       </dl>
 
-      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_340px]">
-        <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto pr-1">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_340px]">
+        <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto">
           {/* AI pre-qualification: Yes / No and why */}
           <PrequalCard tender={tender} />
 
           {/* Details, progressively disclosed */}
-          <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col rounded-xl bg-card p-1 shadow-soft">
-            <TabsList variant="line" className="w-full shrink-0 justify-start border-b px-3 pt-1">
+          <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col">
+            <TabsList variant="line" className="w-full shrink-0 justify-start border-b px-3 pt-2 sm:px-4">
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="eligibility">
                 Eligibility
@@ -203,8 +205,8 @@ export function TenderDetail() {
         </div>
 
         {/* Right rail */}
-        <aside className="min-h-0">
-          <div className="h-full overflow-y-auto rounded-xl bg-card p-5 shadow-soft">
+        <aside className="min-h-0 border-t bg-zinc-50/50 lg:border-t-0 lg:border-l">
+          <div className="h-full overflow-y-auto p-4 sm:p-5">
             <h2 className="mb-4 text-sm font-bold text-primary">Prequalification</h2>
             <DecisionPanel tender={tender} />
             {history.length > 0 && (
@@ -227,6 +229,7 @@ export function TenderDetail() {
           </div>
         </aside>
       </div>
+      </div>
 
     </div>
   );
@@ -245,7 +248,7 @@ function Fact({ label, value, sub, tone }: { label: string; value: React.ReactNo
 function PrequalCard({ tender }: { tender: Tender }) {
   const yes = aiPrequalified(tender);
   return (
-    <div className="shrink-0 rounded-xl bg-card p-5 shadow-soft">
+    <div className="shrink-0 border-b p-4 sm:p-6">
       <div className="flex gap-4">
         <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
           <Sparkles className="size-5" />
