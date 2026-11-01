@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from "lucide-react";
 import { useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, fitScore, isActive, priorityScore, prospectStatus } from "@/lib/scoring";
-import { daysUntil, formatDate, formatValue } from "@/lib/format";
+import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
+import { serviceLineFor } from "@/lib/mock-data";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -161,8 +162,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                     <td className="px-3 py-3">
                       <PrequalBadge yes={aiPrequalified(t)} />
                     </td>
-                    <td className="px-3 py-3 pr-5">
+                    <td className="px-3 py-3 pr-5 whitespace-nowrap">
                       <StatusBadge status={t.status} />
+                      <StatusDetail tender={t} />
                     </td>
                   </tr>
                 );
@@ -180,6 +182,35 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
       </div>
     </div>
   );
+}
+
+/** Where a prospect stands in the HoD workflow, shown under its status. */
+function StatusDetail({ tender: t }: { tender: Tender }) {
+  const hod = serviceLineFor(t.category).hod;
+  let text: string | null = null;
+  let tone = "text-muted-foreground";
+  switch (t.status) {
+    case "New":
+    case "Under Review":
+      text = "Not yet submitted";
+      break;
+    case "Awaiting HoD":
+      text = `Awaiting ${hod}${t.approval ? ` · sent ${timeAgo(t.approval.submittedAt).toLowerCase()}` : ""}`;
+      tone = "text-orange-700";
+      break;
+    case "Changes Requested":
+      text = `Changes requested by ${hod}`;
+      tone = "text-orange-700";
+      break;
+    case "Prequalified":
+      text = "Ready to push to D365";
+      break;
+    case "Lead in D365":
+      text = t.lead ? `Lead ${t.lead.leadId}` : "Lead in D365";
+      break;
+  }
+  if (!text) return null;
+  return <div className={cn("mt-1.5 text-[11px]", tone)}>{text}</div>;
 }
 
 function Th({
