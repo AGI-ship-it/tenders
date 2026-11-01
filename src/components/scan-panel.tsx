@@ -382,7 +382,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
                       </span>
                     )}
                   </div>
-                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <div className="mt-0.5 flex items-center justify-between gap-2">
                     <span className="truncate text-xs text-muted-foreground">
                       {t.buyer} · {formatValue(t)}
                     </span>
