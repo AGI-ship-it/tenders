@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import {
   AlertTriangle,
-  ArrowLeft,
+  ChevronRight,
   CheckCircle2,
   CircleDashed,
   CircleHelp,
@@ -72,12 +72,21 @@ export function TenderDetail() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
       <div className="flex shrink-0 items-center justify-between gap-3">
-        <button
-          onClick={goBack}
-          className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-sm font-medium text-foreground/80 shadow-soft transition-colors hover:text-primary"
-        >
-          <ArrowLeft className="size-4" /> {back.label}
-        </button>
+        <nav aria-label="Breadcrumb" className="min-w-0">
+          <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+            <li className="shrink-0">
+              <button onClick={goBack} className="font-medium text-muted-foreground transition-colors hover:text-primary hover:underline">
+                {back.label}
+              </button>
+            </li>
+            <li aria-hidden className="shrink-0 text-muted-foreground/60">
+              <ChevronRight className="size-4" />
+            </li>
+            <li aria-current="page" className="min-w-0 truncate font-semibold text-foreground">
+              {tender.id}
+            </li>
+          </ol>
+        </nav>
         <button
           onClick={goBack}
           aria-label={`Close and return to ${back.label}`}
