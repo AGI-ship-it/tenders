@@ -212,7 +212,7 @@ function SubmitDialog({
     onOpenChange(false);
     setNote("");
     setConfirmed(false);
-    router.push(`/approvals?view=hod&id=${encodeURIComponent(tender.id)}`);
+    router.push(`/approvals?id=${encodeURIComponent(tender.id)}`);
   }
 
   return (

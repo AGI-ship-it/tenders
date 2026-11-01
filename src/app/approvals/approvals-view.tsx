@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { motion } from "motion/react";
 import { ArrowUpRight, Download, Inbox, MessageSquare, Search, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
@@ -20,35 +19,17 @@ import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
-type View = "register" | "hod";
-
 const PENDING: Tender["status"][] = ["Awaiting HoD", "Changes Requested"];
-
-const STATUS_ORDER: Tender["status"][] = [
-  "Awaiting HoD",
-  "Changes Requested",
-  "Prequalified",
-  "Lead in D365",
-  "No-bid",
-  "Not qualified",
-];
 
 export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const demo = useDemo()!;
-  // Deep link from "Submit for prequalification": /approvals?view=hod&id=TND-...
+  // Deep link from "Submit for prequalification": /approvals?id=TND-...
   const params = useSearchParams();
-  const linked = params.get("view");
-  const linkedView: View | null = linked === "hod" ? "hod" : linked === "register" ? "register" : null;
-  const [view, setView] = useState<View>(linkedView ?? "register");
   const router = useRouter();
   const pathname = usePathname();
-  // Mirror tab and open panel in the URL so returning from a prospect restores them.
-  function syncUrl(v: View, id: string | null) {
-    const q = new URLSearchParams();
-    if (v !== "register") q.set("view", v);
-    if (id) q.set("id", id);
-    const qs = q.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  // Mirror the open panel in the URL so returning from a prospect restores it.
+  function syncUrl(id: string | null) {
+    router.replace(id ? `${pathname}?id=${encodeURIComponent(id)}` : pathname, { scroll: false });
   }
   const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
   // Follow new deep links even when this page is already open.
@@ -56,7 +37,6 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const [seenLink, setSeenLink] = useState(linkKey);
   if (seenLink !== linkKey) {
     setSeenLink(linkKey);
-    if (linkedView) setView(linkedView);
     setSelectedId(params.get("id"));
   }
 
@@ -65,19 +45,13 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const routed = demo.tenders.filter((t) => t.approval);
   const mine = routed.filter((t) => myLine.categories.includes(t.category));
   const notSubmitted = demo.tenders.filter((t) => ["New", "Under Review"].includes(t.status)).length;
-  const awaiting = routed.filter((t) => t.status === "Awaiting HoD").length;
   const myAwaiting = mine.filter((t) => t.status === "Awaiting HoD").length;
   const selected = demo.tenders.find((t) => t.id === selectedId);
 
   function open(id: string) {
     setSelectedId(id);
-    syncUrl(view, id);
+    syncUrl(id);
   }
-
-  const tabs: { key: View; label: string; count?: number; alert?: boolean }[] = [
-    { key: "register", label: "Register", count: routed.length },
-    { key: "hod", label: "By HoD", count: awaiting, alert: awaiting > 0 },
-  ];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
@@ -111,53 +85,17 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         </>
       ) : (
         <>
-          <div className="flex shrink-0 items-center gap-1 border-b">
-            {tabs.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => {
-                  setView(t.key);
-                  setSelectedId(null);
-                  syncUrl(t.key, null);
-                }}
-                className={cn(
-                  "relative -mb-px flex items-center gap-2 px-3 pb-2.5 text-sm transition-colors",
-                  view === t.key ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-                {t.count !== undefined && (
-                  <span
-                    className={cn(
-                      "tabular rounded-full px-1.5 text-[11px] font-semibold",
-                      t.alert ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {t.count}
-                  </span>
-                )}
-                {view === t.key && (
-                  <motion.span layoutId="approval-tab" className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
-            {notSubmitted > 0 && (
-              <Link href="/pipeline" className="ml-auto pb-2.5 text-xs text-muted-foreground hover:text-primary">
+          {notSubmitted > 0 && (
+            <div className="-mt-3 flex shrink-0 justify-end">
+              <Link href="/pipeline" className="text-xs text-muted-foreground hover:text-primary">
                 {notSubmitted} prospects not yet submitted →
               </Link>
-            )}
-          </div>
-
-          {view === "register" ? (
-            routed.length ? (
-              <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
-            ) : (
-              <EmptyState text="No prospects have been routed to an HoD yet." />
-            )
-          ) : (
-            <div className="min-h-0 flex-1 overflow-y-auto pb-1">
-              <HodBoard routed={routed} onOpen={open} selectedId={selectedId} />
             </div>
+          )}
+          {routed.length ? (
+            <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
+          ) : (
+            <EmptyState text="No prospects have been routed to an HoD yet." />
           )}
         </>
       )}
@@ -167,7 +105,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
         onOpenChange={(o) => {
           if (o) return;
           setSelectedId(null);
-          syncUrl(view, null);
+          syncUrl(null);
         }}
       >
         <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl data-[side=right]:sm:max-w-xl">
@@ -175,65 +113,6 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
           {selected && <ReviewPanel tender={selected} />}
         </SheetContent>
       </Sheet>
-    </div>
-  );
-}
-
-/** One column per service line and its HoD, with the status of each routed prospect. */
-function HodBoard({ routed, onOpen, selectedId }: { routed: Tender[]; onOpen: (id: string) => void; selectedId: string | null }) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {SERVICE_LINES.map((line) => {
-        const items = routed
-          .filter((t) => line.categories.includes(t.category))
-          .sort((x, y) => STATUS_ORDER.indexOf(x.status) - STATUS_ORDER.indexOf(y.status));
-        const waiting = items.filter((t) => t.status === "Awaiting HoD").length;
-        return (
-          <section key={line.id} className="flex flex-col rounded-2xl bg-card p-3 shadow-soft">
-            <header className="flex items-center gap-2.5 px-1 pb-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
-                {line.initials}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">{line.hod}</div>
-                <div className="truncate text-xs text-muted-foreground">Owner · HoD, {line.name}</div>
-              </div>
-              {waiting > 0 && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                  {waiting} waiting
-                </span>
-              )}
-            </header>
-            <ul className="flex-1 space-y-2">
-              {items.map((t) => (
-                <li key={t.id}>
-                  <button
-                    onClick={() => onOpen(t.id)}
-                    className={cn(
-                      "w-full rounded-xl bg-muted/40 p-3 text-left transition-all hover:bg-card hover:shadow-soft-lg",
-                      t.status === "Awaiting HoD" && "bg-amber-50/70 ring-1 ring-amber-200 ring-inset",
-                      selectedId === t.id && "ring-2 ring-primary/30",
-                    )}
-                  >
-                    <div className="line-clamp-2 text-sm font-medium">{t.title}</div>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="tabular flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {formatValue(t)} · AI <PrequalBadge yes={aiPrequalified(t)} className="px-2 py-0 text-[11px]" />
-                      </span>
-                      <StatusBadge status={t.status} />
-                    </div>
-                  </button>
-                </li>
-              ))}
-              {items.length === 0 && (
-                <li className="rounded-xl border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
-                  Nothing routed yet
-                </li>
-              )}
-            </ul>
-          </section>
-        );
-      })}
     </div>
   );
 }
