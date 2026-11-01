@@ -42,7 +42,7 @@ export function SortTh<K extends string>({
   const active = sort.key === sortKey;
   const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
   return (
-    <th className={cn("px-3 py-3 font-medium", className)} aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}>
+    <th className={cn("px-3 py-3 font-semibold", className)} aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}>
       <button
         onClick={() => onSort(sortKey)}
         className={cn(
