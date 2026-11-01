@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, Radar, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowRight, ChevronDown, Radar, ShieldCheck, UserRound } from "lucide-react";
 import { completeOnboarding, requestScan, setRole, useDemo } from "@/lib/store";
 import { PEOPLE, SERVICE_LINES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -70,17 +70,20 @@ export function WelcomeView() {
             footer={
               <label className="block space-y-1">
                 <span className="text-xs text-muted-foreground">Sign in as</span>
-                <select
-                  value={hodLine}
-                  onChange={(e) => setHodLine(e.target.value)}
-                  className="h-9 w-full rounded-lg border bg-card px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                >
-                  {SERVICE_LINES.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.hod} · HoD, {l.name}
-                    </option>
-                  ))}
-                </select>
+                <span className="relative block">
+                  <select
+                    value={hodLine}
+                    onChange={(e) => setHodLine(e.target.value)}
+                    className="h-9 w-full cursor-pointer appearance-none rounded-lg border bg-card pr-9 pl-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                  >
+                    {SERVICE_LINES.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.hod} · HoD, {l.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                </span>
               </label>
             }
             onSignIn={signInHod}
