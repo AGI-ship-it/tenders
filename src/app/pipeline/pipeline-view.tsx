@@ -10,12 +10,11 @@ import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ALL, FilterSelect } from "@/components/filter-select";
 import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 
 type SortKey = "priority" | "id" | "value" | "deadline" | "fit";
 
-const ALL = "All";
 
 export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   const demo = useDemo()!;
@@ -86,9 +85,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="bg-card pl-8" placeholder="Search prospect ID, title or buyer" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <Filter label="Service" value={category} onChange={setCategory} options={options.category} />
-        <Filter label="Emirate" value={emirate} onChange={setEmirate} options={options.emirate} />
-        <Filter label="Status" value={status} onChange={setStatus} options={options.status} />
+        <FilterSelect label="Service" value={category} onChange={setCategory} options={options.category} />
+        <FilterSelect label="Emirate" value={emirate} onChange={setEmirate} options={options.emirate} />
+        <FilterSelect label="Status" value={status} onChange={setStatus} options={options.status} />
         {filtered && (
           <Button
             variant="ghost"
@@ -212,33 +211,5 @@ function Th({
         <Icon className={cn("size-3", !active && "opacity-40")} />
       </button>
     </th>
-  );
-}
-
-function Filter({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-}) {
-  return (
-    <Select value={value} onValueChange={(v) => onChange(v as string)}>
-      <SelectTrigger className={cn("min-w-36 bg-card", value !== ALL && "border-primary/40 text-primary")}>
-        <span className="text-muted-foreground">{label}:</span>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o} value={o}>
-            {o}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }

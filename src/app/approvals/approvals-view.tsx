@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
+import { ArrowUpRight, Download, Inbox, MessageSquare, Search, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
-import { aiPrequalified, prospectStatus } from "@/lib/scoring";
+import { PROSPECT_STATUSES, aiPrequalified, prospectStatus } from "@/lib/scoring";
 import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { ALL, FilterSelect } from "@/components/filter-select";
 import { DecisionPanel } from "@/components/decision-panel";
 import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -101,13 +103,11 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
               </span>
             )}
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto pb-1">
-            {mine.length ? (
-              <Register tenders={mine} onOpen={open} selectedId={selectedId} showHod={false} />
-            ) : (
-              <EmptyState text="Nothing has been routed to you yet." />
-            )}
-          </div>
+          {mine.length ? (
+            <Register tenders={mine} onOpen={open} selectedId={selectedId} showHod={false} />
+          ) : (
+            <EmptyState text="Nothing has been routed to you yet." />
+          )}
         </>
       ) : (
         <>
@@ -148,17 +148,17 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
             )}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pb-1">
-            {view === "register" ? (
-              routed.length ? (
-                <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
-              ) : (
-                <EmptyState text="No prospects have been routed to an HoD yet." />
-              )
+          {view === "register" ? (
+            routed.length ? (
+              <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
             ) : (
+              <EmptyState text="No prospects have been routed to an HoD yet." />
+            )
+          ) : (
+            <div className="min-h-0 flex-1 overflow-y-auto pb-1">
               <HodBoard routed={routed} onOpen={open} selectedId={selectedId} />
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
 
@@ -368,103 +368,156 @@ function Register({
   selectedId: string | null;
   showHod: boolean;
 }) {
-  const sorted = [...tenders].sort(registerOrder);
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState(ALL);
+  const [hod, setHod] = useState(ALL);
+  const [ai, setAi] = useState(ALL);
+
+  const needle = q.trim().toLowerCase();
+  const sorted = tenders
+    .filter(
+      (t) =>
+        (status === ALL || prospectStatus(t.status) === status) &&
+        (hod === ALL || serviceLineFor(t.category).hod === hod) &&
+        (ai === ALL || (ai === "Yes") === aiPrequalified(t)) &&
+        (!needle || `${t.id} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
+    )
+    .sort(registerOrder);
+  const filtered = Boolean(needle) || status !== ALL || hod !== ALL || ai !== ALL;
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          {showHod
-            ? "Every prospect routed for prequalification, the HoD it is assigned to and where it stands."
-            : "Prospects routed to your service line. Open one to prequalify or reject it."}
-        </p>
-        <Button variant="outline" onClick={() => exportCsv(sorted)}>
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <p className="shrink-0 text-sm text-muted-foreground">
+        {showHod
+          ? "Every prospect routed for prequalification, the HoD it is assigned to and where it stands."
+          : "Prospects routed to your service line. Open one to prequalify or reject it."}
+      </p>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="relative w-64">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="bg-card pl-8" placeholder="Search ID, title or buyer" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <FilterSelect label="Status" value={status} onChange={setStatus} options={[ALL, ...PROSPECT_STATUSES]} />
+        {showHod && (
+          <FilterSelect label="HoD" value={hod} onChange={setHod} options={[ALL, ...SERVICE_LINES.map((l) => l.hod)]} />
+        )}
+        <FilterSelect label="AI pre-qual" value={ai} onChange={setAi} options={[ALL, "Yes", "No"]} />
+        {filtered && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setQ("");
+              setStatus(ALL);
+              setHod(ALL);
+              setAi(ALL);
+            }}
+          >
+            <X /> Clear
+          </Button>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground">
+          {sorted.length} of {tenders.length} prospects
+        </span>
+        <Button variant="outline" onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
           <Download /> Export CSV
         </Button>
       </div>
-      <div className="overflow-hidden rounded-xl bg-card shadow-soft">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-            <tr>
-              <th className="px-5 py-3 font-medium">Prospect</th>
-              <th className="px-3 py-3 font-medium">Due date</th>
-              <th className="px-3 py-3 font-medium">AI pre-qual</th>
-              {showHod && <th className="px-3 py-3 font-medium">HoD</th>}
-              <th className="px-3 py-3 font-medium">Status</th>
-              <th className="px-3 py-3 pr-5 font-medium">D365 lead</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {sorted.map((t) => {
-              const line = serviceLineFor(t.category);
-              const pending = PENDING.includes(t.status);
-              const days = daysUntil(t.deadline);
-              const agrees = agreesWithAi(t);
-              return (
-                <tr
-                  key={t.id}
-                  onClick={() => onOpen(t.id)}
-                  className={cn(
-                    "cursor-pointer align-top transition-colors hover:bg-muted/30",
-                    t.status === "Awaiting HoD" && "bg-amber-50/40",
-                    selectedId === t.id && "bg-primary/5",
-                  )}
-                >
-                  <td className="max-w-[320px] px-5 py-3">
-                    <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
-                    <div className="truncate font-medium">{t.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {t.buyer} · {formatValue(t)}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    {formatDate(t.deadline)}
-                    <div className={cn("text-xs", days <= 14 && days > 0 ? "text-orange-700" : "text-muted-foreground")}>
-                      {days > 0 ? `${days} days left` : "Closed"}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <PrequalBadge yes={aiPrequalified(t)} />
-                  </td>
-                  {showHod && (
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      {line.hod}
-                      <div className="text-xs text-muted-foreground">{line.name}</div>
-                    </td>
-                  )}
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    <StatusBadge status={t.status} />
-                    <div className="mt-1.5 text-[11px] text-muted-foreground">
-                      {pending ? (
-                        t.status === "Changes Requested" ? (
-                          "Changes requested"
-                        ) : (
-                          t.approval && `Submitted ${timeAgo(t.approval.submittedAt)}`
-                        )
-                      ) : (
-                        <span className={cn("font-medium", !agrees && "text-magenta")}>
-                          {agrees ? "Matches AI" : "Overrides AI"}
-                          {t.approval?.decidedAt && <span className="font-normal text-muted-foreground"> · {formatDate(t.approval.decidedAt)}</span>}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 pr-5 whitespace-nowrap">
-                    {t.lead ? (
-                      <>
-                        <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
-                        <div className="text-xs text-muted-foreground">{formatDate(t.lead.pushedAt)}</div>
-                      </>
-                    ) : t.status === "Prequalified" ? (
-                      <span className="text-xs text-muted-foreground">Ready to push</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+
+      {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft">
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="px-5 py-3 font-medium">Prospect</th>
+                <th className="px-3 py-3 font-medium">Due date</th>
+                <th className="px-3 py-3 font-medium">AI pre-qual</th>
+                {showHod && <th className="px-3 py-3 font-medium">HoD</th>}
+                <th className="px-3 py-3 font-medium">Status</th>
+                <th className="px-3 py-3 pr-5 font-medium">D365 lead</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {sorted.map((t) => {
+                const line = serviceLineFor(t.category);
+                const pending = PENDING.includes(t.status);
+                const days = daysUntil(t.deadline);
+                const agrees = agreesWithAi(t);
+                return (
+                  <tr
+                    key={t.id}
+                    onClick={() => onOpen(t.id)}
+                    className={cn(
+                      "cursor-pointer align-top transition-colors hover:bg-muted/30",
+                      t.status === "Awaiting HoD" && "bg-amber-50/40",
+                      selectedId === t.id && "bg-primary/5",
                     )}
+                  >
+                    <td className="max-w-[320px] px-5 py-3">
+                      <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
+                      <div className="truncate font-medium">{t.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.buyer} · {formatValue(t)}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      {formatDate(t.deadline)}
+                      <div className={cn("text-xs", days <= 14 && days > 0 ? "text-orange-700" : "text-muted-foreground")}>
+                        {days > 0 ? `${days} days left` : "Closed"}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <PrequalBadge yes={aiPrequalified(t)} />
+                    </td>
+                    {showHod && (
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        {line.hod}
+                        <div className="text-xs text-muted-foreground">{line.name}</div>
+                      </td>
+                    )}
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <StatusBadge status={t.status} />
+                      <div className="mt-1.5 text-[11px] text-muted-foreground">
+                        {pending ? (
+                          t.status === "Changes Requested" ? (
+                            "Changes requested"
+                          ) : (
+                            t.approval && `Submitted ${timeAgo(t.approval.submittedAt)}`
+                          )
+                        ) : (
+                          <span className={cn("font-medium", !agrees && "text-magenta")}>
+                            {agrees ? "Matches AI" : "Overrides AI"}
+                            {t.approval?.decidedAt && <span className="font-normal text-muted-foreground"> · {formatDate(t.approval.decidedAt)}</span>}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 pr-5 whitespace-nowrap">
+                      {t.lead ? (
+                        <>
+                          <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
+                          <div className="text-xs text-muted-foreground">{formatDate(t.lead.pushedAt)}</div>
+                        </>
+                      ) : t.status === "Prequalified" ? (
+                        <span className="text-xs text-muted-foreground">Ready to push</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {sorted.length === 0 && (
+                <tr>
+                  <td colSpan={showHod ? 6 : 5} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                    No prospects match these filters.
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
