@@ -71,21 +71,10 @@ export function TenderDetail() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
-      <div className="flex shrink-0 items-center justify-end gap-3">
-        <button
-          onClick={goBack}
-          aria-label={`Close and return to ${back.label}`}
-          title="Close"
-          className="grid size-11 place-items-center text-foreground/70 transition-colors hover:text-primary"
-        >
-          <X className="size-6" />
-        </button>
-      </div>
-
       {/* One section: header, key facts, then the assessment beside the prequalification rail. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-card shadow-soft sm:rounded-3xl">
       {/* Header */}
-      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
+      <div className="flex shrink-0 items-stretch justify-between gap-4 px-4 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-5">
         <div className="min-w-0 space-y-1">
           <nav aria-label="Breadcrumb" className="mb-2 min-w-0">
             <ol className="flex min-w-0 items-center gap-1.5 text-sm">
@@ -107,7 +96,18 @@ export function TenderDetail() {
             {tender.category} · {tender.buyer} · {tender.emirate}
           </div>
         </div>
-        <PortalLinkButton tender={tender} source={source} />
+        {/* Close at the top, Open on portal sitting down by the facts line. */}
+        <div className="flex shrink-0 flex-col items-end justify-between gap-3">
+          <button
+            onClick={goBack}
+            aria-label={`Close and return to ${back.label}`}
+            title="Close"
+            className="-mr-2 grid size-10 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-muted hover:text-primary"
+          >
+            <X className="size-6" />
+          </button>
+          <PortalLinkButton tender={tender} source={source} />
+        </div>
       </div>
 
       {/* Key facts, as listed on the portal */}
