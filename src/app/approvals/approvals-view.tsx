@@ -78,7 +78,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-6">
       <PageHeader
         title={embedded ? undefined : "Prospects for Prequalification"}
         description={embedded ? undefined : "Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to D365 as leads."}
@@ -87,7 +87,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
       {isHod ? (
         // HoD view: only the prospects routed to this HoD's service line.
         <>
-          <div className="flex items-center gap-3 border-b pb-3">
+          <div className="flex shrink-0 items-center gap-3 border-b pb-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
               {myLine.initials}
             </span>
@@ -101,15 +101,17 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
               </span>
             )}
           </div>
-          {mine.length ? (
-            <Register tenders={mine} onOpen={open} selectedId={selectedId} showHod={false} />
-          ) : (
-            <EmptyState text="Nothing has been routed to you yet." />
-          )}
+          <div className="min-h-0 flex-1 overflow-y-auto pb-1">
+            {mine.length ? (
+              <Register tenders={mine} onOpen={open} selectedId={selectedId} showHod={false} />
+            ) : (
+              <EmptyState text="Nothing has been routed to you yet." />
+            )}
+          </div>
         </>
       ) : (
         <>
-          <div className="flex items-center gap-1 border-b">
+          <div className="flex shrink-0 items-center gap-1 border-b">
             {tabs.map((t) => (
               <button
                 key={t.key}
@@ -146,15 +148,17 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
             )}
           </div>
 
-          {view === "register" ? (
-            routed.length ? (
-              <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
+          <div className="min-h-0 flex-1 overflow-y-auto pb-1">
+            {view === "register" ? (
+              routed.length ? (
+                <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod />
+              ) : (
+                <EmptyState text="No prospects have been routed to an HoD yet." />
+              )
             ) : (
-              <EmptyState text="No prospects have been routed to an HoD yet." />
-            )
-          ) : (
-            <HodBoard routed={routed} onOpen={open} selectedId={selectedId} />
-          )}
+              <HodBoard routed={routed} onOpen={open} selectedId={selectedId} />
+            )}
+          </div>
         </>
       )}
 
