@@ -136,7 +136,7 @@ export function TenderDetail() {
 
           {/* Details, progressively disclosed */}
           <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col">
-            <TabsList variant="line" className="w-full shrink-0 justify-start gap-2 overflow-x-auto border-b px-3 pt-2 sm:gap-4 sm:px-5">
+            <TabsList variant="line" className="w-full shrink-0 justify-start gap-2 overflow-x-auto border-b px-3 group-data-horizontal/tabs:h-12 sm:gap-4 sm:px-5">
               <TabsTrigger className={LINE_TAB} value="summary">Summary</TabsTrigger>
               <TabsTrigger className={LINE_TAB} value="eligibility">
                 Eligibility
