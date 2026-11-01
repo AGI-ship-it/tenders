@@ -91,8 +91,8 @@ export function StepTabs() {
                     <span
                       className={cn(
                         "tabular text-[2.25rem] font-extrabold tracking-tight",
-                        // The last step (awaiting HoD) is the one to act on, so its count stands out in dark purple.
-                        !on && i === steps.length - 1 && "text-primary",
+                        // Open prospects and awaiting approvals are the counts to act on, so they stand out in dark purple.
+                        !on && i > 0 && "text-primary",
                       )}
                     >
                       {s.value}
