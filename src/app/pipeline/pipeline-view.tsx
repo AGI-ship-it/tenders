@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, fitScore, isActive, priorityScore, prospectStatus } from "@/lib/scoring";
-import { Download } from "lucide-react";
+import { ChevronRight, Download } from "lucide-react";
+import Link from "next/link";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
@@ -118,7 +119,8 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 <SortTh sortKey="status" sort={sort} onSort={toggleSort}>
                   Status
                 </SortTh>
-                <th className="px-3 py-3 pr-5 font-bold">Decision</th>
+                <th className="px-3 py-3 font-bold">Decision</th>
+                <th className="w-12 py-3 pr-4"><span className="sr-only">Details</span></th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -160,15 +162,26 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                     <td className="px-3 py-3">
                       <StatusBadge status={t.status} />
                     </td>
-                    <td className="px-3 py-3 pr-5 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <Decision tender={t} />
+                    </td>
+                    <td className="py-3 pr-4 text-right">
+                      <Link
+                        href={`/opportunity?id=${encodeURIComponent(t.id)}&from=pipeline`}
+                        aria-label={`Show details for ${t.title}`}
+                        title="Show details"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors group-hover:bg-secondary group-hover:text-primary hover:bg-primary/10"
+                      >
+                        <ChevronRight className="size-4" />
+                      </Link>
                     </td>
                   </tr>
                 );
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="px-5 py-14 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>
