@@ -86,10 +86,12 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
-      <PageHeader
-        title={embedded ? undefined : "Prospects for Prequalification"}
-        description={embedded ? undefined : "Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to D365 as leads."}
-      />
+      {!embedded && (
+        <PageHeader
+          title="Prospects for Prequalification"
+          description="Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to D365 as leads."
+        />
+      )}
 
       {isHod ? (
         // HoD view: only the prospects routed to this HoD's service line.
@@ -300,7 +302,7 @@ function Register({
         </p>
       )}
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <TableHeader title={showHod ? "Prequalification register" : "Routed to you"} count={sorted.length} search={q} onSearch={setQ}>
           {notSubmitted ? (
             <Link href="/pipeline" className="px-1 text-xs text-muted-foreground hover:text-primary">

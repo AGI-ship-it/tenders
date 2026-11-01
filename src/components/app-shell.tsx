@@ -107,8 +107,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex min-h-[520px] flex-1 flex-col")}>
           {demo && !blocked ? (
             <>
-              {!isHod && (STEP_ROUTES.includes(pathname) || pathname === "/onboarding") && <StepTabs />}
-              {children}
+              {!isHod && (STEP_ROUTES.includes(pathname) || pathname === "/onboarding") ? (
+                // Steps and the screen below them read as one section; inner cards drop their own frame.
+                <div
+                  data-step-section
+                  className={cn("overflow-hidden rounded-3xl bg-card shadow-soft", fill && "flex min-h-0 flex-1 flex-col")}
+                >
+                  <StepTabs />
+                  {children}
+                </div>
+              ) : (
+                children
+              )}
             </>
           ) : (
             <LoadingState />

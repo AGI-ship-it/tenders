@@ -172,7 +172,7 @@ export function ScanPanel({
 
   if (phase === "idle") {
     return (
-      <section className="relative flex flex-1 flex-col items-center justify-center rounded-3xl bg-card px-6 py-12 text-center shadow-soft">
+      <section className="relative flex flex-1 flex-col items-center justify-center rounded-3xl bg-card px-6 py-12 text-center shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <div className="absolute top-4 right-4 left-4 flex items-center justify-between gap-3">
           {stats ?? <span />}
           {sourcesAction}
@@ -206,7 +206,7 @@ export function ScanPanel({
   }
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl bg-card shadow-soft">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
       <header className="shrink-0 border-b px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
