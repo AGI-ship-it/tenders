@@ -231,7 +231,7 @@ export function FilterChips({ facets, filters }: { facets: Facet[]; filters: Ret
   );
 }
 
-const SEGMENT = "flex h-full items-center px-2.5 transition-colors hover:bg-muted aria-expanded:bg-muted";
+const SEGMENT = "flex h-full items-center px-2.5 transition-colors hover:bg-primary/10 aria-expanded:bg-primary/10";
 
 function FilterCondition({ facet: f, filters }: { facet: Facet; filters: ReturnType<typeof useTableFilters> }) {
   const selected = filters.values[f.key] ?? [];
@@ -239,8 +239,8 @@ function FilterCondition({ facet: f, filters }: { facet: Facet; filters: ReturnT
   const many = selected.length > 1;
   const opLabel = (o: FilterOp) => (o === "is" ? (many ? "is any of" : "is") : many ? "is none of" : "is not");
   return (
-    <div className="inline-flex h-8 items-stretch divide-x overflow-hidden rounded-lg border bg-card text-xs shadow-xs">
-      <span className="flex items-center px-2.5 font-semibold text-foreground">{f.label}</span>
+    <div className="inline-flex h-8 items-stretch divide-x divide-primary/15 overflow-hidden rounded-full border border-primary/20 bg-secondary text-xs">
+      <span className="flex items-center pr-2.5 pl-3.5 font-semibold text-foreground">{f.label}</span>
 
       <DropdownMenu>
         <DropdownMenuTrigger render={<button className={cn(SEGMENT, "text-muted-foreground")} aria-label={`${f.label} condition`} />}>
@@ -277,7 +277,7 @@ function FilterCondition({ facet: f, filters }: { facet: Facet; filters: ReturnT
         aria-label={`Remove ${f.label} filter`}
         title="Remove filter"
         onClick={() => filters.removeFacet(f.key)}
-        className="grid w-8 place-items-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="grid w-9 place-items-center pr-0.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
       >
         <X className="size-3.5" />
       </button>
