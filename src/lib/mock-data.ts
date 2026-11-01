@@ -271,7 +271,7 @@ export function scanTenders(nowISO: string): Tender[] {
     tender({
       id: "TND-2026-0418",
       isoRequired: ["ISO 9001", "ISO 14001", "ISO 45001", "ISO 50001"],
-      title: "Hard FM and MEP maintenance for government office towers",
+      title: "Hard FM & MEP maintenance for government office towers",
       buyer: "Emirates Civic Facilities Authority",
       buyerType: "Government",
       sourceId: "src-auh",
@@ -323,7 +323,7 @@ export function scanTenders(nowISO: string): Tender[] {
     tender({
       id: "TND-2026-0421",
       isoRequired: ["ISO 9001", "ISO 14001"],
-      title: "Landscaping and irrigation maintenance for residential community",
+      title: "Landscaping & irrigation maintenance for residential community",
       buyer: "Meridian Properties",
       buyerType: "Private client",
       sourceId: "src-meridian",
@@ -416,7 +416,7 @@ export function scanBatches(nowISO: string): Tender[][] {
       briefTender(
         {
           id: "TND-2026-0428",
-          title: "Cleaning and hygiene for logistics free-zone offices",
+          title: "Cleaning & hygiene for logistics free-zone offices",
           buyer: "Northgate Logistics Free Zone",
           buyerType: "Semi-government",
           sourceId: "src-dxb",
@@ -504,7 +504,7 @@ export function scanBatches(nowISO: string): Tender[][] {
         {
           id: "TND-2026-0442",
           isoRequired: ["ISO 9001", "ISO 14001"],
-          title: "Landscaping and irrigation for community parks",
+          title: "Landscaping & irrigation for community parks",
           buyer: "Coastal Districts Municipality",
           buyerType: "Government",
           sourceId: "src-auh",
@@ -530,7 +530,7 @@ export function seedTenders(): Tender[] {
   return [
     tender({
       id: "TND-2026-0377",
-      title: "Cleaning and hygiene services for 22 public schools",
+      title: "Cleaning & hygiene services for 22 public schools",
       buyer: "Northern Emirates Schools Directorate",
       buyerType: "Government",
       sourceId: "src-fed",
@@ -557,7 +557,7 @@ export function seedTenders(): Tender[] {
     }),
     tender({
       id: "TND-2026-0362",
-      title: "Integrated FM for metro stations and depots",
+      title: "Integrated FM for metro stations & depots",
       buyer: "Capital Transit Authority",
       buyerType: "Government",
       sourceId: "src-auh",
@@ -692,7 +692,7 @@ export function seedTenders(): Tender[] {
     }),
     tender({
       id: "TND-2026-0329",
-      title: "Waste management and recycling for free-zone logistics park",
+      title: "Waste management & recycling for free-zone logistics park",
       buyer: "Harbourline Developments",
       buyerType: "Private client",
       sourceId: "src-dxb",
@@ -924,7 +924,7 @@ const ROUTED_CASES: RoutedCase[] = [
   // Layla Mansour · Hard FM & MEP
   {
     id: "TND-2026-0310",
-    title: "HVAC and BMS maintenance for a hospital cluster",
+    title: "HVAC & BMS maintenance for a hospital cluster",
     buyer: "Northern Emirates Health Services",
     buyerType: "Government",
     sourceId: "src-shj",
@@ -1019,7 +1019,7 @@ const ROUTED_CASES: RoutedCase[] = [
   },
   {
     id: "TND-2026-0286",
-    title: "Lift and escalator modernisation",
+    title: "Lift & escalator modernisation",
     buyer: "Emirates Civic Facilities Authority",
     buyerType: "Government",
     sourceId: "src-shj",
@@ -1044,7 +1044,7 @@ const ROUTED_CASES: RoutedCase[] = [
   // Faisal Karim · Soft Services
   {
     id: "TND-2026-0312",
-    title: "Landscaping and irrigation for a public park network",
+    title: "Landscaping & irrigation for a public park network",
     buyer: "Dubai Parks Directorate",
     buyerType: "Government",
     sourceId: "src-dxb",
@@ -1138,7 +1138,7 @@ const ROUTED_CASES: RoutedCase[] = [
   },
   {
     id: "TND-2026-0298",
-    title: "Security and access control for a hospital",
+    title: "Security & access control for a hospital",
     buyer: "Northern Emirates Health Services",
     buyerType: "Government",
     sourceId: "src-shj",
@@ -1250,7 +1250,7 @@ function seedAudit(): AuditEvent[] {
   ].sort((x, y) => y.at.localeCompare(x.at));
 }
 
-export const DEMO_VERSION = 15;
+export const DEMO_VERSION = 16;
 
 export function seedState(): DemoState {
   return {
