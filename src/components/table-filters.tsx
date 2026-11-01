@@ -104,15 +104,15 @@ export function FilterMenu({
           </span>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
+      <DropdownMenuContent align="end" className="w-64 rounded-xl p-1.5">
         {facet ? (
           <>
-            <DropdownMenuItem closeOnClick={false} onClick={() => setOpenKey(null)} className="text-muted-foreground">
+            <DropdownMenuItem closeOnClick={false} onClick={() => setOpenKey(null)} className={cn(ITEM, "text-muted-foreground")}>
               <ChevronLeft /> Back
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <div className="flex items-center justify-between px-1.5 py-1">
-              <span className="text-xs font-medium text-muted-foreground">{facet.label}</span>
+            <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
+            <div className="flex items-center justify-between px-2.5 pt-1 pb-1.5">
+              <span className={MENU_LABEL}>{facet.label}</span>
               {selected.length > 0 && (
                 <button
                   onClick={() => selected.forEach((o) => filters.remove(facet.key, o))}
@@ -122,34 +122,39 @@ export function FilterMenu({
                 </button>
               )}
             </div>
-            {facet.options.map((o) => (
-              <CheckboxOption key={o} checked={selected.includes(o)} onToggle={() => filters.toggle(facet.key, o)}>
-                {o}
-              </CheckboxOption>
-            ))}
+            <div className="space-y-0.5">
+              {facet.options.map((o) => (
+                <CheckboxOption key={o} checked={selected.includes(o)} onToggle={() => filters.toggle(facet.key, o)}>
+                  {o}
+                </CheckboxOption>
+              ))}
+            </div>
           </>
         ) : (
           <>
-            {facets.map((f) => {
-              const n = filters.values[f.key]?.length ?? 0;
-              return (
-                <DropdownMenuItem key={f.key} closeOnClick={false} onClick={() => setOpenKey(f.key)}>
-                  {f.label}
-                  <span className="ml-auto flex items-center gap-1">
-                    {n > 0 && (
-                      <span className="tabular grid h-4 min-w-4 place-items-center rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary">
-                        {n}
-                      </span>
-                    )}
-                    <ChevronRight className="text-muted-foreground" />
-                  </span>
-                </DropdownMenuItem>
-              );
-            })}
+            <div className={cn(MENU_LABEL, "px-2.5 pt-1 pb-1.5")}>Filter by</div>
+            <div className="space-y-0.5">
+              {facets.map((f) => {
+                const n = filters.values[f.key]?.length ?? 0;
+                return (
+                  <DropdownMenuItem key={f.key} closeOnClick={false} onClick={() => setOpenKey(f.key)} className={ITEM}>
+                    {f.label}
+                    <span className="ml-auto flex items-center gap-1.5">
+                      {n > 0 && (
+                        <span className="tabular grid h-5 min-w-5 place-items-center rounded-full bg-primary/10 px-1.5 text-[11px] font-semibold text-primary">
+                          {n}
+                        </span>
+                      )}
+                      <ChevronRight className="text-muted-foreground" />
+                    </span>
+                  </DropdownMenuItem>
+                );
+              })}
+            </div>
             {filters.count > 0 && (
               <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={filters.clear}>
+                <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
+                <DropdownMenuItem onClick={filters.clear} className={cn(ITEM, "text-muted-foreground")}>
                   <X /> Clear all filters
                 </DropdownMenuItem>
               </>
@@ -161,6 +166,10 @@ export function FilterMenu({
   );
 }
 
+/** Shared spacing for rows in the filter menu. */
+const ITEM = "gap-2.5 rounded-lg px-2.5 py-2 text-sm";
+const MENU_LABEL = "text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
+
 /** A menu option with a visible checkbox on the left; the menu stays open when toggled. */
 function CheckboxOption({ checked, onToggle, children }: { checked: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
@@ -168,7 +177,7 @@ function CheckboxOption({ checked, onToggle, children }: { checked: boolean; onT
       checked={checked}
       onCheckedChange={onToggle}
       closeOnClick={false}
-      className="flex cursor-default items-center gap-2 rounded-md px-1.5 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground"
+      className={cn(ITEM, "flex cursor-default items-center outline-hidden select-none focus:bg-accent focus:text-accent-foreground")}
     >
       <span
         className={cn(
