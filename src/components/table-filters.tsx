@@ -97,12 +97,13 @@ export function FilterMenu({
   return (
     <DropdownMenu onOpenChange={(open) => !open && setOpenKey(null)}>
       <DropdownMenuTrigger render={<Button variant="outline" className="border-primary/30 bg-secondary text-secondary-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-secondary-foreground aria-expanded:border-primary/50 aria-expanded:bg-primary/10 aria-expanded:text-secondary-foreground" />}>
-        <ListFilter /> Filter
+        Filter
         {filters.count > 0 && (
           <span className="tabular grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
             {filters.count}
           </span>
         )}
+        <ListFilter />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64 rounded-xl p-1.5">
         {facet ? (
