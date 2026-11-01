@@ -387,11 +387,11 @@ function Register({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <p className="shrink-0 text-sm text-muted-foreground">
-        {showHod
-          ? "Every prospect routed for prequalification, the HoD it is assigned to and where it stands."
-          : "Prospects routed to your service line. Open one to prequalify or reject it."}
-      </p>
+      {!showHod && (
+        <p className="shrink-0 text-sm text-muted-foreground">
+          Prospects routed to your service line. Open one to prequalify or reject it.
+        </p>
+      )}
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <div className="relative w-64">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
