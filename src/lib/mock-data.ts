@@ -307,7 +307,7 @@ export function scanTenders(nowISO: string): Tender[] {
         { label: "Submission deadline", location: "Tender notice", excerpt: "Closing date: 10 December 2026, 14:00 GST, via e-portal." },
       ],
       aiNarrative:
-        "Strong match to AGFS core integrated FM capability in a priority geography and inside the target value band. Technical-weighted evaluation favours AGFS healthcare references. The main open point is the second healthcare reference (AED 11M vs AED 15M threshold); a clarification is recommended before committing bid resources.",
+        "Strong match to AGFS core integrated FM capability in a priority geography and inside the target value band. Technical-weighted evaluation favours AGFS healthcare references. The main open point is the second healthcare reference (AED 11M vs AED 15M threshold); a clarification is recommended before it goes to D365.",
       status: "New",
       discoveredAt: nowISO,
       fromLatestScan: true,
@@ -359,7 +359,7 @@ export function scanTenders(nowISO: string): Tender[] {
         { label: "Bond", location: "Conditions of Contract, Cl. 4.2", excerpt: "Performance security of ten percent (10%) of the contract price." },
       ],
       aiNarrative:
-        "Good service and geography fit with a high-value, strategic government buyer. However, the ICV threshold is a hard eligibility gate that AGFS does not currently meet. Recommend bidding only if a JV partner or ICV route is confirmed within 10 days.",
+        "Good service and geography fit with a high-value, strategic government buyer. However, the ICV threshold is a hard eligibility gate that AGFS does not currently meet. Pre-qualifies only if a JV partner or ICV route is confirmed within 10 days.",
       status: "New",
       discoveredAt: nowISO,
       fromLatestScan: true,
@@ -401,7 +401,7 @@ export function scanTenders(nowISO: string): Tender[] {
         { label: "Evaluation", location: "RFQ Section 5", excerpt: "Award will be made to the lowest technically compliant bidder." },
       ],
       aiNarrative:
-        "Below the AGFS minimum contract value of AED 5M, outside priority geography and evaluated on lowest price. Recommend no-bid and a relationship note to the client offering IFM bundling on future packages.",
+        "Below the AGFS minimum contract value of AED 5M, outside priority geography and evaluated on lowest price. Does not pre-qualify; consider a relationship note to the client offering IFM bundling on future packages.",
       status: "New",
       discoveredAt: nowISO,
       fromLatestScan: true,
@@ -453,7 +453,7 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Four-year integrated FM for a 31-building campus including student housing, labs and sports facilities.",
           scope: ["Hard and soft services across academic and residential buildings.", "Lab and cleanroom environment maintenance.", "Events and term-break deep cleaning."],
           checks: ["met", "met", "met", "met", "partial"],
-          aiNarrative: "Strong IFM fit in an active market, inside the value band. Education references support the bid; vendor registration needs renewal.",
+          aiNarrative: "Strong IFM fit in an active market, inside the value band. Education references are strong; vendor registration needs renewal.",
         },
         nowISO,
       ),
@@ -540,7 +540,7 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Integrated pest management across seven hotels.",
           scope: ["Monthly integrated pest management.", "Emergency call-outs within 4 hours."],
           checks: ["met", "met", "partial", "met", "met"],
-          aiNarrative: "Below the AGFS minimum contract value. Recommend no-bid and offer pest control as part of a wider FM bundle.",
+          aiNarrative: "Below the AGFS minimum contract value. Does not pre-qualify; pest control could be offered as part of a wider FM bundle.",
         },
         nowISO,
       ),
@@ -626,7 +626,7 @@ export function seedTenders(): Tender[] {
       status: "Awaiting HoD",
       discoveredAt: hoursAgo(24 * 26),
       approval: {
-        proposed: "Bid",
+        proposed: "Prequalify",
         submittedBy: "Sara Haddad",
         submittedAt: hoursAgo(20),
         reviewer: "Omar Rahman (HoD, Integrated FM)",
@@ -658,7 +658,7 @@ export function seedTenders(): Tender[] {
       status: "Prequalified",
       discoveredAt: hoursAgo(24 * 37),
       approval: {
-        proposed: "Bid",
+        proposed: "Prequalify",
         submittedBy: "Sara Haddad",
         submittedAt: hoursAgo(24 * 30),
         reviewer: "Faisal Karim (HoD, Soft Services)",
@@ -666,7 +666,7 @@ export function seedTenders(): Tender[] {
         decision: "Approved",
         decidedBy: "Faisal Karim",
         decidedAt: hoursAgo(24 * 29),
-        decisionComment: "Approved. Prioritise bid team allocation; keep pricing within 10% of last renewal.",
+        decisionComment: "Approved. Relevant for the IFM service line; push to D365 as a lead.",
       },
     }),
     tender({
@@ -690,7 +690,7 @@ export function seedTenders(): Tender[] {
       status: "No-bid",
       discoveredAt: hoursAgo(24 * 29),
       approval: {
-        proposed: "No-bid",
+        proposed: "Reject",
         submittedBy: "Sara Haddad",
         submittedAt: hoursAgo(24 * 27),
         reviewer: "Faisal Karim (HoD, Soft Services)",
@@ -698,7 +698,7 @@ export function seedTenders(): Tender[] {
         decision: "Approved",
         decidedBy: "Faisal Karim",
         decidedAt: hoursAgo(24 * 27 - 3),
-        decisionComment: "Agree, no-bid.",
+        decisionComment: "Agree, not relevant for AGFS.",
       },
     }),
     tender({
@@ -723,7 +723,7 @@ export function seedTenders(): Tender[] {
       status: "Changes Requested",
       discoveredAt: hoursAgo(24 * 24),
       approval: {
-        proposed: "Bid",
+        proposed: "Prequalify",
         submittedBy: "Sara Haddad",
         submittedAt: hoursAgo(24 * 6),
         reviewer: "Nadia Yousef (HoD, Security & Specialist)",
@@ -790,16 +790,16 @@ function seedAudit(): AuditEvent[] {
     detail,
   });
   return [
-    e(20, "Sara Haddad", "analyst", "Submitted for approval (proposed: Bid)", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
+    e(20, "Sara Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
     e(26, AGENT_NAME, "agent", "Daily scan completed", undefined, "4 sources scanned, 2 new tenders, 4 duplicates skipped (simulated)."),
     e(24 * 5, "Nadia Yousef", "approver", "Requested changes", "TND-2026-0333", "Please name the partner and confirm margin split."),
-    e(24 * 6, "Sara Haddad", "analyst", "Submitted for approval (proposed: Bid)", "TND-2026-0333"),
-    e(24 * 27 - 3, "Faisal Karim", "approver", "Approved no-bid", "TND-2026-0340", "Agree, no-bid."),
-    e(24 * 29, "Faisal Karim", "approver", "Prequalified", "TND-2026-0351", "Prioritise bid team allocation."),
+    e(24 * 6, "Sara Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0333"),
+    e(24 * 27 - 3, "Faisal Karim", "approver", "Confirmed rejection", "TND-2026-0340", "Agree, not relevant for AGFS."),
+    e(24 * 29, "Faisal Karim", "approver", "Prequalified", "TND-2026-0351", "Relevant for the IFM service line."),
   ];
 }
 
-export const DEMO_VERSION = 12;
+export const DEMO_VERSION = 13;
 
 export function seedState(): DemoState {
   return {

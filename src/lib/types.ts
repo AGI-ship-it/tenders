@@ -62,7 +62,8 @@ export interface Comment {
 }
 
 export interface ApprovalRecord {
-  proposed: "Bid" | "No-bid";
+  /** The Bid Analyst's proposal to the HoD. */
+  proposed: "Prequalify" | "Reject";
   submittedBy: string;
   submittedAt: string;
   reviewer: string;

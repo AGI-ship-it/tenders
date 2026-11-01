@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { decide, setRole, submitForApproval, useDemo } from "@/lib/store";
 import { PEOPLE, hodLabel, serviceLineFor } from "@/lib/mock-data";
-import { recommendation } from "@/lib/scoring";
+import { aiPrequalified } from "@/lib/scoring";
 import { formatDateTime } from "@/lib/format";
 import type { ApprovalRecord, Tender } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { StatusBadge } from "@/components/shared";
+import { PrequalBadge, StatusBadge } from "@/components/shared";
 import { PushToD365Button } from "@/components/d365-push";
 
 const SUBMITTABLE: Tender["status"][] = ["New", "Under Review", "Changes Requested"];
@@ -144,9 +144,9 @@ export function DecisionActions({ tender }: { tender: Tender }) {
     decide(tender.id, d, comment.trim());
     setComment("");
     setNeedComment(false);
-    const proposed = tender.approval?.proposed ?? "Bid";
+    const proposed = tender.approval?.proposed ?? "Prequalify";
     toast.success(
-      d === "Approved" ? (proposed === "Bid" ? "Prequalified" : "No-bid approved") : d === "Rejected" ? "Marked not qualified" : "Changes requested",
+      d === "Approved" ? (proposed === "Prequalify" ? "Prequalified" : "Rejection confirmed") : d === "Rejected" ? "Marked not qualified" : "Changes requested",
       { description: `${tender.id} pipeline status updated.` },
     );
   }
@@ -160,14 +160,14 @@ export function DecisionActions({ tender }: { tender: Tender }) {
         <Textarea
           id={`c-${tender.id}`}
           rows={3}
-          placeholder="Add context for the bid team…"
+          placeholder="Add context for the Bid Analyst…"
           value={comment}
           aria-invalid={needComment && !comment.trim()}
           onChange={(e) => setComment(e.target.value)}
         />
       </div>
       <Button className="w-full bg-emerald-700 hover:bg-emerald-700/90" size="lg" onClick={() => act("Approved")}>
-        <Check /> {tender.approval?.proposed === "No-bid" ? "Approve no-bid" : "Prequalify"}
+        <Check /> {tender.approval?.proposed === "Reject" ? "Confirm rejection" : "Prequalify"}
       </Button>
       <div className="grid grid-cols-2 gap-2">
         <Button variant="outline" onClick={() => act("Changes Requested")}>
@@ -190,13 +190,13 @@ function SubmitDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
-  const ai = recommendation(tender);
-  const [proposed, setProposed] = useState<"Bid" | "No-bid">(ai === "No-bid" ? "No-bid" : "Bid");
+  const aiYes = aiPrequalified(tender);
+  const [proposed, setProposed] = useState<ApprovalRecord["proposed"]>(aiYes ? "Prequalify" : "Reject");
   const line = serviceLineFor(tender.category);
   const [note, setNote] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const router = useRouter();
-  const overrides = (ai === "No-bid" && proposed === "Bid") || (ai !== "No-bid" && proposed === "No-bid");
+  const overrides = aiYes !== (proposed === "Prequalify");
 
   function submit() {
     submitForApproval(tender.id, { proposed, note: note.trim() });
@@ -215,7 +215,7 @@ function SubmitDialog({
         <DialogHeader>
           <DialogTitle>Submit for prequalification</DialogTitle>
           <DialogDescription>
-            The AI recommends <span className="font-medium text-foreground">{ai}</span>. You make the proposal; the
+            AI pre-qualification: <PrequalBadge yes={aiYes} className="align-middle" />. You make the proposal; the
             service-line HoD decides.
           </DialogDescription>
         </DialogHeader>
@@ -224,7 +224,7 @@ function SubmitDialog({
           <div className="space-y-1.5">
             <Label>Your proposal</Label>
             <div className="grid grid-cols-2 gap-2">
-              {(["Bid", "No-bid"] as const).map((p) => (
+              {(["Prequalify", "Reject"] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setProposed(p)}

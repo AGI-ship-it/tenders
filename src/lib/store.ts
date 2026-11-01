@@ -208,13 +208,13 @@ export function decide(
     const t = s.tenders.find((x) => x.id === id);
     // In the demo, the HoD role acts on behalf of whichever HoD the prospect is routed to.
     const by = s.role === "approver" && t ? serviceLineFor(t.category).hod : PEOPLE[s.role].name;
-    const proposed = t?.approval?.proposed ?? "Bid";
+    const proposed = t?.approval?.proposed ?? "Prequalify";
     const status: Tender["status"] =
       decision === "Changes Requested"
         ? "Changes Requested"
         : decision === "Rejected"
           ? "Not qualified"
-          : proposed === "Bid"
+          : proposed === "Prequalify"
             ? "Prequalified"
             : "No-bid";
     const action =
@@ -222,9 +222,9 @@ export function decide(
         ? "Requested changes"
         : decision === "Rejected"
           ? "Marked not qualified"
-          : proposed === "Bid"
+          : proposed === "Prequalify"
             ? "Prequalified"
-            : "Approved no-bid";
+            : "Confirmed rejection";
     return {
       ...s,
       tenders: patchTender(s, id, (x) => ({

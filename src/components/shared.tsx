@@ -3,7 +3,7 @@
 import { FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prospectStatus } from "@/lib/scoring";
-import type { ProspectStatus, Recommendation, TenderStatus } from "@/lib/types";
+import type { ProspectStatus, TenderStatus } from "@/lib/types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STATUS_STYLE: Record<ProspectStatus, string> = {
@@ -24,27 +24,6 @@ export function StatusBadge({ status: workflow, className }: { status: TenderSta
     >
       <span className="size-1.5 rounded-full bg-current opacity-70" />
       {status}
-    </span>
-  );
-}
-
-const REC_STYLE: Record<Recommendation, string> = {
-  Bid: "bg-purple-800 text-white",
-  "Bid with conditions": "bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-100",
-  Review: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200",
-  "No-bid": "bg-zinc-100 text-zinc-600 ring-1 ring-inset ring-zinc-200",
-};
-
-export function RecommendationBadge({ rec, className }: { rec: Recommendation; className?: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium",
-        REC_STYLE[rec],
-        className,
-      )}
-    >
-      {rec}
     </span>
   );
 }

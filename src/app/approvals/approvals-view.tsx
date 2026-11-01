@@ -270,13 +270,9 @@ function Comments({ tender }: { tender: Tender }) {
   );
 }
 
-/** Collapses the AI's four-way recommendation and the final outcome to bid / no-bid for comparison. */
-function finalOutcome(t: Tender): "Bid" | "No-bid" {
-  return t.status === "Prequalified" || t.status === "Lead in D365" ? "Bid" : "No-bid";
-}
-
-function aiOutcome(t: Tender): "Bid" | "No-bid" {
-  return aiPrequalified(t) ? "Bid" : "No-bid";
+/** Whether the HoD's final decision matches the AI's Yes / No. */
+function agreesWithAi(t: Tender): boolean {
+  return aiPrequalified(t) === (t.status === "Prequalified" || t.status === "Lead in D365");
 }
 
 function exportCsv(tenders: Tender[]) {
@@ -295,7 +291,7 @@ function exportCsv(tenders: Tender[]) {
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = "agfs-bid-decision-register.csv";
+  a.download = "agfs-prequalification-register.csv";
   a.click();
   URL.revokeObjectURL(url);
   toast.success("Decision register exported", { description: `${tenders.length} decisions · CSV` });
@@ -307,7 +303,7 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground">
-          Every HoD prequalification decision, with who decided and why. Outcomes also feed the win model.
+          Every HoD prequalification decision, with who decided and why.
         </p>
         <Button variant="outline" onClick={() => exportCsv(sorted)}>
           <Download /> Export CSV
@@ -326,7 +322,7 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
           </thead>
           <tbody className="divide-y">
             {sorted.map((t) => {
-              const agrees = aiOutcome(t) === finalOutcome(t);
+              const agrees = agreesWithAi(t);
               return (
                 <tr key={t.id} className="align-top hover:bg-muted/30">
                   <td className="max-w-[300px] px-5 py-3">
