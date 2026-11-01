@@ -383,7 +383,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
                     )}
                   </div>
                   <div className="mt-0.5 flex items-center justify-between gap-2">
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="truncate text-xs font-medium text-muted-foreground">
                       {t.buyer} · {formatValue(t)}
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
