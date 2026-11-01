@@ -89,7 +89,10 @@ export function ScanPanel({
 }) {
   const demo = useDemo()!;
   // A scan requested by sign-in or first-time setup. Read once into state so re-renders can't lose it.
-  const [autoStart] = useState(peekPendingScan);
+  // The agent scans daily, so a first visit on a new day runs today's scan instead of showing an older one.
+  const [autoStart] = useState<"discover" | "checkin" | null>(
+    () => peekPendingScan() ?? (demo.lastScan && !isToday(demo.lastScan.at) ? "discover" : null),
+  );
   // Open on the previous run's results when there is one.
   const [phase, setPhase] = useState<"idle" | "running" | "done">(
     autoStart ? "running" : demo.lastScan ? "done" : "idle",
