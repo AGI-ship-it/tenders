@@ -81,7 +81,7 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
           <Button
             variant="outline"
             size="sm"
-            className="w-full border-teal-200 bg-white text-teal-800 hover:bg-teal-100/60"
+            className="w-full border-teal-200 bg-card text-teal-800 hover:bg-teal-100/60"
             onClick={() =>
               toast(`Opening lead ${lead.leadId} in D365`, {
                 description: "Simulated: in the live solution this opens the lead record in Dynamics 365.",

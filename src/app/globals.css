@@ -198,38 +198,101 @@
   --sidebar-ring: var(--ag-purple-600);
 }
 
+/* Dark mode: warm near-black surfaces, brand purple lifted for contrast, and the
+   pale status tints re-derived against the dark card so pills stay readable. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --tint-base: #1d1a20;
+  --background: #131116;
+  --foreground: #ede7e3;
+  --card: #1d1a20;
+  --card-foreground: #ede7e3;
+  --popover: #24202a;
+  --popover-foreground: #ede7e3;
+  --primary: #a56cf0;
+  --primary-foreground: #ffffff;
+  --secondary: color-mix(in oklch, var(--ag-purple-400) 16%, var(--tint-base));
+  --secondary-foreground: #d7b8fb;
+  --muted: #2a2630;
+  --muted-foreground: #aa9d95;
+  --accent: color-mix(in oklch, var(--ag-purple-400) 16%, var(--tint-base));
+  --accent-foreground: #d7b8fb;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: rgb(255 255 255 / 0.09);
+  --input: rgb(255 255 255 / 0.16);
+  --ring: var(--ag-purple-400);
+  --magenta: var(--ag-magenta-400);
+  --chart-1: #a56cf0;
+  --chart-2: var(--ag-magenta-400);
+  --chart-3: var(--ag-teal-400);
+  --chart-4: var(--ag-orange-400);
+  --chart-5: var(--ag-gold-400);
+  --sidebar: #1d1a20;
+  --sidebar-foreground: #ede7e3;
+  --sidebar-primary: #a56cf0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a2630;
+  --sidebar-accent-foreground: #ede7e3;
+  --sidebar-border: rgb(255 255 255 / 0.09);
+  --sidebar-ring: var(--ag-purple-400);
+
+  --shadow-soft: 0 0 0 1px rgb(255 255 255 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 6px 20px -6px rgb(0 0 0 / 0.5);
+  --shadow-soft-lg: 0 0 0 1px rgb(255 255 255 / 0.05), 0 2px 4px 0 rgb(0 0 0 / 0.35), 0 14px 32px -10px rgb(0 0 0 / 0.6);
+
+  /* Palette used by badges and highlights: tints sit on the dark card, text shades are lightened. */
+  --color-zinc-50: #1a171d;
+  --color-zinc-100: #2a2630;
+  --color-zinc-200: #34303b;
+  --color-zinc-300: #4a4452;
+  --color-zinc-600: #aa9d95;
+
+  --color-purple-50: color-mix(in oklch, var(--ag-purple-400) 10%, var(--tint-base));
+  --color-purple-100: color-mix(in oklch, var(--ag-purple-400) 22%, var(--tint-base));
+  --color-purple-200: color-mix(in oklch, var(--ag-purple-400) 35%, var(--tint-base));
+  --color-purple-800: #d7b8fb;
+  --color-purple-900: #e6d2fd;
+
+  --color-pink-100: color-mix(in oklch, var(--ag-magenta-600) 25%, var(--tint-base));
+  --color-pink-700: #f79bd6;
+  --color-pink-800: #f9b3e0;
+
+  --color-emerald-50: color-mix(in oklch, var(--ag-green-600) 22%, var(--tint-base));
+  --color-emerald-200: color-mix(in oklch, var(--ag-green-400) 35%, var(--tint-base));
+  --color-emerald-600: var(--ag-green-400);
+  --color-emerald-700: var(--ag-green-400);
+  --color-emerald-900: var(--ag-green-200);
+
+  --color-amber-50: color-mix(in oklch, var(--ag-orange-600) 16%, var(--tint-base));
+  --color-amber-100: color-mix(in oklch, var(--ag-orange-600) 26%, var(--tint-base));
+  --color-amber-200: color-mix(in oklch, var(--ag-orange-600) 38%, var(--tint-base));
+  --color-amber-300: color-mix(in oklch, var(--ag-orange-400) 55%, var(--tint-base));
+  --color-amber-600: var(--ag-orange-400);
+  --color-amber-700: var(--ag-orange-400);
+  --color-amber-800: #ffc27a;
+  --color-amber-900: var(--ag-orange-200);
+
+  --color-orange-50: color-mix(in oklch, var(--ag-orange-600) 16%, var(--tint-base));
+  --color-orange-700: #ffb35c;
+  --color-orange-900: var(--ag-orange-200);
+
+  --color-sky-50: color-mix(in oklch, var(--ag-teal-600) 18%, var(--tint-base));
+  --color-sky-100: color-mix(in oklch, var(--ag-teal-600) 30%, var(--tint-base));
+  --color-sky-700: var(--ag-teal-200);
+
+  --color-teal-50: color-mix(in oklch, var(--ag-teal-600) 18%, var(--tint-base));
+  --color-teal-100: color-mix(in oklch, var(--ag-teal-600) 30%, var(--tint-base));
+  --color-teal-200: color-mix(in oklch, var(--ag-teal-600) 45%, var(--tint-base));
+  --color-teal-700: var(--ag-teal-400);
+  --color-teal-800: var(--ag-teal-200);
+
+  --color-rose-50: color-mix(in oklch, #e5484d 16%, var(--tint-base));
+  --color-rose-200: color-mix(in oklch, #e5484d 38%, var(--tint-base));
+  --color-rose-600: #ff8b8f;
+  --color-rose-700: #ff9ea1;
+  --color-rose-900: #ffc9ca;
+}
+
+.dark .app-canvas {
+  background: var(--background);
 }
 
 @layer base {

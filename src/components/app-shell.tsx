@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, FlaskConical, LogOut, Radar, RotateCcw } from "lucide-react";
+import { ChevronDown, FlaskConical, LogOut, Moon, Radar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useDemo, resetDemo } from "@/lib/store";
 import { actingPerson } from "@/lib/mock-data";
@@ -13,6 +14,7 @@ import type { Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -133,6 +135,7 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
   const person = actingPerson(role, hodLine);
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <>
@@ -164,6 +167,12 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={resolvedTheme === "dark"}
+            onCheckedChange={(on) => setTheme(on ? "dark" : "light")}
+          >
+            <Moon /> Dark mode
+          </DropdownMenuCheckboxItem>
           <DropdownMenuItem onClick={() => setResetOpen(true)}>
             <RotateCcw /> Reset demo
           </DropdownMenuItem>

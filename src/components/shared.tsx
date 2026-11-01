@@ -35,7 +35,9 @@ export function PrequalBadge({ yes, className }: { yes: boolean; className?: str
       className={cn(
         "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
         // Muted sage and soft coral rather than the stock green and red.
-        yes ? "bg-[#EAF4EE] text-[#2E6B4F] ring-[#C9E2D3]" : "bg-[#FBEDEA] text-[#A9473D] ring-[#F1D1CB]",
+        yes
+          ? "bg-[#EAF4EE] text-[#2E6B4F] ring-[#C9E2D3] dark:bg-[#1F3329] dark:text-[#9FD3B5] dark:ring-[#2F4D3D]"
+          : "bg-[#FBEDEA] text-[#A9473D] ring-[#F1D1CB] dark:bg-[#3A2220] dark:text-[#F0A79E] dark:ring-[#58302C]",
         className,
       )}
     >
