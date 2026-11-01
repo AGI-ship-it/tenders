@@ -102,7 +102,7 @@ export function TenderDetail() {
             onClick={goBack}
             aria-label={`Close and return to ${back.label}`}
             title="Close"
-            className="-mr-2 grid size-10 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-muted hover:text-primary"
+            className="-mt-2 -mr-2 grid size-10 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-muted hover:text-primary"
           >
             <X className="size-6" />
           </button>
