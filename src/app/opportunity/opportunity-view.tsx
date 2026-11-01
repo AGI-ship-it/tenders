@@ -11,6 +11,7 @@ import {
   CircleHelp,
   FileText,
   Sparkles,
+  X,
   XCircle,
 } from "lucide-react";
 import { markUnderReview, useDemo } from "@/lib/store";
@@ -87,7 +88,12 @@ export function TenderDetail() {
             {tender.category} · {tender.buyer} · {tender.emirate}
           </div>
         </div>
-        <PortalLinkButton tender={tender} source={source} />
+        <div className="flex items-center gap-2">
+          <PortalLinkButton tender={tender} source={source} />
+          <Button variant="ghost" size="icon-lg" aria-label={`Close and return to ${back.label}`} title="Close" onClick={goBack}>
+            <X />
+          </Button>
+        </div>
       </div>
 
       {/* Key facts, as listed on the portal */}
