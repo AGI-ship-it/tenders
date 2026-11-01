@@ -1,4 +1,5 @@
 import type {
+  ApprovalRecord,
   AuditEvent,
   Category,
   Emirate,
@@ -674,7 +675,7 @@ export function seedTenders(): Tender[] {
         decision: "Approved",
         decidedBy: "Faisal Karim",
         decidedAt: hoursAgo(24 * 29),
-        decisionComment: "Approved. Relevant for the IFM service line; push to D365 as a lead.",
+        decisionComment: "Approved. Relevant for Soft Services; push to D365 as a lead.",
       },
     }),
     tender({
@@ -784,12 +785,488 @@ export function seedTenders(): Tender[] {
       status: "Under Review",
       discoveredAt: hoursAgo(24 * 28),
     }),
+    ...ROUTED_CASES.map(routedTender),
   ];
 }
 
+// ---------------------------------------------------------------------------
+// Routed prospects so that every HoD has each case: pending review, changes requested, prequalified (ready to push),
+// pushed to D365 as a lead, and rejected. Ages are in days before now.
+
+type RoutedStatus = "Awaiting HoD" | "Changes Requested" | "Prequalified" | "Lead in D365" | "Not qualified" | "No-bid";
+
+interface RoutedCase {
+  id: string;
+  title: string;
+  buyer: string;
+  buyerType: Tender["buyerType"];
+  sourceId: string;
+  sourceRef: string;
+  category: Category;
+  emirate: Emirate;
+  location: string;
+  valueAED: number;
+  durationMonths: number;
+  publishedAt: string;
+  deadline: string;
+  summary: string;
+  scope: string[];
+  eligibility: CheckStatus[];
+  aiNarrative: string;
+  status: RoutedStatus;
+  note: string;
+  /** Days ago the Bid Analyst submitted it. */
+  submitted: number;
+  /** Days ago the HoD decided (omit while pending). */
+  decided?: number;
+  comment?: string;
+  /** Lead number and days ago it was pushed to D365. */
+  lead?: [string, number];
+}
+
+const daysAgo = (d: number) => hoursAgo(d * 24);
+
+function routedTender(c: RoutedCase): Tender {
+  const line = serviceLineFor(c.category);
+  const decision: ApprovalRecord["decision"] =
+    c.status === "Awaiting HoD"
+      ? undefined
+      : c.status === "Changes Requested"
+        ? "Changes Requested"
+        : c.status === "Not qualified"
+          ? "Rejected"
+          : "Approved";
+  return tender({
+    id: c.id,
+    title: c.title,
+    buyer: c.buyer,
+    buyerType: c.buyerType,
+    sourceId: c.sourceId,
+    sourceRef: c.sourceRef,
+    category: c.category,
+    emirate: c.emirate,
+    location: c.location,
+    valueAED: c.valueAED,
+    durationMonths: c.durationMonths,
+    publishedAt: c.publishedAt,
+    deadline: c.deadline,
+    summary: c.summary,
+    scope: c.scope,
+    eligibility: genericEligibility(c.eligibility),
+    aiNarrative: c.aiNarrative,
+    status: c.status,
+    discoveredAt: daysAgo(c.submitted + 2),
+    approval: {
+      proposed: c.status === "No-bid" ? "Reject" : "Prequalify",
+      submittedBy: PEOPLE.analyst.name,
+      submittedAt: daysAgo(c.submitted),
+      reviewer: hodLabel(c.category),
+      note: c.note,
+      ...(decision && {
+        decision,
+        decidedBy: line.hod,
+        decidedAt: daysAgo(c.decided ?? 0),
+        decisionComment: c.comment ?? "",
+      }),
+    },
+    ...(c.lead && {
+      lead: { leadId: c.lead[0], pushedBy: line.hod, pushedAt: daysAgo(c.lead[1]), owner: line.hod },
+    }),
+  });
+}
+
+const ROUTED_CASES: RoutedCase[] = [
+  // Omar Rahman · Integrated FM
+  {
+    id: "TND-2026-0302",
+    title: "Integrated FM for a university campus",
+    buyer: "Gulf Polytechnic University",
+    buyerType: "Semi-government",
+    sourceId: "src-auh",
+    sourceRef: "GPU-FM-2026-04",
+    category: "Integrated FM",
+    emirate: "Abu Dhabi",
+    location: "Abu Dhabi (main campus, 41 buildings)",
+    valueAED: 64_000_000,
+    durationMonths: 48,
+    publishedAt: "2026-10-08",
+    deadline: "2026-12-04",
+    summary: "Hard and soft FM across academic buildings, student housing and sports facilities.",
+    scope: ["Planned and reactive MEP maintenance.", "Cleaning of academic and residential buildings.", "CAFM helpdesk."],
+    eligibility: ["met", "met", "met", "partial", "met"],
+    aiNarrative: "Core IFM scope in a priority market and inside the value band. Student-housing references should be confirmed.",
+    status: "Changes Requested",
+    note: "Strong IFM fit; education references attached.",
+    submitted: 6,
+    decided: 4,
+    comment: "Add the student-housing references and the CAFM approach before I prequalify.",
+  },
+  {
+    id: "TND-2026-0296",
+    title: "Integrated FM for a government headquarters tower",
+    buyer: "Federal Services Authority",
+    buyerType: "Government",
+    sourceId: "src-fed",
+    sourceRef: "FSA-IFM-26-11",
+    category: "Integrated FM",
+    emirate: "Dubai",
+    location: "Dubai (HQ tower, 38 floors)",
+    valueAED: 52_000_000,
+    durationMonths: 36,
+    publishedAt: "2026-10-03",
+    deadline: "2026-11-20",
+    summary: "Total FM for a 38-floor headquarters, including front-of-house and energy management.",
+    scope: ["MEP and BMS maintenance.", "Soft services and front-of-house.", "Monthly energy reporting."],
+    eligibility: ["met", "met", "met", "met", "met"],
+    aiNarrative: "Excellent fit: core IFM, priority geography, target value band and all eligibility met.",
+    status: "Prequalified",
+    note: "All criteria met; similar tower contracts in portfolio.",
+    submitted: 5,
+    decided: 2,
+    comment: "Prequalified. Ready to push to D365.",
+  },
+  {
+    id: "TND-2026-0289",
+    title: "Integrated FM for a waterfront residential community",
+    buyer: "Marina Gate Communities",
+    buyerType: "Private client",
+    sourceId: "src-dxb",
+    sourceRef: "MGC-IFM-0826",
+    category: "Integrated FM",
+    emirate: "Dubai",
+    location: "Dubai (1,200 units, 6 towers)",
+    valueAED: 38_500_000,
+    durationMonths: 36,
+    publishedAt: "2026-09-14",
+    deadline: "2026-11-12",
+    summary: "Community FM including tower maintenance, common-area cleaning and pool operations.",
+    scope: ["Tower MEP maintenance.", "Common-area cleaning and landscaping.", "Pool and amenity operations."],
+    eligibility: ["met", "met", "met", "met", "partial"],
+    aiNarrative: "Good IFM fit with a repeat developer client in Dubai.",
+    status: "Lead in D365",
+    note: "Repeat client; recommend prequalifying.",
+    submitted: 20,
+    decided: 18,
+    comment: "Prequalified. Pushed to D365.",
+    lead: ["LEAD-48211", 17],
+  },
+  {
+    id: "TND-2026-0284",
+    title: "Integrated FM for remote border posts",
+    buyer: "Coastal Districts Municipality",
+    buyerType: "Government",
+    sourceId: "src-fed",
+    sourceRef: "CDM-IFM-26-03",
+    category: "Integrated FM",
+    emirate: "Fujairah",
+    location: "Fujairah (9 remote sites)",
+    valueAED: 6_400_000,
+    durationMonths: 24,
+    publishedAt: "2026-09-25",
+    deadline: "2026-11-18",
+    summary: "IFM for nine remote border facilities with on-site accommodation for staff.",
+    scope: ["Reactive maintenance at remote sites.", "Cleaning and accommodation services."],
+    eligibility: ["met", "partial", "met", "met", "unmet"],
+    aiNarrative: "Outside the operating footprint and below the target value band.",
+    status: "Not qualified",
+    note: "Borderline; HoD to decide on remote-site appetite.",
+    submitted: 12,
+    decided: 10,
+    comment: "Not qualified. Remote sites outside our footprint.",
+  },
+  // Layla Mansour · Hard FM & MEP
+  {
+    id: "TND-2026-0310",
+    title: "HVAC and BMS maintenance for a hospital cluster",
+    buyer: "Northern Emirates Health Services",
+    buyerType: "Government",
+    sourceId: "src-shj",
+    sourceRef: "NEHS-MEP-26-09",
+    category: "Hard FM / MEP",
+    emirate: "Sharjah",
+    location: "Sharjah and Ajman (3 hospitals)",
+    valueAED: 41_000_000,
+    durationMonths: 48,
+    publishedAt: "2026-10-12",
+    deadline: "2026-12-08",
+    summary: "Critical HVAC, medical gas and BMS maintenance across three hospitals.",
+    scope: ["24/7 HVAC maintenance for clinical areas.", "BMS monitoring and upgrades.", "Medical gas maintenance."],
+    eligibility: ["met", "met", "partial", "met", "met"],
+    aiNarrative: "Strong hard FM fit in an active market. Medical gas competence certificate needs checking.",
+    status: "Awaiting HoD",
+    note: "Clinical HVAC references attached; medical gas via approved specialist.",
+    submitted: 1,
+  },
+  {
+    id: "TND-2026-0307",
+    title: "Electrical maintenance for a logistics hub",
+    buyer: "Harbourline Developments",
+    buyerType: "Private client",
+    sourceId: "src-dxb",
+    sourceRef: "HLD-ELC-204",
+    category: "Hard FM / MEP",
+    emirate: "Dubai",
+    location: "Dubai (logistics hub)",
+    valueAED: 12_800_000,
+    durationMonths: 36,
+    publishedAt: "2026-10-09",
+    deadline: "2026-11-27",
+    summary: "HV/LV electrical maintenance and generator servicing for a logistics hub.",
+    scope: ["HV/LV switchgear maintenance.", "Standby generator servicing."],
+    eligibility: ["met", "met", "met", "partial", "met"],
+    aiNarrative: "Good hard FM fit in a priority market, at the lower end of the value band.",
+    status: "Changes Requested",
+    note: "Recommend prequalifying; HV competence in-house.",
+    submitted: 7,
+    decided: 5,
+    comment: "Confirm the HV-authorised engineers we would assign.",
+  },
+  {
+    id: "TND-2026-0299",
+    title: "MEP maintenance for a mixed-use tower",
+    buyer: "Skyline Estates",
+    buyerType: "Private client",
+    sourceId: "src-meridian",
+    sourceRef: "SKY-MEP-0910",
+    category: "Hard FM / MEP",
+    emirate: "Dubai",
+    location: "Dubai (mixed-use tower)",
+    valueAED: 22_000_000,
+    durationMonths: 36,
+    publishedAt: "2026-10-02",
+    deadline: "2026-11-22",
+    summary: "Planned and reactive MEP for a 55-floor mixed-use tower.",
+    scope: ["Chiller plant and AHU maintenance.", "Fire-life-safety systems.", "Vertical transport coordination."],
+    eligibility: ["met", "met", "met", "met", "met"],
+    aiNarrative: "Strong hard FM fit; all eligibility criteria met.",
+    status: "Prequalified",
+    note: "All criteria met.",
+    submitted: 4,
+    decided: 1,
+    comment: "Prequalified.",
+  },
+  {
+    id: "TND-2026-0291",
+    title: "Chiller plant maintenance for a theme park",
+    buyer: "Desert Rose Hospitality",
+    buyerType: "Private client",
+    sourceId: "src-meridian",
+    sourceRef: "DRH-CHL-2026-1",
+    category: "Hard FM / MEP",
+    emirate: "Dubai",
+    location: "Dubai (theme park)",
+    valueAED: 29_000_000,
+    durationMonths: 60,
+    publishedAt: "2026-09-10",
+    deadline: "2026-11-09",
+    summary: "Five-year maintenance of central chiller plants and thermal storage.",
+    scope: ["Chiller and thermal storage maintenance.", "Energy performance reporting."],
+    eligibility: ["met", "met", "met", "met", "partial"],
+    aiNarrative: "Good hard FM fit with an existing hospitality client.",
+    status: "Lead in D365",
+    note: "Existing client; recommend prequalifying.",
+    submitted: 25,
+    decided: 23,
+    comment: "Prequalified. Pushed to D365.",
+    lead: ["LEAD-47630", 22],
+  },
+  {
+    id: "TND-2026-0286",
+    title: "Lift and escalator modernisation",
+    buyer: "Emirates Civic Facilities Authority",
+    buyerType: "Government",
+    sourceId: "src-shj",
+    sourceRef: "ECFA-LFT-26-05",
+    category: "Hard FM / MEP",
+    emirate: "Ras Al Khaimah",
+    location: "Ras Al Khaimah (12 buildings)",
+    valueAED: 8_200_000,
+    durationMonths: 18,
+    publishedAt: "2026-09-28",
+    deadline: "2026-11-15",
+    summary: "Replacement and modernisation of lifts and escalators in 12 civic buildings.",
+    scope: ["Lift replacement works.", "Escalator modernisation."],
+    eligibility: ["partial", "met", "unmet", "met", "met"],
+    aiNarrative: "Specialist OEM works outside AGFS self-delivered scope, in a secondary market.",
+    status: "No-bid",
+    note: "Specialist OEM scope; propose rejecting.",
+    submitted: 14,
+    decided: 13,
+    comment: "Agree. OEM-led works, not for us.",
+  },
+  // Faisal Karim · Soft Services
+  {
+    id: "TND-2026-0312",
+    title: "Landscaping and irrigation for a public park network",
+    buyer: "Dubai Parks Directorate",
+    buyerType: "Government",
+    sourceId: "src-dxb",
+    sourceRef: "DPD-LND-26-17",
+    category: "Landscaping",
+    emirate: "Dubai",
+    location: "Dubai (14 parks)",
+    valueAED: 16_500_000,
+    durationMonths: 36,
+    publishedAt: "2026-10-15",
+    deadline: "2026-12-10",
+    summary: "Soft landscaping, irrigation maintenance and playground inspections for 14 parks.",
+    scope: ["Soft landscaping and tree care.", "Irrigation network maintenance.", "Playground safety inspections."],
+    eligibility: ["met", "met", "met", "met", "partial"],
+    aiNarrative: "Acceptable fit in a priority market; landscaping usually sits inside IFM bundles.",
+    status: "Awaiting HoD",
+    note: "Recommend prequalifying; can be delivered with our landscaping subcontractor.",
+    submitted: 2,
+  },
+  {
+    id: "TND-2026-0305",
+    title: "Housekeeping for a serviced-apartment portfolio",
+    buyer: "Oasis Retail Holdings",
+    buyerType: "Private client",
+    sourceId: "src-inbox",
+    sourceRef: "ORH-HK-1026",
+    category: "Cleaning & Hygiene",
+    emirate: "Dubai",
+    location: "Dubai (3 buildings, 640 units)",
+    valueAED: 14_200_000,
+    durationMonths: 24,
+    publishedAt: "2026-10-10",
+    deadline: "2026-11-25",
+    summary: "Daily housekeeping and laundry coordination for serviced apartments.",
+    scope: ["Daily housekeeping of units.", "Public-area cleaning.", "Laundry coordination."],
+    eligibility: ["met", "met", "met", "met", "met"],
+    aiNarrative: "Strong soft-services fit with an existing client.",
+    status: "Changes Requested",
+    note: "Existing client; recommend prequalifying.",
+    submitted: 5,
+    decided: 3,
+    comment: "Please add staffing ratios before I prequalify.",
+  },
+  {
+    id: "TND-2026-0293",
+    title: "Cleaning services for a government office campus",
+    buyer: "Federal Services Authority",
+    buyerType: "Government",
+    sourceId: "src-fed",
+    sourceRef: "FSA-CLN-26-08",
+    category: "Cleaning & Hygiene",
+    emirate: "Abu Dhabi",
+    location: "Abu Dhabi (office campus)",
+    valueAED: 19_800_000,
+    durationMonths: 36,
+    publishedAt: "2026-09-18",
+    deadline: "2026-11-14",
+    summary: "Office cleaning, washroom hygiene and window cleaning for a government campus.",
+    scope: ["Daily office cleaning.", "Washroom hygiene.", "Quarterly facade cleaning."],
+    eligibility: ["met", "met", "met", "met", "met"],
+    aiNarrative: "Excellent soft-services fit in a priority market.",
+    status: "Lead in D365",
+    note: "All criteria met.",
+    submitted: 18,
+    decided: 16,
+    comment: "Prequalified. Pushed to D365.",
+    lead: ["LEAD-48004", 15],
+  },
+  // Nadia Yousef · Security & Specialist
+  {
+    id: "TND-2026-0314",
+    title: "Security guarding for a business park",
+    buyer: "Skyline Estates",
+    buyerType: "Private client",
+    sourceId: "src-meridian",
+    sourceRef: "SKY-SEC-1012",
+    category: "Security Services",
+    emirate: "Dubai",
+    location: "Dubai (business park, 9 buildings)",
+    valueAED: 11_400_000,
+    durationMonths: 36,
+    publishedAt: "2026-10-16",
+    deadline: "2026-12-06",
+    summary: "Manned guarding, access control and CCTV monitoring for a business park.",
+    scope: ["24/7 manned guarding.", "Access control and visitor management.", "CCTV monitoring."],
+    eligibility: ["partial", "met", "met", "met", "met"],
+    aiNarrative: "Not a self-delivered AGFS service; viable only with a licensed security partner.",
+    status: "Awaiting HoD",
+    note: "Existing FM client; propose prequalifying with our licensed partner.",
+    submitted: 1,
+  },
+  {
+    id: "TND-2026-0298",
+    title: "Security and access control for a hospital",
+    buyer: "Northern Emirates Health Services",
+    buyerType: "Government",
+    sourceId: "src-shj",
+    sourceRef: "NEHS-SEC-26-04",
+    category: "Security Services",
+    emirate: "Sharjah",
+    location: "Sharjah (hospital campus)",
+    valueAED: 13_600_000,
+    durationMonths: 36,
+    publishedAt: "2026-10-04",
+    deadline: "2026-11-26",
+    summary: "Guarding and access control for a hospital, bundled with our existing FM contract.",
+    scope: ["Manned guarding.", "Access control for clinical areas."],
+    eligibility: ["partial", "met", "met", "met", "met"],
+    aiNarrative: "Security is partner-delivered; the bundle with our existing FM contract strengthens the case.",
+    status: "Prequalified",
+    note: "Bundles with our FM contract at the same hospital.",
+    submitted: 4,
+    decided: 2,
+    comment: "Prequalified with the licensed partner named.",
+  },
+  {
+    id: "TND-2026-0288",
+    title: "Security services for a retail destination",
+    buyer: "Oasis Retail Holdings",
+    buyerType: "Private client",
+    sourceId: "src-inbox",
+    sourceRef: "ORH-SEC-0826",
+    category: "Security Services",
+    emirate: "Dubai",
+    location: "Dubai (2 malls)",
+    valueAED: 15_000_000,
+    durationMonths: 36,
+    publishedAt: "2026-09-08",
+    deadline: "2026-11-11",
+    summary: "Guarding and control-room services for two malls, alongside our soft-services contract.",
+    scope: ["Manned guarding.", "Control-room operations."],
+    eligibility: ["partial", "met", "met", "met", "met"],
+    aiNarrative: "Partner-delivered service with an existing client.",
+    status: "Lead in D365",
+    note: "Existing client; partner agreed.",
+    submitted: 22,
+    decided: 20,
+    comment: "Prequalified. Pushed to D365.",
+    lead: ["LEAD-47912", 19],
+  },
+  {
+    id: "TND-2026-0282",
+    title: "Cash-in-transit services for a bank branch network",
+    buyer: "Emirates Commercial Bank",
+    buyerType: "Private client",
+    sourceId: "src-meridian",
+    sourceRef: "ECB-CIT-26-02",
+    category: "Security Services",
+    emirate: "Abu Dhabi",
+    location: "Abu Dhabi (34 branches)",
+    valueAED: 21_000_000,
+    durationMonths: 36,
+    publishedAt: "2026-09-22",
+    deadline: "2026-11-19",
+    summary: "Armoured cash-in-transit and ATM replenishment services.",
+    scope: ["Armoured cash collection.", "ATM replenishment."],
+    eligibility: ["unmet", "met", "met", "met", "partial"],
+    aiNarrative: "Cash-in-transit needs a specialist licence AGFS does not hold.",
+    status: "Not qualified",
+    note: "Large value; checking appetite with a partner.",
+    submitted: 11,
+    decided: 9,
+    comment: "Not qualified. Cash-in-transit is outside our services.",
+  },
+];
+
 function seedAudit(): AuditEvent[] {
   const e = (h: number, actor: string, role: AuditEvent["role"], action: string, tenderId?: string, detail?: string): AuditEvent => ({
-    id: `seed-${h}-${action}`,
+    id: `seed-${h}-${action}-${tenderId ?? ""}`,
     at: hoursAgo(h),
     actor,
     role,
@@ -797,17 +1274,36 @@ function seedAudit(): AuditEvent[] {
     tenderId,
     detail,
   });
+  const routed = ROUTED_CASES.flatMap((c) => {
+    const hod = serviceLineFor(c.category).hod;
+    const proposed = c.status === "No-bid" ? "Reject" : "Prequalify";
+    const out = [e(c.submitted * 24, PEOPLE.analyst.name, "analyst", `Submitted for approval (proposed: ${proposed})`, c.id)];
+    if (c.decided !== undefined) {
+      const action =
+        c.status === "Changes Requested"
+          ? "Requested changes"
+          : c.status === "Not qualified"
+            ? "Marked not qualified"
+            : c.status === "No-bid"
+              ? "Confirmed rejection"
+              : "Prequalified";
+      out.push(e(c.decided * 24, hod, "approver", action, c.id, c.comment));
+    }
+    if (c.lead) out.push(e(c.lead[1] * 24, hod, "approver", `Pushed to D365 as lead ${c.lead[0]}`, c.id));
+    return out;
+  });
   return [
+    ...routed,
     e(20, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
     e(26, AGENT_NAME, "agent", "Daily scan completed", undefined, "4 sources scanned, 2 new tenders, 4 duplicates skipped (simulated)."),
     e(24 * 5, "Nadia Yousef", "approver", "Requested changes", "TND-2026-0333", "Please name the partner and confirm margin split."),
     e(24 * 6, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0333"),
     e(24 * 27 - 3, "Faisal Karim", "approver", "Confirmed rejection", "TND-2026-0340", "Agree, not relevant for AGFS."),
-    e(24 * 29, "Faisal Karim", "approver", "Prequalified", "TND-2026-0351", "Relevant for the IFM service line."),
-  ];
+    e(24 * 29, "Faisal Karim", "approver", "Prequalified", "TND-2026-0351", "Relevant for Soft Services."),
+  ].sort((x, y) => y.at.localeCompare(x.at));
 }
 
-export const DEMO_VERSION = 14;
+export const DEMO_VERSION = 15;
 
 export function seedState(): DemoState {
   return {

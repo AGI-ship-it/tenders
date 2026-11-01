@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Check, CloudUpload, ExternalLink, MessageSquareWarning, Send, ShieldCheck, X } from "lucide-react";
+import { Check, CloudUpload, ExternalLink, MessageSquareWarning, Send, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { decide, setRole, submitForApproval, useDemo } from "@/lib/store";
-import { actingPerson, hodLabel, serviceLineFor } from "@/lib/mock-data";
+import { decide, submitForApproval, useDemo } from "@/lib/store";
+import { hodLabel, serviceLineFor } from "@/lib/mock-data";
 import { aiPrequalified } from "@/lib/scoring";
 import { formatDateTime } from "@/lib/format";
 import type { ApprovalRecord, Tender } from "@/lib/types";
@@ -51,14 +51,20 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
             <Send /> {tender.status === "Changes Requested" ? "Resubmit to HoD" : "Submit for prequalification"}
           </Button>
         ) : (
-          <RoleHint text="Only the Bid Analyst can submit for prequalification." target="analyst" />
+          <RoleHint text={`Waiting for the Bid Analyst to submit this prospect for prequalification.`} />
         ))}
 
       {tender.status === "Awaiting HoD" &&
         (role === "approver" && demo.hodLine === line.id ? (
           <DecisionActions tender={tender} />
         ) : (
-          <RoleHint text={`Waiting for ${line.hod} to prequalify.`} target="approver" hodLine={line.id} />
+          <RoleHint
+            text={
+              role === "approver"
+                ? `Routed to ${line.hod}, HoD ${line.name}. Only they can prequalify it.`
+                : `Waiting for ${line.hod} to prequalify.`
+            }
+          />
         ))}
 
       {tender.status === "Prequalified" && <PushToD365Button tender={tender} />}
@@ -92,24 +98,8 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
   );
 }
 
-function RoleHint({ text, target, hodLine }: { text: string; target: "analyst" | "approver"; hodLine?: string }) {
-  const person = actingPerson(target, hodLine);
-  return (
-    <div className="rounded-lg border border-dashed bg-muted/30 p-3 text-sm">
-      <p className="text-muted-foreground">{text}</p>
-      <Button
-        variant="outline"
-        size="sm"
-        className="mt-2.5 w-full"
-        onClick={() => {
-          setRole(target, hodLine);
-          toast.success(`Now acting as ${person.name}`, { description: "Demo role switched." });
-        }}
-      >
-        <ArrowLeftRight /> Switch to {target === "approver" ? person.name : "Bid Analyst"}
-      </Button>
-    </div>
-  );
+function RoleHint({ text }: { text: string }) {
+  return <p className="rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">{text}</p>;
 }
 
 function ApprovalSummary({ approval: a }: { approval: ApprovalRecord }) {
@@ -217,7 +207,7 @@ function SubmitDialog({
   function submit() {
     submitForApproval(tender.id, { proposed, note: note.trim() });
     toast.success(`Routed to ${line.hod}`, {
-      description: `HoD, ${line.name}. Switch to ${line.hod} to continue the demo.`,
+      description: `HoD, ${line.name}. Log out and sign in as ${line.hod} to continue the demo.`,
     });
     onOpenChange(false);
     setNote("");

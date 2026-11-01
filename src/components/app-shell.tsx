@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChevronDown, FlaskConical, LogOut, Radar, RotateCcw, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronDown, FlaskConical, LogOut, Radar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useDemo, resetDemo, setRole } from "@/lib/store";
-import { SERVICE_LINES, actingPerson } from "@/lib/mock-data";
+import { useDemo, resetDemo } from "@/lib/store";
+import { actingPerson } from "@/lib/mock-data";
 import { STEP_ROUTES, StepTabs } from "@/components/step-tabs";
 import type { Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -111,7 +109,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
   const person = actingPerson(role, hodLine);
-  const value = role === "analyst" ? "analyst" : `hod:${hodLine ?? SERVICE_LINES[0].id}`;
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
 
@@ -139,36 +136,10 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Switch demo role</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={value}
-              onValueChange={(v) => {
-                const line = v.startsWith("hod:") ? v.slice(4) : undefined;
-                setRole(line ? "approver" : "analyst", line);
-                toast.success(`Now acting as ${actingPerson(line ? "approver" : "analyst", line).name}`, {
-                  description: line
-                    ? "You see the prospects routed to you and can prequalify them."
-                    : "You see every routed prospect in the register and submit for prequalification.",
-                });
-              }}
-            >
-              <DropdownMenuRadioItem value="analyst">
-                <UserRound className="size-4 text-purple-800" />
-                <div>
-                  <div className="text-sm">Bid Analyst</div>
-                  <div className="text-xs text-muted-foreground">Reviews AI output, submits for prequalification</div>
-                </div>
-              </DropdownMenuRadioItem>
-              {SERVICE_LINES.map((l) => (
-                <DropdownMenuRadioItem key={l.id} value={`hod:${l.id}`}>
-                  <ShieldCheck className="size-4 text-pink-700" />
-                  <div>
-                    <div className="text-sm">{l.hod}</div>
-                    <div className="text-xs text-muted-foreground">HoD, {l.name}</div>
-                  </div>
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
+            <DropdownMenuLabel>
+              <div className="text-sm font-medium text-foreground">{person.name}</div>
+              <div className="text-xs font-normal text-muted-foreground">{person.title}</div>
+            </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setResetOpen(true)}>
@@ -177,7 +148,7 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
           <DropdownMenuItem
             onClick={() => {
               router.push("/");
-              toast("Logged out", { description: "Your demo progress is saved in this browser." });
+              toast("Logged out", { description: "Sign in as the Bid Analyst or an HoD. Your demo progress is saved in this browser." });
             }}
           >
             <LogOut /> Log out
