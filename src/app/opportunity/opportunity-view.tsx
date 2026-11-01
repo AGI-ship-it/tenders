@@ -71,12 +71,22 @@ export function TenderDetail() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
-      <button
-        onClick={goBack}
-        className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-card px-3 py-1.5 text-sm font-medium text-foreground/80 shadow-soft transition-colors hover:text-primary"
-      >
-        <ArrowLeft className="size-4" /> {back.label}
-      </button>
+      <div className="flex shrink-0 items-center justify-between gap-3">
+        <button
+          onClick={goBack}
+          className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-sm font-medium text-foreground/80 shadow-soft transition-colors hover:text-primary"
+        >
+          <ArrowLeft className="size-4" /> {back.label}
+        </button>
+        <button
+          onClick={goBack}
+          aria-label={`Close and return to ${back.label}`}
+          title="Close"
+          className="grid size-9 place-items-center rounded-full bg-card text-foreground/80 shadow-soft transition-colors hover:text-primary"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
 
       {/* One section: header, key facts, then the assessment beside the prequalification rail. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-card shadow-soft sm:rounded-3xl">
@@ -88,12 +98,7 @@ export function TenderDetail() {
             {tender.category} · {tender.buyer} · {tender.emirate}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <PortalLinkButton tender={tender} source={source} />
-          <Button variant="ghost" size="icon-lg" aria-label={`Close and return to ${back.label}`} title="Close" onClick={goBack}>
-            <X />
-          </Button>
-        </div>
+        <PortalLinkButton tender={tender} source={source} />
       </div>
 
       {/* Key facts, as listed on the portal */}
