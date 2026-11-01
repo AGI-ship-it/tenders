@@ -325,7 +325,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       <div className="space-y-6">
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">By source</h3>
+        <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">By source</h3>
         <ul className="divide-y rounded-xl bg-card ring-1 ring-border">
           {runs.map(({ source, outcome }) => (
             <li key={source.id} className="flex items-center gap-2.5 px-3 py-2.5 text-sm">
@@ -351,7 +351,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
       </div>
 
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+        <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">
           {newTenders.length ? "New prospects" : "Prospects found"}
         </h3>
         {list.length === 0 ? (
