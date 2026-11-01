@@ -179,7 +179,7 @@
   --accent-foreground: var(--ag-purple-800);
   --destructive: oklch(0.577 0.2 27);
   /* Soft, slightly warm hairlines so cards and lists separate without boxing content in. */
-  --border: color-mix(in oklch, color-mix(in oklch, var(--ag-grey-400) 30%, var(--ag-grey-200)) 92%, var(--ink-muted));
+  --border: color-mix(in oklch, color-mix(in oklch, var(--ag-grey-400) 20%, var(--ag-grey-200)) 96%, var(--ink-muted));
   --input: var(--ag-grey-400);
   --ring: var(--ag-purple-600);
   --magenta: var(--ag-magenta-600);
