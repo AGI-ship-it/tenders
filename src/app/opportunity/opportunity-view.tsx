@@ -268,7 +268,7 @@ function Fact({ label, value, sub, tone }: { label: string; value: React.ReactNo
 /** Tabs as chips: sized to their labels, the selected one filled with the soft purple tint. */
 const LINE_TAB =
   // The base line-tab styles force a transparent active background, so the fill is set at the same specificity.
-  "h-8 flex-none rounded-full px-3.5 ring-1 ring-transparent ring-inset after:hidden hover:bg-muted data-active:font-semibold data-active:text-primary data-active:ring-primary/20 group-data-[variant=line]/tabs-list:data-active:bg-secondary dark:group-data-[variant=line]/tabs-list:data-active:bg-secondary dark:data-active:text-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none";
+  "h-8 flex-none rounded-full border-0 px-3.5 after:hidden hover:bg-muted data-active:font-semibold data-active:text-primary group-data-[variant=line]/tabs-list:data-active:bg-secondary dark:group-data-[variant=line]/tabs-list:data-active:bg-secondary dark:data-active:text-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none";
 
 function PrequalCard({ tender }: { tender: Tender }) {
   const yes = aiPrequalified(tender);
