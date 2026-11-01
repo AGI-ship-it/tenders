@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { CheckCircle2, ListOrdered, Radar } from "lucide-react";
 import { useDemo } from "@/lib/store";
 import { isActive } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
@@ -48,7 +47,6 @@ export function StepTabs() {
       href: "/sources",
       title: "Scan Portal",
       action: "Connect & scan",
-      icon: Radar,
       value: connected,
       unit: "sources",
     },
@@ -56,7 +54,6 @@ export function StepTabs() {
       href: "/pipeline",
       title: "Prospects",
       action: "Review & send for approval",
-      icon: ListOrdered,
       value: open,
       unit: "open",
     },
@@ -64,7 +61,6 @@ export function StepTabs() {
       href: "/approvals",
       title: "Approval Center",
       action: "HoD approves → D365",
-      icon: CheckCircle2,
       value: awaiting,
       unit: "awaiting",
     },
@@ -92,8 +88,7 @@ export function StepTabs() {
                 >
                   {!on && <DashedRing />}
                   <span className="flex flex-col items-center leading-none">
-                    <s.icon className={cn("mb-1.5 size-5", on ? "text-primary-foreground/80" : "text-muted-foreground")} />
-                    <span className="tabular text-4xl font-semibold tracking-tight">{s.value}</span>
+                    <span className="tabular text-[2.75rem] font-semibold tracking-tight">{s.value}</span>
                     <span className={cn("mt-1 text-[10px] font-medium uppercase", on ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {s.unit}
                     </span>
