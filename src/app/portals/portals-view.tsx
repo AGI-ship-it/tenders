@@ -42,8 +42,8 @@ export function PortalsView() {
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-5 py-3 font-medium">Portal</th>
-                <th className="px-3 py-3 font-medium">
+                <th className="px-5 py-3 font-semibold">Portal</th>
+                <th className="px-3 py-3 font-semibold">
                   <span className="inline-flex items-center gap-1.5">
                     Access
                     <Tooltip>
@@ -73,10 +73,10 @@ export function PortalsView() {
                     </Tooltip>
                   </span>
                 </th>
-                <th className="px-3 py-3 font-medium">Method · schedule</th>
-                <th className="px-3 py-3 font-medium">Scanning for</th>
-                <th className="px-3 py-3 font-medium">Last scan</th>
-                <th className="px-3 py-3 font-medium">Status</th>
+                <th className="px-3 py-3 font-semibold">Method · schedule</th>
+                <th className="px-3 py-3 font-semibold">Scanning for</th>
+                <th className="px-3 py-3 font-semibold">Last scan</th>
+                <th className="px-3 py-3 font-semibold">Status</th>
                 <th className="w-12 px-3 py-3" />
               </tr>
             </thead>
