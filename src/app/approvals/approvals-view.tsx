@@ -316,7 +316,7 @@ function Register({
               {notSubmitted} not yet submitted →
             </Link>
           ) : null}
-          <Button variant="outline" onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
+          <Button onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
             <Download /> Export CSV
           </Button>
         </TableHeader>
