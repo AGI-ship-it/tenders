@@ -88,7 +88,15 @@ export function StepTabs() {
                 >
                   {!on && <DashedRing />}
                   <span className="flex flex-col items-center leading-none">
-                    <span className="tabular text-[2.25rem] font-extrabold tracking-tight">{s.value}</span>
+                    <span
+                      className={cn(
+                        "tabular text-[2.25rem] font-extrabold tracking-tight",
+                        // The last step (awaiting HoD) is the one to act on, so its count stands out in dark purple.
+                        !on && i === steps.length - 1 && "text-primary",
+                      )}
+                    >
+                      {s.value}
+                    </span>
                     <span className={cn("mt-1 text-[10px] font-medium uppercase", on ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {s.unit}
                     </span>
