@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, fitScore, isActive, priorityScore, prospectStatus } from "@/lib/scoring";
+import { Download } from "lucide-react";
+import { downloadCsv } from "@/lib/csv";
+import { Button } from "@/components/ui/button";
 import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
 import { serviceLineFor } from "@/lib/mock-data";
 import type { Tender } from "@/lib/types";
@@ -88,6 +91,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft">
         <TableHeader title="All prospects" count={rows.length} search={q} onSearch={setQ}>
           <FilterMenu facets={facets} filters={filters} />
+          <Button onClick={() => exportCsv(rows)} disabled={!rows.length}>
+            <Download /> Export CSV
+          </Button>
         </TableHeader>
         <FilterChips facets={facets} filters={filters} />
         <div className="min-h-0 flex-1 overflow-auto">
@@ -171,7 +177,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
 }
 
 /** Who holds the decision on a prospect, or who made it and when. */
-function Decision({ tender: t }: { tender: Tender }) {
+function decisionOf(t: Tender): { main: string; sub?: string; tone: string } {
   const hod = serviceLineFor(t.category).hod;
   const a = t.approval;
   const decidedOn = a?.decidedAt ? formatDate(a.decidedAt) : undefined;
@@ -203,10 +209,27 @@ function Decision({ tender: t }: { tender: Tender }) {
       main = a?.decidedBy ? `Rejected by ${a.decidedBy}` : "Rejected";
       sub = decidedOn;
   }
+  return { main, sub, tone };
+}
+
+function Decision({ tender }: { tender: Tender }) {
+  const { main, sub, tone } = decisionOf(tender);
   return (
     <>
       <div className={cn("text-sm", tone)}>{main}</div>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </>
   );
+}
+
+function exportCsv(tenders: Tender[]) {
+  const header = ["Tender ID", "Title", "Buyer", "Service", "Emirate", "Value (AED)", "Value disclosed", "Due date", "AI pre-qualification", "Status", "Decision", "Decision detail"];
+  const rows = tenders.map((t) => {
+    const d = decisionOf(t);
+    return [
+      t.id, t.title, t.buyer, t.category, t.emirate, t.valueAED, t.valueDisclosed === false ? "No (AI estimate)" : "Yes",
+      t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No", prospectStatus(t.status), d.main, d.sub ?? "",
+    ];
+  });
+  downloadCsv("agfs-prospects-pipeline.csv", header, rows, "Pipeline exported");
 }

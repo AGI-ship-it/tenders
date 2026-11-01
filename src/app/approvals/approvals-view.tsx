@@ -7,6 +7,7 @@ import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, prospectStatus } from "@/lib/scoring";
+import { downloadCsv } from "@/lib/csv";
 import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -237,16 +238,7 @@ function exportCsv(tenders: Tender[]) {
     t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "", t.lead?.leadId ?? "",
     t.approval?.submittedBy ?? "", t.approval?.note ?? "",
   ]);
-  const csv = [header, ...rows]
-    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-    .join("\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "agfs-prequalification-register.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-  toast.success("Register exported", { description: `${tenders.length} prospects · CSV` });
+  downloadCsv("agfs-prequalification-register.csv", header, rows, "Register exported");
 }
 
 /** Pending first (soonest due date first), then decided (most recent first). */
