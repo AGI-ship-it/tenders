@@ -4,6 +4,11 @@ export function formatAED(value: number, compact = true) {
   return `AED ${m >= 100 ? m.toFixed(0) : m.toFixed(1)}M`;
 }
 
+/** Whole days elapsed since a timestamp. */
+export function daysSince(iso: string) {
+  return (Date.now() - new Date(iso).getTime()) / 86_400_000;
+}
+
 export function daysUntil(dateISO: string) {
   const end = new Date(`${dateISO}T23:59:59`);
   return Math.ceil((end.getTime() - Date.now()) / 86_400_000);
