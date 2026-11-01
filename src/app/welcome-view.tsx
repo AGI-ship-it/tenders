@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, ChevronDown, Radar, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowRight, ChevronDown, KeyRound, Loader2, Mail, Radar, ShieldCheck, UserRound } from "lucide-react";
 import { completeOnboarding, requestScan, setRole, useDemo } from "@/lib/store";
 import { PEOPLE, SERVICE_LINES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,11 @@ export function WelcomeView() {
   const router = useRouter();
   const analyst = PEOPLE.analyst;
   const [hodLine, setHodLine] = useState(demo?.hodLine ?? SERVICE_LINES[0].id);
+  // Arriving from the "Review & decide" link in an HoD's email.
+  const params = useSearchParams();
+  const emailLine = params.get("from") === "email" ? SERVICE_LINES.find((l) => l.id === params.get("line")) : undefined;
+  const emailProspect = demo.tenders.find((t) => t.id === params.get("prospect"));
+  const [otherAccount, setOtherAccount] = useState(false);
 
   function signInAnalyst() {
     setRole("analyst");
@@ -31,6 +36,21 @@ export function WelcomeView() {
   function signInHod() {
     setRole("approver", hodLine);
     router.push("/approvals");
+  }
+
+  if (emailLine && !otherAccount) {
+    return (
+      <EmailSignIn
+        line={emailLine}
+        prospectTitle={emailProspect?.title}
+        onSignedIn={() => {
+          setRole("approver", emailLine.id);
+          const focus = emailProspect ? `&focus=${encodeURIComponent(emailProspect.id)}` : "";
+          router.push(`/approvals?via=email${focus}`);
+        }}
+        onOtherAccount={() => setOtherAccount(true)}
+      />
+    );
   }
 
   return (
@@ -121,6 +141,83 @@ function LoginCard({
       <Button size="xl" onClick={onSignIn} className="mt-4 w-full">
         Sign in <ArrowRight />
       </Button>
+    </div>
+  );
+}
+
+/**
+ * Sign-in reached from the HoD's email: the account is already known, so it is one step with the work account.
+ * The context strip reminds them why they are here.
+ */
+function EmailSignIn({
+  line,
+  prospectTitle,
+  onSignedIn,
+  onOtherAccount,
+}: {
+  line: (typeof SERVICE_LINES)[number];
+  prospectTitle?: string;
+  onSignedIn: () => void;
+  onOtherAccount: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  function signIn() {
+    setBusy(true);
+    // Simulated single sign-on.
+    window.setTimeout(onSignedIn, 1100);
+  }
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex w-full max-w-sm flex-col items-center text-center"
+      >
+        <div className="grid size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md">
+          <Radar className="size-6" />
+        </div>
+        <h1 className="mt-6 text-2xl font-bold tracking-tight text-primary">Sign in to review</h1>
+        <p className="mt-2 text-sm text-muted-foreground">AGFS Tender Intelligence</p>
+
+        {prospectTitle && (
+          <div className="mt-6 flex w-full items-start gap-3 rounded-xl bg-secondary px-4 py-3 text-left text-sm text-secondary-foreground">
+            <Mail className="mt-0.5 size-4 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-xs font-semibold">From your email</div>
+              <div className="truncate font-medium text-foreground">{prospectTitle}</div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 w-full rounded-2xl bg-card p-5 text-left shadow-soft">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-pink-100 text-sm font-semibold text-pink-800">
+              {line.initials}
+            </span>
+            <div className="min-w-0 leading-tight">
+              <div className="font-bold">{line.hod}</div>
+              <div className="text-xs text-muted-foreground">HoD, {line.name}</div>
+            </div>
+          </div>
+          <Button size="xl" className="mt-5 w-full" onClick={signIn} disabled={busy}>
+            {busy ? (
+              <>
+                <Loader2 className="animate-spin" /> Signing in…
+              </>
+            ) : (
+              <>
+                <KeyRound /> Sign in with work account
+              </>
+            )}
+          </Button>
+          <p className="mt-3 text-center text-xs text-muted-foreground">Single sign-on · no separate password</p>
+        </div>
+
+        <button onClick={onOtherAccount} className="mt-5 text-xs font-medium text-muted-foreground hover:text-primary hover:underline">
+          Not {line.hod.split(" ")[0]}? Use another account
+        </button>
+      </motion.div>
     </div>
   );
 }

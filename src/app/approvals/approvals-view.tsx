@@ -69,6 +69,8 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
   // Arrived by clicking "Review & decide" in the HoD's email.
   const [fromEmail, setFromEmail] = useState(params.get("via") === "email");
+  // The prospect the email was about, highlighted in the HoD's list.
+  const [focusId, setFocusId] = useState<string | null>(params.get("focus"));
   // Follow new deep links even when this page is already open.
   const linkKey = params.toString();
   const [seenLink, setSeenLink] = useState(linkKey);
@@ -76,6 +78,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
     setSeenLink(linkKey);
     setSelectedId(params.get("id"));
     if (params.get("via") === "email") setFromEmail(true);
+    if (params.get("focus")) setFocusId(params.get("focus"));
   }
 
   const isHod = demo.role === "approver";
@@ -85,6 +88,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const notSubmitted = demo.tenders.filter((t) => ["New", "Under Review"].includes(t.status)).length;
   const myAwaiting = mine.filter((t) => t.status === "Awaiting HoD").length;
   const selected = demo.tenders.find((t) => t.id === selectedId);
+  const focused = demo.tenders.find((t) => t.id === focusId);
   // The HoD's queue, soonest due first, for "Review next".
   const myQueue = mine.filter((t) => t.status === "Awaiting HoD").sort((a, b) => a.deadline.localeCompare(b.deadline));
 
@@ -120,18 +124,34 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
             )}
           </div>
           {fromEmail && (
-            <div className="flex shrink-0 items-center gap-3 rounded-xl bg-secondary px-4 py-2.5 text-sm text-secondary-foreground">
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex shrink-0 flex-wrap items-center gap-3 rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground"
+            >
               <Mail className="size-4 shrink-0" />
               <span className="min-w-0 flex-1">
-                <span className="font-semibold">Opened from email.</span> Signed in as {myLine.hod} with your work account.
+                <span className="font-semibold">Welcome, {myLine.hod.split(" ")[0]}.</span>{" "}
+                {focused ? (
+                  <>
+                    You opened <span className="font-semibold text-foreground">{focused.title}</span> from your email.
+                  </>
+                ) : (
+                  "Signed in from your email."
+                )}
               </span>
+              {focused && focused.status === "Awaiting HoD" && (
+                <Button size="lg" onClick={() => open(focused.id)}>
+                  Review now <ArrowRight />
+                </Button>
+              )}
               <button onClick={() => setFromEmail(false)} aria-label="Dismiss" className="rounded-md p-1 hover:bg-primary/10">
                 <X className="size-4" />
               </button>
-            </div>
+            </motion.div>
           )}
           {mine.length ? (
-            <Register tenders={mine} onOpen={open} selectedId={selectedId} showHod={false} />
+            <Register tenders={mine} onOpen={open} selectedId={selectedId} highlightId={fromEmail ? focusId : null} showHod={false} />
           ) : (
             <EmptyState text="Nothing has been routed to you yet." />
           )}
@@ -333,12 +353,15 @@ function Register({
   tenders,
   onOpen,
   selectedId,
+  highlightId,
   showHod,
   notSubmitted,
 }: {
   tenders: Tender[];
   onOpen: (id: string) => void;
   selectedId: string | null;
+  /** A row to draw attention to, e.g. the prospect an email linked to. */
+  highlightId?: string | null;
   showHod: boolean;
   /** Prospects not yet sent to an HoD; linked to the Pipeline in the toolbar. */
   notSubmitted?: number;
@@ -437,6 +460,7 @@ function Register({
                       "cursor-pointer align-top transition-colors hover:bg-muted/30",
                       t.status === "Awaiting HoD" && "bg-amber-50/40",
                       selectedId === t.id && "bg-primary/5",
+                      highlightId === t.id && "bg-secondary shadow-[inset_3px_0_0_var(--primary)]",
                     )}
                   >
 <td className="py-3 pr-3 pl-5 whitespace-nowrap">

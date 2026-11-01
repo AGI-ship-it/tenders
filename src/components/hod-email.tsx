@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
-import { Archive, FileText, Forward, Grip, Inbox, KeyRound, Loader2, Reply, ReplyAll, Search, Send, Sparkles, SquarePen, Trash2, X } from "lucide-react";
-import { setRole, useDemo } from "@/lib/store";
+import { Archive, FileText, Forward, Grip, Inbox, Reply, ReplyAll, Search, Send, Sparkles, SquarePen, Trash2, X } from "lucide-react";
+import { useDemo } from "@/lib/store";
 import { aiPrequalified } from "@/lib/scoring";
 import { formatDate, formatDateTime, formatTime, formatValue, isToday } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -52,7 +51,6 @@ export function HodEmailHost() {
   const id = usePreviewId();
   const demo = useDemo();
   const router = useRouter();
-  const [signingIn, setSigningIn] = useState(false);
   const tender = demo?.tenders.find((t) => t.id === id);
   if (!demo) return null;
 
@@ -65,16 +63,11 @@ export function HodEmailHost() {
   const dueBy = new Date(new Date(sentAt).getTime() + DECISION_SLA_DAYS * 86_400_000).toISOString();
   const when = (iso: string) => (isToday(iso) ? formatTime(iso) : formatDate(iso));
 
+  /** The email link opens the app's sign-in; after signing in the HoD lands on their Approval Center. */
   function reviewAndDecide() {
     if (!tender || !line) return;
-    setSigningIn(true);
-    // Simulated single sign-on, then straight to the prospect.
-    window.setTimeout(() => {
-      setRole("approver", line.id);
-      closeHodEmail();
-      setSigningIn(false);
-      router.push(`/approvals?id=${encodeURIComponent(tender.id)}&via=email`);
-    }, 1400);
+    closeHodEmail();
+    router.push(`/?from=email&line=${line.id}&prospect=${encodeURIComponent(tender.id)}`);
   }
 
   const inbox: InboxItem[] = tender
@@ -106,7 +99,7 @@ export function HodEmailHost() {
     <Dialog
       open={!!tender}
       onOpenChange={(o) => {
-        if (!o && !signingIn) closeHodEmail();
+        if (!o) closeHodEmail();
       }}
     >
       <DialogContent
@@ -129,7 +122,6 @@ export function HodEmailHost() {
           <button
             aria-label="Close email"
             onClick={closeHodEmail}
-            disabled={signingIn}
             className="grid size-8 place-items-center rounded hover:bg-white/15"
           >
             <X className="size-4" />
@@ -268,8 +260,7 @@ export function HodEmailHost() {
                     <div className="text-center">
                       <button
                         onClick={reviewAndDecide}
-                        disabled={signingIn}
-                        className="inline-flex h-11 items-center rounded-md bg-[#410266] px-8 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+                                    className="inline-flex h-11 items-center rounded-md bg-[#410266] px-8 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
                       >
                         Review & decide
                       </button>
@@ -292,23 +283,6 @@ export function HodEmailHost() {
               </div>
             </div>
 
-            {/* Simulated single sign-on */}
-            {signingIn && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="absolute inset-0 grid place-items-center bg-white/95 backdrop-blur-sm"
-              >
-                <div className="flex flex-col items-center text-center text-zinc-900">
-                  <span className="grid size-12 place-items-center rounded-full bg-[#410266]/10 text-[#410266]">
-                    <KeyRound className="size-6" />
-                  </span>
-                  <div className="mt-4 font-bold">Signing in as {line.hod}</div>
-                  <div className="mt-1 text-sm text-zinc-500">AGFS work account · single sign-on</div>
-                  <Loader2 className="mt-4 size-5 animate-spin text-[#410266]" />
-                </div>
-              </motion.div>
-            )}
           </div>
         )}
       </DialogContent>
