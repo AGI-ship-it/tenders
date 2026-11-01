@@ -9,7 +9,7 @@ import { cn } from "cn"
  * Variants (emphasis, high to low):
  *   default      Primary action on a surface. One per area (Export CSV, Prequalify, Open on portal).
  *   success      Positive decision that completes a workflow step (HoD prequalifies).
- *   secondary    Tinted purple with a soft purple border: supporting actions such as Filter.
+ *   secondary    White with a purple border and purple label: supporting actions such as Filter.
  *   outline      Neutral bordered: Cancel, Sources, Request changes.
  *   ghost        No chrome: icon buttons, Back, low-priority actions.
  *   destructive  Soft red: reject or remove.
@@ -29,7 +29,7 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground shadow-sm shadow-primary/15 hover:bg-primary/85",
         success: "bg-emerald-700 text-white shadow-sm hover:bg-emerald-700/90",
         secondary:
-          "border-primary/30 bg-secondary text-secondary-foreground hover:border-primary/50 hover:bg-primary/10 aria-expanded:border-primary/50 aria-expanded:bg-primary/10",
+          "border-primary/40 bg-card text-primary hover:border-primary/60 hover:bg-secondary aria-expanded:border-primary/60 aria-expanded:bg-secondary",
         outline:
           "border-input bg-card text-foreground hover:bg-muted aria-expanded:bg-muted dark:bg-input/20 dark:hover:bg-input/40",
         ghost:
