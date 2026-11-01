@@ -23,20 +23,39 @@ export interface Facet {
 
 /** Selected options per facet; an empty or missing list means no filter. */
 export type FilterValues = Record<string, string[]>;
+/** Per facet: keep rows matching the selection ("is") or exclude them ("not"). */
+export type FilterOp = "is" | "not";
 
 export function useTableFilters() {
   const [values, setValues] = useState<FilterValues>({});
+  const [ops, setOps] = useState<Record<string, FilterOp>>({});
   const toggle = (key: string, option: string) =>
     setValues((v) => {
       const cur = v[key] ?? [];
       return { ...v, [key]: cur.includes(option) ? cur.filter((o) => o !== option) : [...cur, option] };
     });
   const remove = (key: string, option: string) => setValues((v) => ({ ...v, [key]: (v[key] ?? []).filter((o) => o !== option) }));
-  const clear = () => setValues({});
-  /** Whether a row's value passes the filter for this facet. */
-  const matches = useCallback((key: string, value: string) => !values[key]?.length || values[key].includes(value), [values]);
+  /** Drop a whole condition, e.g. every Service value. */
+  const removeFacet = (key: string) => {
+    setValues((v) => ({ ...v, [key]: [] }));
+    setOps((o) => ({ ...o, [key]: "is" }));
+  };
+  const setOp = (key: string, op: FilterOp) => setOps((o) => ({ ...o, [key]: op }));
+  const clear = () => {
+    setValues({});
+    setOps({});
+  };
+  /** Whether a row's value passes the condition for this facet. */
+  const matches = useCallback(
+    (key: string, value: string) => {
+      const sel = values[key];
+      if (!sel?.length) return true;
+      return (ops[key] ?? "is") === "is" ? sel.includes(value) : !sel.includes(value);
+    },
+    [values, ops],
+  );
   const count = Object.values(values).reduce((n, l) => n + l.length, 0);
-  return { values, toggle, remove, clear, matches, count, key: JSON.stringify(values) };
+  return { values, ops, toggle, remove, removeFacet, setOp, clear, matches, count, key: JSON.stringify([values, ops]) };
 }
 
 /** The heading row of a table card: title and count on the left, search, filters and actions on the right. */
@@ -193,31 +212,74 @@ function CheckboxOption({ checked, onToggle, children }: { checked: boolean; onT
   );
 }
 
-/** Applied filters as removable chips, with Clear all. Renders nothing when no filter is set. */
+/**
+ * Applied filters as conditions, like Linear: one chip per field reading
+ * "Service | is any of | Cleaning & Hygiene +1 | ×". The operator and the values are each editable in place.
+ */
 export function FilterChips({ facets, filters }: { facets: Facet[]; filters: ReturnType<typeof useTableFilters> }) {
   if (!filters.count) return null;
+  const active = facets.filter((f) => filters.values[f.key]?.length);
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2.5 sm:px-5">
-      {facets.flatMap((f) =>
-        (filters.values[f.key] ?? []).map((o) => (
-          <span
-            key={`${f.key}:${o}`}
-            className="inline-flex h-7 items-center gap-1.5 rounded-full bg-primary/8 pr-1.5 pl-3 text-xs text-primary ring-1 ring-primary/20 ring-inset"
-          >
-            <span className="text-muted-foreground">{f.label}:</span>
-            <span className="font-medium">{o}</span>
-            <button
-              aria-label={`Remove ${f.label}: ${o}`}
-              onClick={() => filters.remove(f.key, o)}
-              className="grid size-5 place-items-center rounded-full hover:bg-primary/15"
-            >
-              <X className="size-3" />
-            </button>
-          </span>
-        )),
-      )}
+      {active.map((f) => (
+        <FilterCondition key={f.key} facet={f} filters={filters} />
+      ))}
       <button onClick={filters.clear} className="ml-1 text-xs font-medium text-muted-foreground hover:text-primary">
         Clear all
+      </button>
+    </div>
+  );
+}
+
+const SEGMENT = "flex h-full items-center px-2.5 transition-colors hover:bg-muted aria-expanded:bg-muted";
+
+function FilterCondition({ facet: f, filters }: { facet: Facet; filters: ReturnType<typeof useTableFilters> }) {
+  const selected = filters.values[f.key] ?? [];
+  const op = filters.ops[f.key] ?? "is";
+  const many = selected.length > 1;
+  const opLabel = (o: FilterOp) => (o === "is" ? (many ? "is any of" : "is") : many ? "is none of" : "is not");
+  return (
+    <div className="inline-flex h-8 items-stretch divide-x overflow-hidden rounded-lg border bg-card text-xs shadow-xs">
+      <span className="flex items-center px-2.5 font-semibold text-foreground">{f.label}</span>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<button className={cn(SEGMENT, "text-muted-foreground")} aria-label={`${f.label} condition`} />}>
+          {opLabel(op)}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-40 rounded-xl p-1.5">
+          {(["is", "not"] as const).map((o) => (
+            <DropdownMenuItem key={o} className={cn(ITEM, o === op && "font-semibold text-primary")} onClick={() => filters.setOp(f.key, o)}>
+              {opLabel(o)}
+              {o === op && <Check className="ml-auto" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<button className={cn(SEGMENT, "gap-1 font-semibold text-primary")} aria-label={`${f.label} values`} />}>
+          <span className="max-w-48 truncate">{selected[0]}</span>
+          {many && <span className="tabular font-medium text-muted-foreground">+{selected.length - 1}</span>}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-60 rounded-xl p-1.5">
+          <div className={cn(MENU_LABEL, "px-2.5 pt-1 pb-1.5")}>{f.label}</div>
+          <div className="space-y-0.5">
+            {f.options.map((o) => (
+              <CheckboxOption key={o} checked={selected.includes(o)} onToggle={() => filters.toggle(f.key, o)}>
+                {o}
+              </CheckboxOption>
+            ))}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <button
+        aria-label={`Remove ${f.label} filter`}
+        title="Remove filter"
+        onClick={() => filters.removeFacet(f.key)}
+        className="grid w-8 place-items-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <X className="size-3.5" />
       </button>
     </div>
   );
