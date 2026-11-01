@@ -240,7 +240,8 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    /* Manrope reads light at 400, so body text defaults to 500. */
+    @apply font-sans font-medium;
   }
   /* Main content canvas: plain light grey. */
   .app-canvas {
