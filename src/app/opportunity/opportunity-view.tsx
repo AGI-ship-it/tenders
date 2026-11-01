@@ -136,7 +136,7 @@ export function TenderDetail() {
 
           {/* Details, progressively disclosed */}
           <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col">
-            <TabsList variant="line" className="w-full shrink-0 justify-start gap-2 overflow-x-auto border-b px-3 group-data-horizontal/tabs:h-12 sm:gap-4 sm:px-5">
+            <TabsList variant="line" className="w-full shrink-0 justify-start gap-1.5 overflow-x-auto border-b px-3 group-data-horizontal/tabs:h-14 sm:px-5">
               <TabsTrigger className={LINE_TAB} value="summary">Summary</TabsTrigger>
               <TabsTrigger className={LINE_TAB} value="eligibility">
                 Eligibility
@@ -265,9 +265,9 @@ function Fact({ label, value, sub, tone }: { label: string; value: React.ReactNo
   );
 }
 
-/** Tabs sized to their labels, aligned left, with the magenta underline used on the step circles. */
+/** Tabs as chips: sized to their labels, the selected one filled with the soft purple tint. */
 const LINE_TAB =
-  "flex-none px-1 data-active:font-semibold data-active:text-primary dark:data-active:text-primary after:rounded-full after:bg-magenta group-data-horizontal/tabs:after:h-[3px]";
+  "h-8 flex-none rounded-full px-3.5 ring-1 ring-transparent ring-inset after:hidden hover:bg-muted data-active:bg-secondary data-active:font-semibold data-active:text-primary data-active:ring-primary/20 dark:data-active:bg-secondary dark:data-active:text-primary";
 
 function PrequalCard({ tender }: { tender: Tender }) {
   const yes = aiPrequalified(tender);
