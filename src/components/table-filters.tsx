@@ -1,19 +1,16 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { ListFilter, Search, X } from "lucide-react";
+import { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { Check, ChevronLeft, ChevronRight, ListFilter, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -83,7 +80,10 @@ export function TableHeader({
   );
 }
 
-/** "Filter" button opening one submenu per facet, each with checkable options. */
+/**
+ * "Filter" button. The menu lists the fields; choosing one replaces the list
+ * with that field's options as checkboxes, with Back to return.
+ */
 export function FilterMenu({
   facets,
   filters,
@@ -91,8 +91,11 @@ export function FilterMenu({
   facets: Facet[];
   filters: ReturnType<typeof useTableFilters>;
 }) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const facet = facets.find((f) => f.key === openKey);
+  const selected = facet ? (filters.values[facet.key] ?? []) : [];
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => !open && setOpenKey(null)}>
       <DropdownMenuTrigger render={<Button variant="outline" className={cn(filters.count > 0 && "border-primary/40 text-primary")} />}>
         <ListFilter /> Filter
         {filters.count > 0 && (
@@ -101,39 +104,82 @@ export function FilterMenu({
           </span>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
-        {facets.map((f) => {
-          const n = filters.values[f.key]?.length ?? 0;
-          return (
-            <DropdownMenuSub key={f.key}>
-              <DropdownMenuSubTrigger>
-                {f.label}
-                {n > 0 && <span className="tabular ml-auto text-xs font-semibold text-primary">{n}</span>}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="min-w-48">
-                {f.options.map((o) => (
-                  <DropdownMenuCheckboxItem
-                    key={o}
-                    checked={filters.values[f.key]?.includes(o) ?? false}
-                    onCheckedChange={() => filters.toggle(f.key, o)}
-                  >
-                    {o}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          );
-        })}
-        {filters.count > 0 && (
+      <DropdownMenuContent align="end" className="w-60">
+        {facet ? (
           <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={filters.clear}>
-              <X /> Clear all filters
+            <DropdownMenuItem closeOnClick={false} onClick={() => setOpenKey(null)} className="text-muted-foreground">
+              <ChevronLeft /> Back
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <div className="flex items-center justify-between px-1.5 py-1">
+              <span className="text-xs font-medium text-muted-foreground">{facet.label}</span>
+              {selected.length > 0 && (
+                <button
+                  onClick={() => selected.forEach((o) => filters.remove(facet.key, o))}
+                  className="text-xs text-muted-foreground hover:text-primary"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {facet.options.map((o) => (
+              <CheckboxOption key={o} checked={selected.includes(o)} onToggle={() => filters.toggle(facet.key, o)}>
+                {o}
+              </CheckboxOption>
+            ))}
+          </>
+        ) : (
+          <>
+            {facets.map((f) => {
+              const n = filters.values[f.key]?.length ?? 0;
+              return (
+                <DropdownMenuItem key={f.key} closeOnClick={false} onClick={() => setOpenKey(f.key)}>
+                  {f.label}
+                  <span className="ml-auto flex items-center gap-1">
+                    {n > 0 && (
+                      <span className="tabular grid h-4 min-w-4 place-items-center rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary">
+                        {n}
+                      </span>
+                    )}
+                    <ChevronRight className="text-muted-foreground" />
+                  </span>
+                </DropdownMenuItem>
+              );
+            })}
+            {filters.count > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={filters.clear}>
+                  <X /> Clear all filters
+                </DropdownMenuItem>
+              </>
+            )}
           </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** A menu option with a visible checkbox on the left; the menu stays open when toggled. */
+function CheckboxOption({ checked, onToggle, children }: { checked: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <MenuPrimitive.CheckboxItem
+      checked={checked}
+      onCheckedChange={onToggle}
+      closeOnClick={false}
+      className="flex cursor-default items-center gap-2 rounded-md px-1.5 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground"
+    >
+      <span
+        className={cn(
+          "grid size-4 shrink-0 place-items-center rounded-[4px] border transition-colors",
+          checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card",
+        )}
+      >
+        {checked && <Check className="size-3" strokeWidth={3} />}
+      </span>
+      {children}
+    </MenuPrimitive.CheckboxItem>
   );
 }
 
