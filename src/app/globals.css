@@ -178,7 +178,8 @@
   --accent: color-mix(in oklch, var(--ag-purple-200) 14%, white);
   --accent-foreground: var(--ag-purple-800);
   --destructive: oklch(0.577 0.2 27);
-  --border: color-mix(in oklch, var(--ag-grey-400) 55%, var(--ag-grey-200));
+  /* Soft, slightly warm hairlines so cards and lists separate without boxing content in. */
+  --border: color-mix(in oklch, color-mix(in oklch, var(--ag-grey-400) 30%, var(--ag-grey-200)) 92%, var(--ink-muted));
   --input: var(--ag-grey-400);
   --ring: var(--ag-purple-600);
   --magenta: var(--ag-magenta-600);
@@ -218,7 +219,7 @@
   --accent: color-mix(in oklch, #6c5594 18%, var(--tint-base));
   --accent-foreground: #bfb0d6;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: rgb(255 255 255 / 0.09);
+  --border: rgb(255 255 255 / 0.07);
   --input: rgb(255 255 255 / 0.16);
   --ring: #6c5594;
   --magenta: var(--ag-magenta-400);
