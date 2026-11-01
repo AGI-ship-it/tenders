@@ -87,9 +87,10 @@ export function StepTabs() {
                     "relative grid size-28 place-items-center rounded-full transition-all duration-300",
                     on
                       ? "bg-primary text-primary-foreground shadow-soft-lg ring-8 ring-primary/10"
-                      : "border-2 border-dashed border-zinc-300 bg-card text-foreground shadow-soft group-hover:-translate-y-0.5 group-hover:border-primary/50",
+                      : "bg-card text-foreground shadow-soft group-hover:-translate-y-0.5",
                   )}
                 >
+                  {!on && <DashedRing />}
                   <span className="flex flex-col items-center leading-none">
                     <s.icon className={cn("mb-1.5 size-5", on ? "text-primary-foreground/80" : "text-muted-foreground")} />
                     <span className="tabular text-4xl font-semibold tracking-tight">{s.value}</span>
@@ -114,5 +115,22 @@ export function StepTabs() {
         })}
       </ol>
     </div>
+  );
+}
+
+/**
+ * Evenly spaced, round-capped dashes drawn as SVG (CSS dashed borders bunch
+ * up unevenly on circles). Turns primary and drifts slowly on hover.
+ */
+function DashedRing() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 100 100"
+      className="pointer-events-none absolute inset-0 size-full text-zinc-300 transition-colors duration-300 group-hover:animate-[spin_24s_linear_infinite] group-hover:text-primary/60 motion-reduce:group-hover:animate-none"
+    >
+      {/* pathLength 120 with a 1.4 + 2.6 pattern gives exactly 30 dashes, so the seam is invisible. */}
+      <circle cx="50" cy="50" r="48.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" pathLength={120} strokeDasharray="1.4 2.6" />
+    </svg>
   );
 }
