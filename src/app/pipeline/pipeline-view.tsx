@@ -113,7 +113,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                   Due date
                 </SortTh>
                 <SortTh sortKey="fit" sort={sort} onSort={toggleSort}>
-                  Pre-qual recommendation
+                  AI pre-qual
                 </SortTh>
                 <SortTh sortKey="status" sort={sort} onSort={toggleSort}>
                   Status

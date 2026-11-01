@@ -46,7 +46,7 @@ export function SortTh<K extends string>({
       <button
         onClick={() => onSort(sortKey)}
         className={cn(
-          "inline-flex items-center gap-1 rounded transition-colors hover:text-foreground",
+          "inline-flex items-center gap-1 rounded text-left whitespace-nowrap transition-colors hover:text-foreground",
           active && "text-foreground",
           className?.includes("text-right") && "flex-row-reverse",
         )}
