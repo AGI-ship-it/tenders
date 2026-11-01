@@ -274,7 +274,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
   return (
     <div className="shrink-0 border-b p-4 sm:p-6">
       <div className="flex gap-4">
-        <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+        <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <Sparkles className="size-5" />
         </div>
         <div className="min-w-0 flex-1 space-y-1.5">
