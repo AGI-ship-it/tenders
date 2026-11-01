@@ -342,7 +342,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
               <span className="shrink-0 text-xs text-muted-foreground">
                 {outcome === "scanned"
                   ? found(source.id)
-                    ? `${found(source.id)} new`
+                    ? <><span className="tabular font-bold text-foreground">{found(source.id)}</span> new</>
                     : "No new"
                   : outcome === "sign-in"
                     ? "Skipped · sign-in needed"

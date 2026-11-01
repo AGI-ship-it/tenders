@@ -55,7 +55,7 @@ function PipelineStat({
       <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
         <Icon className="size-3.5" />
       </span>
-      <span className="tabular text-lg font-semibold tracking-tight">{value}</span>
+      <span className="tabular text-lg font-extrabold tracking-tight">{value}</span>
       <span className="text-xs leading-tight text-muted-foreground">{label}</span>
     </div>
   );
