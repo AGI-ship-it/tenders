@@ -239,7 +239,7 @@ function FilterCondition({ facet: f, filters }: { facet: Facet; filters: ReturnT
   const many = selected.length > 1;
   const opLabel = (o: FilterOp) => (o === "is" ? (many ? "is any of" : "is") : many ? "is none of" : "is not");
   return (
-    <div className="inline-flex h-8 items-stretch divide-x divide-primary/15 overflow-hidden rounded-full border border-primary/20 bg-secondary text-xs">
+    <div className="inline-flex h-8 items-stretch divide-x divide-primary/15 overflow-hidden rounded-full bg-secondary text-xs">
       <span className="flex items-center pr-2.5 pl-3.5 font-semibold text-foreground">{f.label}</span>
 
       <DropdownMenu>
