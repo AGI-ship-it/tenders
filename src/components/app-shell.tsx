@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, FlaskConical, LogOut, Moon, Radar, RotateCcw } from "lucide-react";
+import { ChevronDown, FlaskConical, LogOut, Monitor, Moon, Radar, RotateCcw, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,6 @@ import type { Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -131,6 +130,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+const APPEARANCE = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
+] as const;
+
+/** Light / Dark / System as a segmented control, the way Claude offers it. The menu stays open while switching. */
+function AppearanceSwitch() {
+  const { theme = "light", setTheme } = useTheme();
+  return (
+    <div className="flex items-center justify-between gap-3 px-2.5 py-1.5">
+      <span className="text-sm">Appearance</span>
+      <div role="radiogroup" aria-label="Appearance" className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
+        {APPEARANCE.map(({ value, label, icon: Icon }) => {
+          const on = theme === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              aria-label={label}
+              title={label}
+              onClick={() => setTheme(value)}
+              className={cn(
+                "grid h-7 w-8 place-items-center rounded-md transition-colors",
+                on ? "bg-card text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** Row spacing shared with the table Filter menu. */
 const MENU_ITEM = "gap-2.5 rounded-lg px-2.5 py-2 text-sm";
 
@@ -138,7 +175,6 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
   const person = actingPerson(role, hodLine);
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <>
@@ -171,13 +207,7 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
           </DropdownMenuGroup>
           <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
           <div className="space-y-0.5">
-            <DropdownMenuCheckboxItem
-              className={cn(MENU_ITEM, "pr-9")}
-              checked={resolvedTheme === "dark"}
-              onCheckedChange={(on) => setTheme(on ? "dark" : "light")}
-            >
-              <Moon /> Dark mode
-            </DropdownMenuCheckboxItem>
+            <AppearanceSwitch />
             <DropdownMenuItem className={MENU_ITEM} onClick={() => setResetOpen(true)}>
               <RotateCcw /> Reset demo
             </DropdownMenuItem>

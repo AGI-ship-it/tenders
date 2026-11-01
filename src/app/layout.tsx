@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="agfs-theme" disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="agfs-theme" disableTransitionOnChange>
           <TooltipProvider delay={200}>
             <Suspense>
               <AppShell>{children}</AppShell>
