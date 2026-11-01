@@ -279,7 +279,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
         </div>
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold">AI pre-qualification</span>
+            <span className="text-base font-bold">AI pre-qualification</span>
             <PrequalBadge yes={yes} />
             <Tooltip>
               <TooltipTrigger render={<button aria-label="About the AI pre-qualification" className="text-muted-foreground hover:text-foreground" />}>
