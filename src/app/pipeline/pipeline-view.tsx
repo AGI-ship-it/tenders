@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, fitScore, isActive, priorityScore, prospectStatus } from "@/lib/scoring";
 import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
@@ -12,10 +12,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ALL, FilterSelect } from "@/components/filter-select";
+import { SortTh, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 
-type SortKey = "priority" | "id" | "value" | "deadline" | "fit";
+type SortKey = "priority" | "id" | "value" | "deadline" | "fit" | "status";
 
 
 export function PipelineView({ embedded = false }: { embedded?: boolean }) {
@@ -25,7 +26,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   const [category, setCategory] = useState(ALL);
   const [emirate, setEmirate] = useState(ALL);
   const [status, setStatus] = useState(ALL);
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "priority", dir: "desc" });
+  const [sort, setSort] = useState<SortState<SortKey>>({ key: "priority", dir: "desc" });
 
   const options = useMemo(() => {
     const uniq = (f: (t: Tender) => string) => [ALL, ...Array.from(new Set(demo.tenders.map(f))).sort()];
@@ -47,6 +48,8 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
           return t.deadline;
         case "id":
           return t.id;
+        case "status":
+          return PROSPECT_STATUSES.indexOf(prospectStatus(t.status));
       }
     };
     return demo.tenders
@@ -71,7 +74,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   const filtered = q || category !== ALL || emirate !== ALL || status !== ALL;
 
   function toggleSort(key: SortKey) {
-    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "deadline" || key === "id" ? "asc" : "desc" }));
+    setSort((s) => nextSort(s, key, ["deadline", "id", "status"]));
   }
 
   return (
@@ -113,19 +116,21 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
-                <Th sortKey="priority" sort={sort} onSort={toggleSort} className="pl-5">
+                <SortTh sortKey="priority" sort={sort} onSort={toggleSort} className="pl-5">
                   Prospect
-                </Th>
-                <Th sortKey="value" sort={sort} onSort={toggleSort} className="text-right">
+                </SortTh>
+                <SortTh sortKey="value" sort={sort} onSort={toggleSort} className="text-right">
                   Value
-                </Th>
-                <Th sortKey="deadline" sort={sort} onSort={toggleSort}>
+                </SortTh>
+                <SortTh sortKey="deadline" sort={sort} onSort={toggleSort}>
                   Due date
-                </Th>
-                <Th sortKey="fit" sort={sort} onSort={toggleSort}>
+                </SortTh>
+                <SortTh sortKey="fit" sort={sort} onSort={toggleSort}>
                   Pre-qual recommendation
-                </Th>
-                <th className="px-3 py-3 font-medium">Status</th>
+                </SortTh>
+                <SortTh sortKey="status" sort={sort} onSort={toggleSort}>
+                  Status
+                </SortTh>
                 <th className="px-3 py-3 pr-5 font-medium">Decision</th>
               </tr>
             </thead>
@@ -225,37 +230,5 @@ function Decision({ tender: t }: { tender: Tender }) {
       <div className={cn("text-sm", tone)}>{main}</div>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </>
-  );
-}
-
-function Th({
-  children,
-  sortKey,
-  sort,
-  onSort,
-  className,
-}: {
-  children: React.ReactNode;
-  sortKey: SortKey;
-  sort: { key: SortKey; dir: "asc" | "desc" };
-  onSort: (k: SortKey) => void;
-  className?: string;
-}) {
-  const active = sort.key === sortKey;
-  const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
-  return (
-    <th className={cn("px-3 py-3 font-medium", className)}>
-      <button
-        onClick={() => onSort(sortKey)}
-        className={cn(
-          "inline-flex items-center gap-1 rounded transition-colors hover:text-foreground",
-          active && "text-foreground",
-          className?.includes("text-right") && "flex-row-reverse",
-        )}
-      >
-        {children}
-        <Icon className={cn("size-3", !active && "opacity-40")} />
-      </button>
-    </th>
   );
 }

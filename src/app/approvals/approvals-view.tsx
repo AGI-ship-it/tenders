@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ALL, FilterSelect } from "@/components/filter-select";
+import { SortTh, compareBy, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { DecisionPanel } from "@/components/decision-panel";
 import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
@@ -21,6 +22,35 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
 const PENDING: Tender["status"][] = ["Awaiting HoD", "Changes Requested"];
+
+/** "order" is the default: pending first by due date, then the latest decisions. */
+type RegisterSort = "order" | "value" | "deadline" | "ai" | "hod" | "status" | "lead";
+
+const STATUS_RANK: Tender["status"][] = [
+  "Awaiting HoD",
+  "Changes Requested",
+  "Prequalified",
+  "Lead in D365",
+  "Not qualified",
+  "No-bid",
+];
+
+function registerValue(t: Tender, key: Exclude<RegisterSort, "order">): number | string {
+  switch (key) {
+    case "value":
+      return t.valueAED;
+    case "deadline":
+      return t.deadline;
+    case "ai":
+      return aiPrequalified(t) ? 1 : 0;
+    case "hod":
+      return serviceLineFor(t.category).hod;
+    case "status":
+      return STATUS_RANK.indexOf(t.status);
+    case "lead":
+      return t.lead?.leadId ?? "";
+  }
+}
 
 export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const demo = useDemo()!;
@@ -248,6 +278,8 @@ function Register({
   const [status, setStatus] = useState(ALL);
   const [hod, setHod] = useState(ALL);
   const [ai, setAi] = useState(ALL);
+  const [sort, setSort] = useState<SortState<RegisterSort>>({ key: "order", dir: "asc" });
+  const onSort = (key: RegisterSort) => setSort((s) => nextSort(s, key, ["order", "deadline", "hod", "status"]));
 
   const needle = q.trim().toLowerCase();
   const sorted = tenders
@@ -258,9 +290,14 @@ function Register({
         (ai === ALL || (ai === "Yes") === aiPrequalified(t)) &&
         (!needle || `${t.id} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
     )
-    .sort(registerOrder);
+    .sort((a, b) => {
+      if (sort.key === "order") return sort.dir === "asc" ? registerOrder(a, b) : registerOrder(b, a);
+      const key = sort.key;
+      // Ties fall back to the default order so the list stays stable.
+      return compareBy<Tender>(sort.dir, (t) => registerValue(t, key))(a, b) || registerOrder(a, b);
+    });
   const filtered = Boolean(needle) || status !== ALL || hod !== ALL || ai !== ALL;
-  const pager = usePagination(sorted, `${q}|${status}|${hod}|${ai}`);
+  const pager = usePagination(sorted, `${q}|${status}|${hod}|${ai}|${sort.key}|${sort.dir}`);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -309,13 +346,29 @@ function Register({
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-5 py-3 font-medium">Prospect</th>
-                <th className="px-3 py-3 text-right font-medium">Value</th>
-                <th className="px-3 py-3 font-medium">Due date</th>
-                <th className="px-3 py-3 font-medium">AI pre-qual</th>
-                {showHod && <th className="px-3 py-3 font-medium">HoD</th>}
-                <th className="px-3 py-3 font-medium">Status</th>
-                <th className="px-3 py-3 pr-5 font-medium">D365 lead</th>
+                <SortTh sortKey="order" sort={sort} onSort={onSort} className="pl-5">
+                  Prospect
+                </SortTh>
+                <SortTh sortKey="value" sort={sort} onSort={onSort} className="text-right">
+                  Value
+                </SortTh>
+                <SortTh sortKey="deadline" sort={sort} onSort={onSort}>
+                  Due date
+                </SortTh>
+                <SortTh sortKey="ai" sort={sort} onSort={onSort}>
+                  AI pre-qual
+                </SortTh>
+                {showHod && (
+                  <SortTh sortKey="hod" sort={sort} onSort={onSort}>
+                    HoD
+                  </SortTh>
+                )}
+                <SortTh sortKey="status" sort={sort} onSort={onSort}>
+                  Status
+                </SortTh>
+                <SortTh sortKey="lead" sort={sort} onSort={onSort} className="pr-5">
+                  D365 lead
+                </SortTh>
               </tr>
             </thead>
             <tbody className="divide-y">
