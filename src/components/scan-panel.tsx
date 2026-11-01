@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 import { clearPendingScan, completeScan, isScannable, peekPendingScan, useDemo } from "@/lib/store";
 import { PEOPLE } from "@/lib/mock-data";
 import type { LastScan, Source, Tender } from "@/lib/types";
-import { fitScore, recommendation } from "@/lib/scoring";
+import { aiPrequalified, fitScore } from "@/lib/scoring";
 import { formatDateTime, formatTime, formatValue, isToday } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { RecommendationBadge, ScoreBar } from "@/components/shared";
+import { PrequalBadge } from "@/components/shared";
 
 interface Step {
   key: string;
@@ -383,9 +383,8 @@ function ScanResults({ scan }: { scan: LastScan }) {
                     <span className="truncate text-xs text-muted-foreground">
                       {t.buyer} · {formatValue(t)}
                     </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <ScoreBar score={fitScore(t)} />
-                      <RecommendationBadge rec={recommendation(t)} />
+                    <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                      Pre-qual <PrequalBadge yes={aiPrequalified(t)} />
                     </span>
                   </div>
                 </Link>

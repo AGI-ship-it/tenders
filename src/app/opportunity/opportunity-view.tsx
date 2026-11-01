@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { motion } from "motion/react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -15,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { markUnderReview, useDemo } from "@/lib/store";
-import { fitScore, recommendation } from "@/lib/scoring";
+import { aiPrequalified, criterionStatus, fitBreakdown } from "@/lib/scoring";
 import { daysUntil, formatAED, formatDate, timeAgo } from "@/lib/format";
 import type { CheckStatus, Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -24,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecisionPanel } from "@/components/decision-panel";
 import { PortalLinkButton } from "@/components/portal-link";
-import { RecommendationBadge } from "@/components/shared";
+import { PrequalBadge } from "@/components/shared";
 
 /** Where "back" returns to, keyed by the ?from= the opening link passed. */
 const BACK: Record<string, { href: string; label: string }> = {
@@ -65,8 +64,6 @@ export function TenderDetail() {
     );
   }
 
-  const fit = fitScore(tender);
-  const rec = recommendation(tender);
   const days = daysUntil(tender.deadline);
   const history = demo.audit.filter((e) => e.tenderId === tender.id);
 
@@ -111,11 +108,8 @@ export function TenderDetail() {
 
       <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[1fr_340px]">
         <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto pr-1">
-          {/* AI pre-qualification score with the AI recommendation beside it */}
-          <div className="grid shrink-0 gap-4 md:grid-cols-[220px_1fr]">
-            <ScoreCard score={fit} />
-            <RecommendationCard tender={tender} />
-          </div>
+          {/* AI pre-qualification: Yes / No and why */}
+          <PrequalCard tender={tender} />
 
           {/* Details, progressively disclosed */}
           <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col rounded-xl bg-card p-1 shadow-soft">
@@ -233,7 +227,6 @@ export function TenderDetail() {
         </aside>
       </div>
 
-      <span className="sr-only">AI recommendation: {rec}</span>
     </div>
   );
 }
@@ -248,51 +241,46 @@ function Fact({ label, value, sub, tone }: { label: string; value: React.ReactNo
   );
 }
 
-function ScoreCard({ score }: { score: number }) {
+function PrequalCard({ tender }: { tender: Tender }) {
+  const yes = aiPrequalified(tender);
   return (
-    <div className="rounded-xl bg-primary p-4 text-primary-foreground shadow-soft">
-      <div className="flex items-center gap-1 text-xs font-medium text-primary-foreground/80">
-        AI pre-qualification
-        <Tooltip>
-          <TooltipTrigger render={<button aria-label="About the pre-qualification score" className="text-primary-foreground/70 hover:text-primary-foreground" />}>
-            <CircleHelp className="size-3.5" />
-          </TooltipTrigger>
-          <TooltipContent className="max-w-60">
-            Weighted score across four AGFS criteria: service coverage, geography, contract size and ISO certifications.
-            The HoD validates it before anything goes to D365.
-          </TooltipContent>
-        </Tooltip>
-      </div>
-      <div className="tabular mt-2 text-3xl font-semibold tracking-tight">
-        {score}
-        <span className="text-sm font-normal text-primary-foreground/70">/100</span>
-      </div>
-      <div className="mt-2 h-1 overflow-hidden rounded-full bg-primary-foreground/20">
-        <motion.div
-          className="h-full rounded-full bg-primary-foreground"
-          initial={{ width: 0 }}
-          animate={{ width: `${score}%` }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function RecommendationCard({ tender }: { tender: Tender }) {
-  return (
-    <div className="flex gap-4 rounded-xl bg-card p-5 shadow-soft">
-      <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-        <Sparkles className="size-5" />
-      </div>
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold">AI recommendation</span>
-          <RecommendationBadge rec={recommendation(tender)} />
-          <span className="text-xs text-muted-foreground">· HoD validates before upload to D365</span>
+    <div className="shrink-0 rounded-xl bg-card p-5 shadow-soft">
+      <div className="flex gap-4">
+        <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <Sparkles className="size-5" />
         </div>
-        <p className="text-sm leading-relaxed text-foreground/80">{tender.aiNarrative}</p>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold">AI pre-qualification</span>
+            <PrequalBadge yes={yes} />
+            <Tooltip>
+              <TooltipTrigger render={<button aria-label="About the AI pre-qualification" className="text-muted-foreground hover:text-foreground" />}>
+                <CircleHelp className="size-3.5" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-64">
+                The AI checks the prospect against four AGFS criteria and recommends Yes or No. It does not decide
+                whether to bid. The HoD validates it before anything goes to D365.
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="text-sm leading-relaxed text-foreground/80">{tender.aiNarrative}</p>
+        </div>
       </div>
+
+      <h3 className="mt-4 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        Why {yes ? "Yes" : "No"}
+      </h3>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {fitBreakdown(tender).map((c) => (
+          <li key={c.key} className="flex gap-2.5 rounded-lg bg-muted/40 px-3 py-2.5">
+            <CheckIcon status={criterionStatus(c)} />
+            <div className="min-w-0 text-sm">
+              <div className="font-medium">{c.label}</div>
+              <div className="text-xs text-muted-foreground">{c.rationale}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

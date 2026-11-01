@@ -7,14 +7,14 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
-import { aiPrequalified, fitScore, recommendation } from "@/lib/scoring";
+import { aiPrequalified } from "@/lib/scoring";
 import { formatValue, formatDateTime, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DecisionPanel } from "@/components/decision-panel";
-import { PageHeader, RecommendationBadge, ScoreBar, StatusBadge } from "@/components/shared";
+import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
@@ -152,8 +152,8 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                       >
                         <div className="line-clamp-2 text-sm font-medium">{t.title}</div>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <span className="tabular text-xs text-muted-foreground">
-                            {formatValue(t)} · <span className="font-semibold text-foreground">{fitScore(t)}</span>/100
+                          <span className="tabular flex items-center gap-1.5 text-xs text-muted-foreground">
+                            {formatValue(t)} · AI <PrequalBadge yes={aiPrequalified(t)} className="px-2 py-0 text-[11px]" />
                           </span>
                           <StatusBadge status={t.status} />
                         </div>
@@ -203,15 +203,11 @@ function ReviewPanel({ tender }: { tender: Tender }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-[110px_1fr] gap-3">
-        <div className="rounded-lg bg-primary px-3 py-2.5 text-primary-foreground">
-          <div className="text-[11px] text-primary-foreground/80">Pre-qual score</div>
-          <div className="tabular mt-0.5 text-2xl font-semibold">{fitScore(tender)}</div>
+      <div className="space-y-1.5 rounded-lg bg-secondary/60 p-3.5">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
         </div>
-        <div className="flex items-start gap-3 rounded-lg bg-secondary/60 p-3.5">
-          <RecommendationBadge rec={recommendation(tender)} className="mt-0.5" />
-          <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
-        </div>
+        <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
       </div>
 
       <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
@@ -285,11 +281,11 @@ function aiOutcome(t: Tender): "Bid" | "No-bid" {
 
 function exportCsv(tenders: Tender[]) {
   const header = [
-    "Tender ID", "Title", "Buyer", "Value (AED)", "Pre-qualification score", "AI recommendation", "Proposed",
+    "Tender ID", "Title", "Buyer", "Value (AED)", "AI pre-qualification", "Proposed",
     "Final decision", "Decided by", "Decided at", "Rationale", "Submitted by", "Submission note",
   ];
   const rows = tenders.map((t) => [
-    t.id, t.title, t.buyer, t.valueAED, fitScore(t), recommendation(t), t.approval?.proposed ?? "",
+    t.id, t.title, t.buyer, t.valueAED, aiPrequalified(t) ? "Yes" : "No", t.approval?.proposed ?? "",
     t.status, t.approval?.decidedBy ?? "", t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "",
     t.approval?.submittedBy ?? "", t.approval?.note ?? "",
   ]);
@@ -322,7 +318,6 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
           <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-5 py-3 font-medium">Tender</th>
-              <th className="px-3 py-3 font-medium">Pre-qual score</th>
               <th className="px-3 py-3 font-medium">AI said</th>
               <th className="px-3 py-3 font-medium">Decision</th>
               <th className="px-3 py-3 font-medium">HoD</th>
@@ -344,10 +339,7 @@ function DecisionRegister({ tenders }: { tenders: Tender[] }) {
                     </Link>
                   </td>
                   <td className="px-3 py-3">
-                    <ScoreBar score={fitScore(t)} />
-                  </td>
-                  <td className="px-3 py-3">
-                    <RecommendationBadge rec={recommendation(t)} />
+                    <PrequalBadge yes={aiPrequalified(t)} />
                   </td>
                   <td className="px-3 py-3">
                     <StatusBadge status={t.status} />

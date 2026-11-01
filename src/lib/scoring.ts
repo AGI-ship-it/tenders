@@ -1,4 +1,4 @@
-import type { Category, Emirate, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
+import type { Category, CheckStatus, Emirate, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
 
 // AGFS pre-qualification criteria (illustrative, to be refined with Commercial).
 // The pre-qualification score is a transparent weighted sum: every point is traceable to one of four criteria.
@@ -81,7 +81,14 @@ export function fitBreakdown(t: Tender): CriterionResult[] {
   return rows.map((r) => ({ ...r, points: Math.round((r.score * r.weight) / 10) / 10 }));
 }
 
-/** AI pre-qualification score, 0 to 100. */
+/** Whether a single criterion is met, partly met or not met; shown instead of the underlying number. */
+export function criterionStatus(c: CriterionResult): CheckStatus {
+  if (c.score >= 70) return "met";
+  if (c.score >= 50) return "partial";
+  return "unmet";
+}
+
+/** Internal ranking value, 0 to 100. Not shown to users: the pre-qualification they see is Yes / No. */
 export function fitScore(t: Tender): number {
   return Math.round(fitBreakdown(t).reduce((s, r) => s + r.points, 0));
 }

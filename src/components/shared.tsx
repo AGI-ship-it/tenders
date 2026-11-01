@@ -66,24 +66,6 @@ export function PrequalBadge({ yes, className }: { yes: boolean; className?: str
   );
 }
 
-export function scoreTone(score: number) {
-  if (score >= 75) return "bg-teal-600";
-  if (score >= 60) return "bg-teal-400";
-  if (score >= 45) return "bg-amber-400";
-  return "bg-zinc-300";
-}
-
-export function ScoreBar({ score, className }: { score: number; className?: string }) {
-  return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <span className="tabular w-6 text-right text-sm font-semibold">{score}</span>
-      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-        <div className={cn("h-full rounded-full", scoreTone(score))} style={{ width: `${score}%` }} />
-      </div>
-    </div>
-  );
-}
-
 export function SimulatedTag({ label = "Simulated", className }: { label?: string; className?: string }) {
   return (
     <Tooltip>

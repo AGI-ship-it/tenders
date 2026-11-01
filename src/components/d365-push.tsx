@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { pushToD365 } from "@/lib/store";
 import { serviceLineFor } from "@/lib/mock-data";
-import { fitScore } from "@/lib/scoring";
+import { aiPrequalified } from "@/lib/scoring";
 import { formatAED, formatDate } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ function mapping(t: Tender) {
     ["Est. close date", formatDate(t.deadline)],
     ["Lead source", `Tender portal · ${t.sourceRef}`],
     ["Service line", line.name],
-    ["Pre-qual score", `${fitScore(t)}/100 (HoD validated)`],
+    ["AI pre-qualification", `${aiPrequalified(t) ? "Yes" : "No"} (HoD validated)`],
     ["Owner", line.hod],
   ];
 }
