@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Check, CloudUpload, MessageSquareWarning, Send, ShieldCheck, X } from "lucide-react";
+import { ArrowLeftRight, Check, CloudUpload, ExternalLink, MessageSquareWarning, Send, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { decide, setRole, submitForApproval, useDemo } from "@/lib/store";
@@ -34,6 +34,7 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
   const role = demo.role;
   const a = tender.approval;
   const line = serviceLineFor(tender.category);
+  const lead = tender.lead;
 
   return (
     <div className="space-y-4">
@@ -62,14 +63,27 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
 
       {tender.status === "Prequalified" && <PushToD365Button tender={tender} />}
 
-      {tender.lead && (
-        <div className="space-y-1 rounded-lg bg-teal-50 p-3 text-sm text-teal-700">
+      {lead && (
+        <div className="space-y-2 rounded-lg bg-teal-50 p-3 text-sm text-teal-700">
           <div className="flex items-center gap-1.5 font-semibold">
-            <CloudUpload className="size-4" /> Lead {tender.lead.leadId} in D365
+            <CloudUpload className="size-4" /> Lead {lead.leadId} in D365
           </div>
           <div className="text-xs">
-            Owner {tender.lead.owner} · pushed by {tender.lead.pushedBy} · {formatDateTime(tender.lead.pushedAt)}
+            {a?.decidedAt && <>Prequalified {formatDateTime(a.decidedAt)} · </>}
+            Owner {lead.owner} · pushed by {lead.pushedBy} · {formatDateTime(lead.pushedAt)}
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full border-teal-200 bg-white text-teal-800 hover:bg-teal-100/60"
+            onClick={() =>
+              toast(`Opening lead ${lead.leadId} in D365`, {
+                description: "Simulated: in the live solution this opens the lead record in Dynamics 365.",
+              })
+            }
+          >
+            <ExternalLink /> Open in D365
+          </Button>
         </div>
       )}
 
