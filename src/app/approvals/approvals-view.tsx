@@ -24,7 +24,7 @@ import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 const PENDING: Tender["status"][] = ["Awaiting HoD", "Changes Requested"];
 
 /** "order" is the default: pending first by due date, then the latest decisions. */
-type RegisterSort = "order" | "value" | "deadline" | "ai" | "hod" | "status" | "lead";
+type RegisterSort = "order" | "id" | "value" | "deadline" | "ai" | "hod" | "status" | "lead";
 
 const STATUS_RANK: Tender["status"][] = [
   "Awaiting HoD",
@@ -37,6 +37,8 @@ const STATUS_RANK: Tender["status"][] = [
 
 function registerValue(t: Tender, key: Exclude<RegisterSort, "order">): number | string {
   switch (key) {
+    case "id":
+      return t.id;
     case "value":
       return t.valueAED;
     case "deadline":
@@ -275,7 +277,7 @@ function Register({
     { key: "ai", label: "AI pre-qual", options: ["Yes", "No"] },
   ];
   const [sort, setSort] = useState<SortState<RegisterSort>>({ key: "order", dir: "asc" });
-  const onSort = (key: RegisterSort) => setSort((s) => nextSort(s, key, ["order", "deadline", "hod", "status"]));
+  const onSort = (key: RegisterSort) => setSort((s) => nextSort(s, key, ["order", "id", "deadline", "hod", "status"]));
 
   const needle = q.trim().toLowerCase();
   const sorted = tenders
@@ -319,7 +321,10 @@ function Register({
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
-                <SortTh sortKey="order" sort={sort} onSort={onSort} className="pl-5">
+                <SortTh sortKey="id" sort={sort} onSort={onSort} className="pl-5">
+                  Tender no.
+                </SortTh>
+                <SortTh sortKey="order" sort={sort} onSort={onSort}>
                   Prospect
                 </SortTh>
                 <SortTh sortKey="value" sort={sort} onSort={onSort} className="text-right">
@@ -360,8 +365,10 @@ function Register({
                       selectedId === t.id && "bg-primary/5",
                     )}
                   >
-                    <td className="max-w-[320px] px-5 py-3">
-                      <div className="font-mono text-xs text-muted-foreground">{t.id}</div>
+<td className="py-3 pr-3 pl-5 whitespace-nowrap">
+                      <span className="font-mono text-xs text-muted-foreground">{t.id}</span>
+                    </td>
+                    <td className="max-w-[320px] px-3 py-3">
                       <div className="truncate font-medium">{t.title}</div>
                       <div className="truncate text-xs text-muted-foreground">{t.buyer}</div>
                     </td>
@@ -415,7 +422,7 @@ function Register({
               })}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={showHod ? 7 : 6} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={showHod ? 8 : 7} className="px-5 py-12 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>

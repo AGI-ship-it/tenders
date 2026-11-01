@@ -100,7 +100,10 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
-                <SortTh sortKey="priority" sort={sort} onSort={toggleSort} className="pl-5">
+                <SortTh sortKey="id" sort={sort} onSort={toggleSort} className="pl-5">
+                  Tender no.
+                </SortTh>
+                <SortTh sortKey="priority" sort={sort} onSort={toggleSort}>
                   Prospect
                 </SortTh>
                 <SortTh sortKey="value" sort={sort} onSort={toggleSort} className="text-right">
@@ -130,7 +133,10 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                       t.fromLatestScan && "bg-sky-50/40",
                     )}
                   >
-                    <td className="max-w-[420px] py-3 pr-3 pl-5">
+<td className="py-3 pr-3 pl-5 whitespace-nowrap">
+                      <span className="font-mono text-xs text-muted-foreground">{t.id}</span>
+                    </td>
+                    <td className="max-w-[420px] px-3 py-3">
                       <div className="flex items-center gap-2">
                         <span className="truncate font-medium group-hover:text-primary">{t.title}</span>
                         {t.fromLatestScan && (
@@ -162,7 +168,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>
