@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, FlaskConical, LogOut, Monitor, Moon, Radar, RotateCcw, Sun } from "lucide-react";
+import { ChevronDown, FlaskConical, LogOut, Menu, Monitor, Moon, Radar, RotateCcw, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -64,9 +64,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const fill = ["/sources", "/opportunity", "/pipeline", "/approvals"].includes(pathname);
 
   return (
-    <div className={cn("flex flex-col", fill ? "h-dvh" : "min-h-screen")}>
+    // On large screens the work screens fit the window and scroll inside; on smaller screens the page scrolls normally.
+    <div className={cn("flex min-h-screen flex-col", fill && "lg:h-dvh lg:min-h-0")}>
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
-        <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center gap-4 px-6 lg:px-10">
+        <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center gap-2 px-4 sm:gap-4 sm:px-6 lg:px-10">
           <Link href={isHod ? "/approvals" : "/sources"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
             <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
               <Radar className="size-5" />
@@ -95,24 +96,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
             <span className="hidden items-center gap-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50/70 px-2.5 py-1 text-[11px] font-medium text-amber-800 sm:inline-flex">
               <FlaskConical className="size-3.5" /> Demo data
             </span>
+            {nav.length > 1 && <MobileNav nav={nav} pathname={pathname} />}
             {demo && <ProfileMenu role={demo.role} hodLine={demo.hodLine} />}
           </div>
         </div>
       </header>
 
-      <main className={cn("app-canvas flex-1 px-6 py-8 lg:px-10", fill && "flex min-h-0 flex-col overflow-y-auto pb-6")}>
-        <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex min-h-[520px] flex-1 flex-col")}>
+      <main className={cn("app-canvas flex-1 px-3 py-4 sm:px-6 sm:py-8 lg:px-10", fill && "lg:flex lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:pb-6")}>
+        <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex flex-col lg:min-h-[520px] lg:flex-1")}>
           {demo && !blocked ? (
             <>
               {!isHod && (STEP_ROUTES.includes(pathname) || pathname === "/onboarding") ? (
                 // Steps and the screen below them read as one section; inner cards drop their own frame.
                 <div
                   data-step-section
-                  className={cn("overflow-hidden rounded-3xl bg-card shadow-soft", fill && "flex min-h-0 flex-1 flex-col")}
+                  className={cn("overflow-hidden rounded-2xl bg-card shadow-soft sm:rounded-3xl", fill && "flex flex-col lg:min-h-0 lg:flex-1")}
                 >
                   <StepTabs />
                   {children}
@@ -165,6 +167,41 @@ function AppearanceSwitch() {
         })}
       </div>
     </div>
+  );
+}
+
+/** The main navigation as a menu on phones and small tablets, where the nav links are hidden. */
+function MobileNav({ nav, pathname }: { nav: typeof NAV; pathname: string }) {
+  const router = useRouter();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            aria-label="Open navigation"
+            className="grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+          />
+        }
+      >
+        <Menu className="size-5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5">
+        <div className="space-y-0.5">
+          {nav.map((n) => {
+            const on = n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
+            return (
+              <DropdownMenuItem
+                key={n.href}
+                onClick={() => router.push(n.href)}
+                className={cn(MENU_ITEM, on && "bg-secondary font-semibold text-secondary-foreground")}
+              >
+                {n.label}
+              </DropdownMenuItem>
+            );
+          })}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

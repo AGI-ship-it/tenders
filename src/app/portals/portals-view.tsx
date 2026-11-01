@@ -39,7 +39,7 @@ export function PortalsView() {
 
       <div className="overflow-hidden rounded-xl bg-card shadow-soft">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[880px] text-sm">
             <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-5 py-3 font-bold">Portal</th>

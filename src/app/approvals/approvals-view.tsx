@@ -318,7 +318,7 @@ function Register({
         </TableHeader>
         <FilterChips facets={facets} filters={filters} />
         <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[1040px] text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
                 <SortTh sortKey="id" sort={sort} onSort={onSort} className="pl-5">

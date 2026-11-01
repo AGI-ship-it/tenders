@@ -51,7 +51,7 @@ export function TablePagination({
   overall: number;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-3 border-t px-5 py-2.5 text-xs text-muted-foreground">
+    <div className="flex shrink-0 items-center gap-3 border-t px-4 py-2.5 sm:px-5 text-xs text-muted-foreground">
       <span className="tabular">
         {total ? `${from}–${to} of ${total} prospects` : "0 prospects"}
         {total !== overall && ` · filtered from ${overall}`}

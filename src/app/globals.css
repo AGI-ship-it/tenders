@@ -320,7 +320,7 @@
   .app-canvas {
     background: color-mix(in oklch, var(--ag-grey-200) 55%, white);
   }
-  /* Faint dot grid behind the stepper, fading out towards the sides. */
+  /* Faint dot grid around the stepper KPIs. */
   .dot-grid {
     position: relative;
     isolation: isolate;
@@ -334,7 +334,13 @@
     background-image: radial-gradient(color-mix(in oklch, var(--ag-purple-200) 30%, var(--ag-grey-400)) 1px, transparent 1.2px);
     background-size: 18px 18px;
     background-position: center;
-    mask-image: radial-gradient(ellipse 60% 120% at 50% 50%, black 30%, transparent 100%);
+    /* Concentrated around the KPI circles: fades towards the sides and softly out at the top and bottom. */
+    --dot-mask-x: radial-gradient(ellipse 48% 95% at 50% 40%, black 35%, transparent 100%);
+    --dot-mask-y: linear-gradient(to bottom, transparent 0%, black 28%, black 62%, transparent 100%);
+    -webkit-mask-image: var(--dot-mask-x), var(--dot-mask-y);
+    -webkit-mask-composite: source-in;
+    mask-image: var(--dot-mask-x), var(--dot-mask-y);
+    mask-composite: intersect;
   }
   .tabular {
     font-variant-numeric: tabular-nums;

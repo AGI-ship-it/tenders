@@ -107,7 +107,7 @@ export function TenderDetail() {
         <Fact label="Contract term" value={`${tender.durationMonths} months`} sub={tender.location.split(" (")[0]} />
       </dl>
 
-      <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[1fr_340px]">
+      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_340px]">
         <div className="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto pr-1">
           {/* AI pre-qualification: Yes / No and why */}
           <PrequalCard tender={tender} />

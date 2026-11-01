@@ -12,7 +12,7 @@ export const STEP_ROUTES = ["/sources", "/pipeline", "/approvals"];
 /** Dots gliding along the line between two circles, so the journey reads left to right. */
 function FlowLine() {
   return (
-    <div aria-hidden className="relative mt-14 h-0.5 flex-1 overflow-hidden rounded-full bg-zinc-300/70">
+    <div aria-hidden className="relative mt-8 h-0.5 min-w-4 flex-1 sm:mt-12 md:mt-14 overflow-hidden rounded-full bg-zinc-300/70">
       {[0, 0.6, 1.2].map((delay) => (
         <motion.span
           key={delay}
@@ -67,8 +67,8 @@ export function StepTabs() {
   ];
 
   return (
-    <div className="dot-grid shrink-0 border-b bg-zinc-50/60 pt-5 pb-3">
-      <ol className="mx-auto flex max-w-4xl items-start px-2 pt-2 pb-1">
+    <div className="dot-grid shrink-0 border-b bg-zinc-50/60 pt-4 pb-2 sm:pt-5 sm:pb-3">
+      <ol className="mx-auto flex max-w-4xl items-start px-1 pt-2 pb-1 sm:px-2">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);
           return (
@@ -76,13 +76,13 @@ export function StepTabs() {
               <Link
                 href={s.href}
                 aria-current={on ? "page" : undefined}
-                className="group flex w-48 shrink-0 flex-col items-center text-center"
+                className="group flex w-24 shrink-0 flex-col items-center text-center sm:w-36 md:w-48"
               >
                 <span
                   className={cn(
-                    "relative grid size-28 place-items-center rounded-full transition-all duration-300",
+                    "relative grid size-16 place-items-center rounded-full transition-all duration-300 sm:size-24 md:size-28",
                     on
-                      ? "bg-primary text-primary-foreground shadow-soft-lg ring-8 ring-primary/10"
+                      ? "bg-primary text-primary-foreground shadow-soft-lg ring-4 ring-primary/10 md:ring-8"
                       : "bg-card text-foreground shadow-soft group-hover:-translate-y-0.5",
                   )}
                 >
@@ -90,24 +90,24 @@ export function StepTabs() {
                   <span className="flex flex-col items-center leading-none">
                     <span
                       className={cn(
-                        "tabular text-[2.25rem] font-extrabold tracking-tight",
+                        "tabular text-xl font-extrabold tracking-tight sm:text-3xl md:text-[2.25rem]",
                         // Open prospects and awaiting approvals are the counts to act on, so they stand out in dark purple.
                         !on && i > 0 && "text-primary",
                       )}
                     >
                       {s.value}
                     </span>
-                    <span className={cn("mt-1 text-[10px] font-medium uppercase", on ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                    <span className={cn("mt-0.5 text-[8px] font-medium uppercase sm:mt-1 sm:text-[10px]", on ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {s.unit}
                     </span>
                   </span>
                 </span>
-                <span className={cn("mt-3 text-sm font-semibold", on ? "text-primary" : "text-foreground")}>{s.title}</span>
-                <span className="mt-0.5 text-xs text-muted-foreground">{s.action}</span>
+                <span className={cn("mt-2 text-xs font-bold sm:mt-3 sm:text-sm", on ? "text-primary" : "text-foreground")}>{s.title}</span>
+                <span className="mt-0.5 hidden text-xs text-muted-foreground sm:block">{s.action}</span>
                 {on && (
                   <motion.span
                     layoutId="step-tab"
-                    className="mt-2.5 h-[3px] w-10 rounded-full bg-magenta"
+                    className="mt-2 h-[3px] w-8 rounded-full bg-magenta sm:mt-2.5 sm:w-10"
                     transition={{ type: "spring", stiffness: 500, damping: 40 }}
                   />
                 )}
