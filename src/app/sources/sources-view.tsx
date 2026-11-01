@@ -29,7 +29,7 @@ export function SourcesView() {
           </div>
         }
         sourcesAction={
-          <Button variant="outline" className="h-10 rounded-xl px-4" onClick={() => setSourcesOpen(true)}>
+          <Button variant="outline" size="lg" onClick={() => setSourcesOpen(true)}>
             <Layers /> Sources · {connected} connected
             {needsSignIn && <span className="size-2 rounded-full bg-amber-500" aria-label="Sign-in needed" />}
           </Button>

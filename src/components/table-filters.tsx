@@ -63,7 +63,7 @@ export function TableHeader({
       <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
         <div className="relative w-full sm:w-72">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="bg-card pr-8 pl-8" placeholder={searchPlaceholder} value={search} onChange={(e) => onSearch(e.target.value)} />
+          <Input className="h-9 bg-card pr-8 pl-8" placeholder={searchPlaceholder} value={search} onChange={(e) => onSearch(e.target.value)} />
           {search && (
             <button
               aria-label="Clear search"
@@ -96,7 +96,7 @@ export function FilterMenu({
   const selected = facet ? (filters.values[facet.key] ?? []) : [];
   return (
     <DropdownMenu onOpenChange={(open) => !open && setOpenKey(null)}>
-      <DropdownMenuTrigger render={<Button variant="outline" className="border-primary/30 bg-secondary text-secondary-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-secondary-foreground aria-expanded:border-primary/50 aria-expanded:bg-primary/10 aria-expanded:text-secondary-foreground" />}>
+      <DropdownMenuTrigger render={<Button variant="secondary" />}>
         Filter
         {filters.count > 0 && (
           <span className="tabular grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">

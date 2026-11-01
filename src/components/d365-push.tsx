@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { D365, boldD365 } from "@/components/shared";
 
 const STEPS = ["Connecting to Dynamics 365", "Creating lead record", "Attaching RFP summary and evidence"];
 
@@ -42,7 +43,7 @@ export function PushToD365Button({ tender, className }: { tender: Tender; classN
   return (
     <>
       <Button size="lg" className={cn("w-full", className)} onClick={() => setOpen(true)}>
-        <CloudUpload /> Push to D365 as lead
+        <CloudUpload /> Push to <D365 /> as lead
       </Button>
       <PushDialog tender={tender} open={open} onOpenChange={setOpen} />
     </>
@@ -75,7 +76,7 @@ function PushDialog({ tender, open, onOpenChange }: { tender: Tender; open: bool
         const id = pushToD365(tender.id);
         setLeadId(id);
         setPhase("done");
-        toast.success(`Lead ${id} created in D365`, { description: "Simulated. No data left this browser." });
+        toast.success(boldD365(`Lead ${id} created in D365`), { description: "Simulated. No data left this browser." });
       }, STEPS.length * 900),
     );
   }
@@ -86,14 +87,14 @@ function PushDialog({ tender, open, onOpenChange }: { tender: Tender; open: bool
         <DialogHeader>
           <DialogTitle>Push to Dynamics 365</DialogTitle>
           <DialogDescription>
-            Creates a lead in D365 Lead Management so Sales can take it forward. Simulated in this prototype.
+            Creates a lead in <D365 /> Lead Management so Sales can take it forward. Simulated in this prototype.
           </DialogDescription>
         </DialogHeader>
 
         {phase === "review" && (
           <div className="overflow-hidden rounded-lg border text-sm">
             <div className="grid grid-cols-[130px_1fr] bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-              <span>D365 lead field</span>
+              <span><D365 /> lead field</span>
               <span>Value from prospect</span>
             </div>
             <dl className="divide-y">
@@ -130,7 +131,7 @@ function PushDialog({ tender, open, onOpenChange }: { tender: Tender; open: bool
             <CheckCircle2 className="size-10 text-emerald-600" />
             <p className="mt-3 font-medium">Lead created</p>
             <p className="mt-1 font-mono text-sm">{leadId}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Owner: {serviceLineFor(tender.category).hod} · status set to Lead in D365</p>
+            <p className="mt-1 text-xs text-muted-foreground">Owner: {serviceLineFor(tender.category).hod} · status set to Lead in <D365 /></p>
           </motion.div>
         )}
 

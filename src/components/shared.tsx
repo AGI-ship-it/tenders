@@ -102,3 +102,15 @@ export function SectionTitle({ children, hint }: { children: React.ReactNode; hi
     </div>
   );
 }
+
+/** "D365" is always set in bold so the hand-off to Dynamics stands out wherever it is mentioned. */
+export function D365() {
+  return <strong className="font-bold">D365</strong>;
+}
+
+/** Renders text with every "D365" in bold. */
+export function boldD365(text: string): React.ReactNode {
+  const parts = text.split("D365");
+  if (parts.length === 1) return text;
+  return parts.flatMap((part, i) => (i === 0 ? [part] : [<D365 key={i} />, part]));
+}

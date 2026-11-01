@@ -31,7 +31,7 @@ export function PortalsView() {
         title="Portal configuration"
         description={`${connected} of ${demo.sources.length} sources connected. Portals that need a login or UAE PASS are signed in by a named person; the agent never bypasses a login or CAPTCHA.`}
         actions={
-          <Button className="h-10 rounded-xl px-4" onClick={() => setAddOpen(true)}>
+          <Button size="lg" onClick={() => setAddOpen(true)}>
             <Plus /> Add source
           </Button>
         }

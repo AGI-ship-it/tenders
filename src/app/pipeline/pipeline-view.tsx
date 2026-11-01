@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } from "@/components/table-filters";
 import { SortTh, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
-import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
+import { PageHeader, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
 
 type SortKey = "priority" | "id" | "value" | "deadline" | "fit" | "status";
 
@@ -223,7 +223,7 @@ function Decision({ tender }: { tender: Tender }) {
   return (
     <>
       <div className={cn("text-sm", tone)}>{main}</div>
-      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+      {sub && <div className="text-xs text-muted-foreground">{boldD365(sub)}</div>}
     </>
   );
 }

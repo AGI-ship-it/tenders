@@ -118,7 +118,7 @@ function LoginCard({
       </div>
       <p className="mt-3 flex-1 text-sm text-muted-foreground">{description}</p>
       <div className="mt-4">{footer}</div>
-      <Button size="lg" onClick={onSignIn} className="mt-4 h-11 w-full gap-2 rounded-xl">
+      <Button size="xl" onClick={onSignIn} className="mt-4 w-full">
         Sign in <ArrowRight />
       </Button>
     </div>

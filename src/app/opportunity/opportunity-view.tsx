@@ -24,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecisionPanel } from "@/components/decision-panel";
 import { PortalLinkButton } from "@/components/portal-link";
-import { PrequalBadge } from "@/components/shared";
+import { D365, PrequalBadge } from "@/components/shared";
 
 /** Where "back" returns to, keyed by the ?from= the opening link passed. */
 const BACK: Record<string, { href: string; label: string }> = {
@@ -91,7 +91,7 @@ export function TenderDetail() {
               </li>
             </ol>
           </nav>
-          <h1 className="max-w-3xl text-2xl font-semibold tracking-tight">{tender.title}</h1>
+          <h1 className="max-w-3xl text-2xl font-bold tracking-tight">{tender.title}</h1>
           <div className="text-sm text-muted-foreground">
             {tender.category} · {tender.buyer} · {tender.emirate}
           </div>
@@ -258,8 +258,8 @@ export function TenderDetail() {
 function Fact({ label, value, sub, tone }: { label: string; value: React.ReactNode; sub?: string; tone?: string }) {
   return (
     <div className="bg-card px-4 py-3.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 truncate text-[15px] font-semibold">{value}</dd>
+      <dt className="text-xs font-bold text-muted-foreground">{label}</dt>
+      <dd className="tabular mt-1 truncate text-[15px] font-extrabold">{value}</dd>
       {sub && <dd className={cn("mt-0.5 truncate text-xs text-muted-foreground", tone)}>{sub}</dd>}
     </div>
   );
@@ -287,7 +287,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
               </TooltipTrigger>
               <TooltipContent className="max-w-64">
                 The AI checks the prospect against four AGFS criteria and recommends Yes or No. It does not decide
-                whether to bid. The HoD validates it before anything goes to D365.
+                whether to bid. The HoD validates it before anything goes to <D365 />.
               </TooltipContent>
             </Tooltip>
           </div>

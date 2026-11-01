@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PrequalBadge, StatusBadge } from "@/components/shared";
+import { D365, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
 import { PushToD365Button } from "@/components/d365-push";
 
 const SUBMITTABLE: Tender["status"][] = ["New", "Under Review", "Changes Requested"];
@@ -72,7 +72,7 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
       {lead && (
         <div className="space-y-3 rounded-xl bg-teal-50 p-4 text-sm text-teal-700">
           <div className="flex items-center gap-1.5 font-semibold">
-            <CloudUpload className="size-4" /> Lead {lead.leadId} in D365
+            <CloudUpload className="size-4" /> Lead {lead.leadId} in <D365 />
           </div>
           <div className="text-xs leading-relaxed">
             {a?.decidedAt && <>Prequalified {formatDateTime(a.decidedAt)} · </>}
@@ -81,14 +81,14 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
           <Button
             variant="outline"
             size="lg"
-            className="mt-1 h-10 w-full border-teal-200 bg-card text-teal-800 hover:bg-teal-100/60"
+            className="mt-1 w-full"
             onClick={() =>
-              toast(`Opening lead ${lead.leadId} in D365`, {
+              toast(boldD365(`Opening lead ${lead.leadId} in D365`), {
                 description: "Simulated: in the live solution this opens the lead record in Dynamics 365.",
               })
             }
           >
-            Open in D365 <ExternalLink />
+            Open in <D365 /> <ExternalLink />
           </Button>
         </div>
       )}
@@ -172,7 +172,7 @@ export function DecisionActions({ tender }: { tender: Tender }) {
           onChange={(e) => setComment(e.target.value)}
         />
       </div>
-      <Button className="w-full bg-emerald-700 hover:bg-emerald-700/90" size="lg" onClick={() => act("Approved")}>
+      <Button variant="success" size="lg" className="w-full" onClick={() => act("Approved")}>
         <Check /> {tender.approval?.proposed === "Reject" ? "Confirm rejection" : "Prequalify"}
       </Button>
       <div className="grid grid-cols-2 gap-2">

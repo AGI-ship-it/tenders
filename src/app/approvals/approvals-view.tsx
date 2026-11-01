@@ -17,7 +17,7 @@ import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } fro
 import { SortTh, compareBy, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { DecisionPanel } from "@/components/decision-panel";
-import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
+import { D365, PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
@@ -91,7 +91,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
       {!embedded && (
         <PageHeader
           title="Prospects for Prequalification"
-          description="Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to D365 as leads."
+          description={<>Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to <D365 /> as leads.</>}
         />
       )}
 
@@ -166,7 +166,7 @@ function ReviewPanel({ tender }: { tender: Tender }) {
         <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
       </div>
 
-      <Button variant="link" className="h-auto px-0" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
+      <Button variant="link" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
         Open full prospect and AI reasoning <ArrowUpRight />
       </Button>
 

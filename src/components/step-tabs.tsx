@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { useDemo } from "@/lib/store";
 import { isActive } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
+import { boldD365 } from "@/components/shared";
 
 export const STEP_ROUTES = ["/sources", "/pipeline", "/approvals"];
 
@@ -103,7 +104,7 @@ export function StepTabs() {
                   </span>
                 </span>
                 <span className={cn("mt-2 text-xs font-bold sm:mt-3 sm:text-sm", on ? "text-primary" : "text-foreground")}>{s.title}</span>
-                <span className="mt-0.5 hidden text-xs text-muted-foreground sm:block">{s.action}</span>
+                <span className="mt-0.5 hidden text-xs text-muted-foreground sm:block">{boldD365(s.action)}</span>
                 {on && (
                   <motion.span
                     layoutId="step-tab"

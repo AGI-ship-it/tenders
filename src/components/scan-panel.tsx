@@ -165,10 +165,7 @@ export function ScanPanel({
   const progress = phase === "done" ? 100 : steps.length ? Math.round(((step + 0.5) / steps.length) * 100) : 0;
 
   const runButton = (
-    <Button
-      className="h-10 gap-2 rounded-xl px-5 shadow-md shadow-primary/20 [&_svg:not([class*='size-'])]:size-[17px]"
-      onClick={() => start(true)}
-    >
+    <Button size="lg" onClick={() => start(true)}>
       <Sparkles /> Run AI Scan
     </Button>
   );
@@ -197,11 +194,7 @@ export function ScanPanel({
             {blocked.length} portal{blocked.length === 1 ? "" : "s"} need sign-in and will be skipped · Sign in
           </button>
         )}
-        <Button
-          size="lg"
-          className="mt-6 h-12 gap-2 rounded-xl px-6 text-[15px] shadow-md shadow-primary/20 [&_svg:not([class*='size-'])]:size-[18px]"
-          onClick={() => start(true)}
-        >
+        <Button size="xl" className="mt-6" onClick={() => start(true)}>
           <Sparkles /> Run AI Scan
         </Button>
       </section>
