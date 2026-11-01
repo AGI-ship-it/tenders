@@ -70,25 +70,25 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
       {tender.status === "Prequalified" && <PushToD365Button tender={tender} />}
 
       {lead && (
-        <div className="space-y-2 rounded-lg bg-teal-50 p-3 text-sm text-teal-700">
+        <div className="space-y-3 rounded-xl bg-teal-50 p-4 text-sm text-teal-700">
           <div className="flex items-center gap-1.5 font-semibold">
             <CloudUpload className="size-4" /> Lead {lead.leadId} in D365
           </div>
-          <div className="text-xs">
+          <div className="text-xs leading-relaxed">
             {a?.decidedAt && <>Prequalified {formatDateTime(a.decidedAt)} · </>}
             Owner {lead.owner} · pushed by {lead.pushedBy} · {formatDateTime(lead.pushedAt)}
           </div>
           <Button
             variant="outline"
-            size="sm"
-            className="w-full border-teal-200 bg-card text-teal-800 hover:bg-teal-100/60"
+            size="lg"
+            className="mt-1 h-10 w-full border-teal-200 bg-card text-teal-800 hover:bg-teal-100/60"
             onClick={() =>
               toast(`Opening lead ${lead.leadId} in D365`, {
                 description: "Simulated: in the live solution this opens the lead record in Dynamics 365.",
               })
             }
           >
-            <ExternalLink /> Open in D365
+            Open in D365 <ExternalLink />
           </Button>
         </div>
       )}
