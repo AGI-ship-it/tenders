@@ -35,7 +35,7 @@ export function OnboardingView() {
     <section className="overflow-hidden rounded-3xl bg-card shadow-soft">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b px-6 pt-5 pb-4">
         <div>
-          <h2 className="text-base font-semibold">Connect your tender portals</h2>
+          <h2 className="text-base font-bold text-primary">Connect your tender portals</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
             The AI agent has found and connected these portals. Portals with a login or UAE PASS need you once.
           </p>

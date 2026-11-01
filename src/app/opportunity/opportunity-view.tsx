@@ -205,7 +205,7 @@ export function TenderDetail() {
         {/* Right rail */}
         <aside className="min-h-0">
           <div className="h-full overflow-y-auto rounded-xl bg-card p-5 shadow-soft">
-            <h2 className="mb-4 text-sm font-semibold">Prequalification</h2>
+            <h2 className="mb-4 text-sm font-bold text-primary">Prequalification</h2>
             <DecisionPanel tender={tender} />
             {history.length > 0 && (
               <div className="mt-6 border-t pt-4">

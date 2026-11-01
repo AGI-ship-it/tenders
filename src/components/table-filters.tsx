@@ -58,7 +58,7 @@ export function TableHeader({
 }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2 border-b px-5 py-3">
-      <h2 className="text-sm font-semibold">{title}</h2>
+      <h2 className="text-sm font-bold text-primary">{title}</h2>
       <span className="tabular rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">{count}</span>
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <div className="relative w-64">

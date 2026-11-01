@@ -169,7 +169,7 @@ function ReviewPanel({ tender }: { tender: Tender }) {
       </Button>
 
       <div className="rounded-xl bg-muted/30 p-4">
-        <h3 className="mb-3 text-sm font-semibold">HoD decision</h3>
+        <h3 className="mb-3 text-sm font-bold text-primary">HoD decision</h3>
         <DecisionPanel tender={tender} />
       </div>
 
@@ -182,7 +182,7 @@ function Comments({ tender }: { tender: Tender }) {
   const [text, setText] = useState("");
   return (
     <div className="space-y-3 border-t pt-5">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+      <h3 className="flex items-center gap-1.5 text-sm font-bold text-primary">
         <MessageSquare className="size-4 text-muted-foreground" /> Reviewer comments
       </h3>
       {tender.comments.length === 0 && <p className="text-xs text-muted-foreground">No comments yet.</p>}

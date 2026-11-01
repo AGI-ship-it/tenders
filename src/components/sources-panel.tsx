@@ -52,7 +52,7 @@ export function SourcesSheet({ open, onOpenChange }: { open: boolean; onOpenChan
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full gap-0 p-0 sm:max-w-lg data-[side=right]:sm:max-w-lg">
           <SheetHeader className="border-b px-5 pt-5 pb-4">
-            <SheetTitle className="text-base">Sources</SheetTitle>
+            <SheetTitle className="text-base font-bold text-primary">Sources</SheetTitle>
             <SheetDescription className="flex items-center gap-1.5">
               {connected} of {demo.sources.length} connected
               <Tooltip>

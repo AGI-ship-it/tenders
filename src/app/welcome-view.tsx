@@ -44,7 +44,7 @@ export function WelcomeView() {
         <div className="grid size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md">
           <Radar className="size-6" />
         </div>
-        <h1 className="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">AGFS Tender Intelligence</h1>
+        <h1 className="mt-6 text-3xl font-bold text-primary tracking-tight sm:text-4xl">AGFS Tender Intelligence</h1>
         <p className="mt-3 max-w-md text-muted-foreground">
           Scan tender portals every day, rank the prospects that fit, and prequalify them with service-line HoDs.
         </p>
@@ -114,7 +114,7 @@ function LoginCard({
     <div className="flex flex-col rounded-2xl bg-card p-5 shadow-soft">
       <div className="flex items-center gap-3">
         <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${tone}`}>{icon}</span>
-        <h2 className="text-base font-semibold">{title}</h2>
+        <h2 className="text-base font-bold text-primary">{title}</h2>
       </div>
       <p className="mt-3 flex-1 text-sm text-muted-foreground">{description}</p>
       <div className="mt-4">{footer}</div>

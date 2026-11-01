@@ -180,7 +180,7 @@ export function ScanPanel({
         <span className="grid size-16 place-items-center rounded-2xl bg-primary/10 text-primary">
           <Radar className="size-8" />
         </span>
-        <h2 className="mt-5 text-xl font-semibold tracking-tight">Scan connected portals</h2>
+        <h2 className="mt-5 text-xl font-bold text-primary tracking-tight">Scan connected portals</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {ready.length} portals ready
           {demo.lastScanAt && <> · last scan {formatDateTime(demo.lastScanAt)}</>}
@@ -213,7 +213,7 @@ export function ScanPanel({
             <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
               <Radar className="size-4" />
             </span>
-            <h2 className="text-base font-semibold">
+            <h2 className="text-base font-bold text-primary">
               {phase === "done" && demo.lastScan ? (
                 isToday(demo.lastScan.at) ? (
                   <>

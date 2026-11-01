@@ -84,7 +84,7 @@ export function PageHeader({
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div className="space-y-1.5">
         {eyebrow}
-        {title && <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>}
+        {title && <h1 className="text-2xl font-bold text-primary tracking-tight">{title}</h1>}
         {description && <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -95,7 +95,7 @@ export function PageHeader({
 export function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <h2 className="text-sm font-semibold text-foreground">{children}</h2>
+      <h2 className="text-sm font-bold text-primary">{children}</h2>
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
   );
