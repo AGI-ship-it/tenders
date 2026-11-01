@@ -136,14 +136,14 @@ export function TenderDetail() {
 
           {/* Details, progressively disclosed */}
           <Tabs defaultValue="summary" className="flex min-h-[260px] flex-1 flex-col">
-            <TabsList variant="line" className="w-full shrink-0 justify-start border-b px-3 pt-2 sm:px-4">
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="eligibility">
+            <TabsList variant="line" className="w-full shrink-0 justify-start gap-2 overflow-x-auto border-b px-3 pt-2 sm:gap-4 sm:px-5">
+              <TabsTrigger className={LINE_TAB} value="summary">Summary</TabsTrigger>
+              <TabsTrigger className={LINE_TAB} value="eligibility">
                 Eligibility
                 <CountDot items={tender.eligibility.filter((e) => e.status !== "met").length} />
               </TabsTrigger>
-              <TabsTrigger value="risks">Risks & assumptions</TabsTrigger>
-              <TabsTrigger value="evidence">Evidence</TabsTrigger>
+              <TabsTrigger className={LINE_TAB} value="risks">Risks & assumptions</TabsTrigger>
+              <TabsTrigger className={LINE_TAB} value="evidence">Evidence</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
@@ -264,6 +264,10 @@ function Fact({ label, value, sub, tone }: { label: string; value: React.ReactNo
     </div>
   );
 }
+
+/** Tabs sized to their labels, aligned left, with the magenta underline used on the step circles. */
+const LINE_TAB =
+  "flex-none px-1 data-active:font-semibold data-active:text-primary dark:data-active:text-primary after:rounded-full after:bg-magenta group-data-horizontal/tabs:after:h-[3px]";
 
 function PrequalCard({ tender }: { tender: Tender }) {
   const yes = aiPrequalified(tender);
