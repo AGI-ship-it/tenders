@@ -96,7 +96,7 @@ export function FilterMenu({
   const selected = facet ? (filters.values[facet.key] ?? []) : [];
   return (
     <DropdownMenu onOpenChange={(open) => !open && setOpenKey(null)}>
-      <DropdownMenuTrigger render={<Button variant="outline" className={cn(filters.count > 0 && "border-primary/40 text-primary")} />}>
+      <DropdownMenuTrigger render={<Button variant="outline" className={cn("border-input bg-card", filters.count > 0 && "border-primary/50 text-primary")} />}>
         <ListFilter /> Filter
         {filters.count > 0 && (
           <span className="tabular grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
