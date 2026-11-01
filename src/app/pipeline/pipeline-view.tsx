@@ -118,7 +118,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 <SortTh sortKey="status" sort={sort} onSort={toggleSort}>
                   Status
                 </SortTh>
-                <th className="px-3 py-3 pr-5 font-semibold">Decision</th>
+                <th className="px-3 py-3 pr-5 font-bold">Decision</th>
               </tr>
             </thead>
             <tbody className="divide-y">
