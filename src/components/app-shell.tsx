@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, FlaskConical, LogOut, Radar, RotateCcw } from "lucide-react";
+import { ChevronDown, FlaskConical, LogOut, MonitorSmartphone, Radar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { setFrame, useFrame } from "@/lib/frame";
 import { useDemo, resetDemo } from "@/lib/store";
 import { actingPerson } from "@/lib/mock-data";
 import { STEP_ROUTES, StepTabs } from "@/components/step-tabs";
@@ -13,6 +14,7 @@ import type { Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -53,6 +55,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (blocked) router.replace("/approvals");
   }, [blocked, router]);
   const nav = isHod ? HOD_NAV : NAV;
+  const frame = useFrame();
+  const pa = frame === "powerapps";
+  // ?frame=powerapps or ?frame=web switches the look and remembers it.
+  useEffect(() => {
+    const f = new URLSearchParams(window.location.search).get("frame");
+    if (f === "powerapps" || f === "web") setFrame(f);
+  }, []);
 
   // The welcome screen is full-screen, without app chrome. First-time setup uses the normal layout.
   if (pathname === "/") {
@@ -67,24 +76,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     // The app reads as one framed window, like a Power Apps screen: top bar, then the screen.
-    <div className={cn("app-canvas flex flex-col p-3 sm:p-5", fill ? "h-dvh" : "min-h-screen")}>
+    // In the Power Apps look it fills the screen edge to edge under a slim brand-coloured app bar.
+    <div className={cn("flex flex-col", pa ? "bg-card" : "app-canvas p-3 sm:p-5", fill ? "h-dvh" : "min-h-screen")}>
       <div
         data-step-section={stepped ? "" : undefined}
         className={cn(
-          "mx-auto flex w-full max-w-[1360px] flex-1 flex-col overflow-clip rounded-3xl bg-card shadow-soft ring-1 ring-border/60",
+          "flex w-full flex-1 flex-col overflow-clip bg-card",
+          !pa && "mx-auto max-w-[1360px] rounded-3xl shadow-soft ring-1 ring-border/60",
           fill && "min-h-0",
         )}
       >
-        <header className="sticky top-0 z-30 shrink-0 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-          <div className="flex h-16 w-full items-center gap-4 px-6">
+        <header
+          className={cn(
+            "sticky top-0 z-30 shrink-0",
+            pa ? "bg-primary text-primary-foreground" : "border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80",
+          )}
+        >
+          <div className={cn("flex w-full items-center gap-4", pa ? "h-12 px-4" : "h-16 px-6")}>
             <Link href={isHod ? "/approvals" : "/sources"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-              <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                <Radar className="size-5" />
-              </div>
-              <div className="leading-tight">
-                <div className="text-[13px] font-semibold tracking-tight">AGFS Tender</div>
-                <div className="text-[13px] font-semibold tracking-tight text-primary">Intelligence</div>
-              </div>
+              {pa ? (
+                <>
+                  <div className="grid size-7 place-items-center rounded-md bg-white/15">
+                    <Radar className="size-4" />
+                  </div>
+                  <div className="text-sm font-semibold tracking-tight whitespace-nowrap">AGFS Tender Intelligence</div>
+                </>
+              ) : (
+                <>
+                  <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                    <Radar className="size-5" />
+                  </div>
+                  <div className="leading-tight">
+                    <div className="text-[13px] font-semibold tracking-tight">AGFS Tender</div>
+                    <div className="text-[13px] font-semibold tracking-tight text-primary">Intelligence</div>
+                  </div>
+                </>
+              )}
             </Link>
             <nav className="ml-6 hidden items-center gap-1 md:flex">
               {nav.map((n) => {
@@ -96,20 +123,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     aria-current={on ? "page" : undefined}
                     className={cn(
                       "relative rounded-lg px-3 py-1.5 text-sm transition-colors",
-                      on ? "font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      pa
+                        ? on
+                          ? "font-medium text-white"
+                          : "text-white/75 hover:bg-white/10 hover:text-white"
+                        : on
+                          ? "font-medium text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     {n.label}
-                    {on && <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-magenta" />}
+                    {on && (
+                      <span className={cn("absolute inset-x-3 h-0.5 rounded-full", pa ? "-bottom-[8px] bg-white" : "-bottom-[13px] bg-magenta")} />
+                    )}
                   </Link>
                 );
               })}
             </nav>
             <div className="ml-auto flex items-center gap-3">
-              <span className="hidden items-center gap-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50/70 px-2.5 py-1 text-[11px] font-medium text-amber-800 sm:inline-flex">
+              <span
+                className={cn(
+                  "hidden items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-[11px] font-medium sm:inline-flex",
+                  pa ? "border-white/40 bg-white/10 text-white" : "border-amber-300 bg-amber-50/70 text-amber-800",
+                )}
+              >
                 <FlaskConical className="size-3.5" /> Demo data
               </span>
-              {demo && <ProfileMenu role={demo.role} hodLine={demo.hodLine} />}
+              {demo && <ProfileMenu role={demo.role} hodLine={demo.hodLine} onBrand={pa} />}
             </div>
           </div>
         </header>
@@ -136,7 +176,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
+function ProfileMenu({ role, hodLine, onBrand }: { role: Role; hodLine?: string; onBrand: boolean }) {
+  const frame = useFrame();
   const person = actingPerson(role, hodLine);
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
@@ -146,12 +187,18 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <button className="flex items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 text-left transition-colors hover:bg-muted" />
+            <button
+              className={cn(
+                "flex items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 text-left transition-colors",
+                onBrand ? "hover:bg-white/10" : "hover:bg-muted",
+              )}
+            />
           }
         >
           <span
             className={cn(
-              "grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold",
+              "grid shrink-0 place-items-center rounded-full text-xs font-semibold",
+              onBrand ? "size-8" : "size-9",
               role === "approver" ? "bg-pink-100 text-pink-800" : "bg-purple-100 text-purple-900",
             )}
           >
@@ -159,9 +206,9 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
           </span>
           <span className="hidden leading-tight sm:block">
             <span className="block text-sm font-medium">{person.name}</span>
-            <span className="block text-[11px] text-muted-foreground">{person.title}</span>
+            <span className={cn("block text-[11px]", onBrand ? "text-white/70" : "text-muted-foreground")}>{person.title}</span>
           </span>
-          <ChevronDown className="size-4 text-muted-foreground" />
+          <ChevronDown className={cn("size-4", onBrand ? "text-white/70" : "text-muted-foreground")} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
           <DropdownMenuGroup>
@@ -171,6 +218,12 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={frame === "powerapps"}
+            onCheckedChange={(on) => setFrame(on ? "powerapps" : "web")}
+          >
+            <MonitorSmartphone /> Power Apps full-screen view
+          </DropdownMenuCheckboxItem>
           <DropdownMenuItem onClick={() => setResetOpen(true)}>
             <RotateCcw /> Reset demo
           </DropdownMenuItem>
