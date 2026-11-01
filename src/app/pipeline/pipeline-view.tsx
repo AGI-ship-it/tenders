@@ -2,16 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
 import { useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, fitScore, isActive, priorityScore, prospectStatus } from "@/lib/scoring";
 import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
 import { serviceLineFor } from "@/lib/mock-data";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ALL, FilterSelect } from "@/components/filter-select";
+import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } from "@/components/table-filters";
 import { SortTh, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
@@ -23,14 +20,17 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   const demo = useDemo()!;
   const router = useRouter();
   const [q, setQ] = useState("");
-  const [category, setCategory] = useState(ALL);
-  const [emirate, setEmirate] = useState(ALL);
-  const [status, setStatus] = useState(ALL);
+  const filters = useTableFilters();
+  const { matches } = filters;
   const [sort, setSort] = useState<SortState<SortKey>>({ key: "priority", dir: "desc" });
 
-  const options = useMemo(() => {
-    const uniq = (f: (t: Tender) => string) => [ALL, ...Array.from(new Set(demo.tenders.map(f))).sort()];
-    return { category: uniq((t) => t.category), emirate: uniq((t) => t.emirate), status: [ALL, ...PROSPECT_STATUSES] };
+  const facets = useMemo<Facet[]>(() => {
+    const uniq = (f: (t: Tender) => string) => Array.from(new Set(demo.tenders.map(f))).sort();
+    return [
+      { key: "category", label: "Service", options: uniq((t) => t.category) },
+      { key: "emirate", label: "Emirate", options: uniq((t) => t.emirate) },
+      { key: "status", label: "Status", options: [...PROSPECT_STATUSES] },
+    ];
   }, [demo.tenders]);
 
   const rows = useMemo(() => {
@@ -55,9 +55,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
     return demo.tenders
       .filter(
         (t) =>
-          (category === ALL || t.category === category) &&
-          (emirate === ALL || t.emirate === emirate) &&
-          (status === ALL || prospectStatus(t.status) === status) &&
+          matches("category", t.category) &&
+          matches("emirate", t.emirate) &&
+          matches("status", prospectStatus(t.status)) &&
           (!needle || `${t.id} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
       )
       .sort((a, b) => {
@@ -68,10 +68,8 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         const c = av < bv ? -1 : av > bv ? 1 : 0;
         return sort.dir === "asc" ? c : -c;
       });
-  }, [demo.tenders, q, category, emirate, status, sort]);
-  const pager = usePagination(rows, `${q}|${category}|${emirate}|${status}|${sort.key}|${sort.dir}`);
-
-  const filtered = q || category !== ALL || emirate !== ALL || status !== ALL;
+  }, [demo.tenders, q, matches, sort]);
+  const pager = usePagination(rows, `${q}|${filters.key}|${sort.key}|${sort.dir}`);
 
   function toggleSort(key: SortKey) {
     setSort((s) => nextSort(s, key, ["deadline", "id", "status"]));
@@ -86,32 +84,12 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         />
       )}
 
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <div className="relative w-72">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="bg-card pl-8" placeholder="Search prospect ID, title or buyer" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-        <FilterSelect label="Service" value={category} onChange={setCategory} options={options.category} />
-        <FilterSelect label="Emirate" value={emirate} onChange={setEmirate} options={options.emirate} />
-        <FilterSelect label="Status" value={status} onChange={setStatus} options={options.status} />
-        {filtered && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setQ("");
-              setCategory(ALL);
-              setEmirate(ALL);
-              setStatus(ALL);
-            }}
-          >
-            <X /> Clear
-          </Button>
-        )}
-      </div>
-
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft">
+        <TableHeader title="All prospects" count={rows.length} search={q} onSearch={setQ}>
+          <FilterMenu facets={facets} filters={filters} />
+        </TableHeader>
+        <FilterChips facets={facets} filters={filters} />
         <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">

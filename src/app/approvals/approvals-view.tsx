@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, Download, Inbox, MessageSquare, Search, Send, X } from "lucide-react";
+import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, prospectStatus } from "@/lib/scoring";
@@ -12,8 +12,7 @@ import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { ALL, FilterSelect } from "@/components/filter-select";
+import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } from "@/components/table-filters";
 import { SortTh, compareBy, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { DecisionPanel } from "@/components/decision-panel";
@@ -275,9 +274,12 @@ function Register({
   notSubmitted?: number;
 }) {
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState(ALL);
-  const [hod, setHod] = useState(ALL);
-  const [ai, setAi] = useState(ALL);
+  const filters = useTableFilters();
+  const facets: Facet[] = [
+    { key: "status", label: "Status", options: [...PROSPECT_STATUSES] },
+    ...(showHod ? [{ key: "hod", label: "HoD", options: SERVICE_LINES.map((l) => l.hod) }] : []),
+    { key: "ai", label: "AI pre-qual", options: ["Yes", "No"] },
+  ];
   const [sort, setSort] = useState<SortState<RegisterSort>>({ key: "order", dir: "asc" });
   const onSort = (key: RegisterSort) => setSort((s) => nextSort(s, key, ["order", "deadline", "hod", "status"]));
 
@@ -285,9 +287,9 @@ function Register({
   const sorted = tenders
     .filter(
       (t) =>
-        (status === ALL || prospectStatus(t.status) === status) &&
-        (hod === ALL || serviceLineFor(t.category).hod === hod) &&
-        (ai === ALL || (ai === "Yes") === aiPrequalified(t)) &&
+        filters.matches("status", prospectStatus(t.status)) &&
+        filters.matches("hod", serviceLineFor(t.category).hod) &&
+        filters.matches("ai", aiPrequalified(t) ? "Yes" : "No") &&
         (!needle || `${t.id} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
     )
     .sort((a, b) => {
@@ -296,8 +298,7 @@ function Register({
       // Ties fall back to the default order so the list stays stable.
       return compareBy<Tender>(sort.dir, (t) => registerValue(t, key))(a, b) || registerOrder(a, b);
     });
-  const filtered = Boolean(needle) || status !== ALL || hod !== ALL || ai !== ALL;
-  const pager = usePagination(sorted, `${q}|${status}|${hod}|${ai}|${sort.key}|${sort.dir}`);
+  const pager = usePagination(sorted, `${q}|${filters.key}|${sort.key}|${sort.dir}`);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -306,42 +307,20 @@ function Register({
           Prospects routed to your service line. Open one to prequalify or reject it.
         </p>
       )}
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <div className="relative w-64">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="bg-card pl-8" placeholder="Search ID, title or buyer" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-        <FilterSelect label="Status" value={status} onChange={setStatus} options={[ALL, ...PROSPECT_STATUSES]} />
-        {showHod && (
-          <FilterSelect label="HoD" value={hod} onChange={setHod} options={[ALL, ...SERVICE_LINES.map((l) => l.hod)]} />
-        )}
-        <FilterSelect label="AI pre-qual" value={ai} onChange={setAi} options={[ALL, "Yes", "No"]} />
-        {filtered && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setQ("");
-              setStatus(ALL);
-              setHod(ALL);
-              setAi(ALL);
-            }}
-          >
-            <X /> Clear
-          </Button>
-        )}
-        {notSubmitted ? (
-          <Link href="/pipeline" className="ml-auto text-xs text-muted-foreground hover:text-primary">
-            {notSubmitted} prospects not yet submitted →
-          </Link>
-        ) : null}
-        <Button variant="outline" className={cn(!notSubmitted && "ml-auto")} onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
-          <Download /> Export CSV
-        </Button>
-      </div>
-
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft">
+        <TableHeader title={showHod ? "Prequalification register" : "Routed to you"} count={sorted.length} search={q} onSearch={setQ}>
+          <FilterMenu facets={facets} filters={filters} />
+          {notSubmitted ? (
+            <Link href="/pipeline" className="px-1 text-xs text-muted-foreground hover:text-primary">
+              {notSubmitted} not yet submitted →
+            </Link>
+          ) : null}
+          <Button variant="outline" onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
+            <Download /> Export CSV
+          </Button>
+        </TableHeader>
+        <FilterChips facets={facets} filters={filters} />
         <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
