@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { D365, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
 import { PushToD365Button } from "@/components/d365-push";
+import { openHodEmail } from "@/components/hod-email";
 
 const SUBMITTABLE: Tender["status"][] = ["New", "Under Review", "Changes Requested"];
 
@@ -206,8 +207,10 @@ function SubmitDialog({
 
   function submit() {
     submitForApproval(tender.id, { proposed, note: note.trim() });
-    toast.success(`Routed to ${line.hod}`, {
-      description: `HoD, ${line.name}. Log out and sign in as ${line.hod} to continue the demo.`,
+    toast.success(`Sent to ${line.hod} · email delivered`, {
+      description: `HoD, ${line.name}. See what lands in their inbox.`,
+      duration: 12000,
+      action: { label: `Preview ${line.hod.split(" ")[0]}'s email`, onClick: () => openHodEmail(tender.id) },
     });
     onOpenChange(false);
     setNote("");

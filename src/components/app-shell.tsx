@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useDemo, resetDemo } from "@/lib/store";
 import { actingPerson } from "@/lib/mock-data";
 import { STEP_ROUTES, StepTabs } from "@/components/step-tabs";
+import { HodEmailHost } from "@/components/hod-email";
 import type { Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -128,6 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </main>
+      <HodEmailHost />
     </div>
   );
 }

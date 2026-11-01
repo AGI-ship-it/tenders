@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, Download, Inbox, MessageSquare, Send } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CheckCircle2, Download, Inbox, Mail, MessageSquare, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, prospectStatus } from "@/lib/scoring";
@@ -17,6 +17,8 @@ import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } fro
 import { SortTh, compareBy, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { DecisionPanel } from "@/components/decision-panel";
+import { openHodEmail } from "@/components/hod-email";
+import { motion } from "motion/react";
 import { D365, PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
@@ -65,12 +67,15 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
     router.replace(id ? `${pathname}?id=${encodeURIComponent(id)}` : pathname, { scroll: false });
   }
   const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
+  // Arrived by clicking "Review & decide" in the HoD's email.
+  const [fromEmail, setFromEmail] = useState(params.get("via") === "email");
   // Follow new deep links even when this page is already open.
   const linkKey = params.toString();
   const [seenLink, setSeenLink] = useState(linkKey);
   if (seenLink !== linkKey) {
     setSeenLink(linkKey);
     setSelectedId(params.get("id"));
+    if (params.get("via") === "email") setFromEmail(true);
   }
 
   const isHod = demo.role === "approver";
@@ -80,6 +85,8 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const notSubmitted = demo.tenders.filter((t) => ["New", "Under Review"].includes(t.status)).length;
   const myAwaiting = mine.filter((t) => t.status === "Awaiting HoD").length;
   const selected = demo.tenders.find((t) => t.id === selectedId);
+  // The HoD's queue, soonest due first, for "Review next".
+  const myQueue = mine.filter((t) => t.status === "Awaiting HoD").sort((a, b) => a.deadline.localeCompare(b.deadline));
 
   function open(id: string) {
     setSelectedId(id);
@@ -112,6 +119,17 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
               </span>
             )}
           </div>
+          {fromEmail && (
+            <div className="flex shrink-0 items-center gap-3 rounded-xl bg-secondary px-4 py-2.5 text-sm text-secondary-foreground">
+              <Mail className="size-4 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="font-semibold">Opened from email.</span> Signed in as {myLine.hod} with your work account.
+              </span>
+              <button onClick={() => setFromEmail(false)} aria-label="Dismiss" className="rounded-md p-1 hover:bg-primary/10">
+                <X className="size-4" />
+              </button>
+            </div>
+          )}
           {mine.length ? (
             <Register tenders={mine} onOpen={open} selectedId={selectedId} showHod={false} />
           ) : (
@@ -138,17 +156,68 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
       >
         <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl data-[side=right]:sm:max-w-xl">
           <SheetTitle className="sr-only">{selected?.title ?? "Prospect"}</SheetTitle>
-          {selected && <ReviewPanel tender={selected} />}
+          {selected && (
+            <ReviewPanel
+              tender={selected}
+              isHod={isHod}
+              next={myQueue.find((t) => t.id !== selected.id)}
+              remaining={myQueue.filter((t) => t.id !== selected.id).length}
+              onOpen={open}
+            />
+          )}
         </SheetContent>
       </Sheet>
     </div>
   );
 }
 
-function ReviewPanel({ tender }: { tender: Tender }) {
+const DONE_LABEL: Partial<Record<Tender["status"], string>> = {
+  Prequalified: "Prequalified",
+  "Lead in D365": "Prequalified",
+  "Not qualified": "Marked not qualified",
+  "No-bid": "Rejection confirmed",
+  "Changes Requested": "Changes requested",
+};
+
+function ReviewPanel({
+  tender,
+  isHod,
+  next,
+  remaining,
+  onOpen,
+}: {
+  tender: Tender;
+  isHod: boolean;
+  next?: Tender;
+  remaining: number;
+  onOpen: (id: string) => void;
+}) {
   const line = serviceLineFor(tender.category);
+  const done = isHod ? DONE_LABEL[tender.status] : undefined;
   return (
     <div className="space-y-5 p-6">
+      {/* After the HoD decides: keep going through the queue without returning to the inbox. */}
+      {done && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200 ring-inset"
+        >
+          <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
+          <div className="min-w-0 flex-1 text-sm">
+            <div className="font-bold text-emerald-900">{done}</div>
+            <div className="text-emerald-900/80">
+              {remaining ? `${remaining} more waiting for you` : "You're all caught up."}
+            </div>
+          </div>
+          {next && (
+            <Button variant="success" size="lg" onClick={() => onOpen(next.id)}>
+              Review next <ArrowRight />
+            </Button>
+          )}
+        </motion.div>
+      )}
+
       <div className="pr-8">
         <div className="text-xs text-muted-foreground">
           <span className="font-mono">{tender.id}</span> · routed to {line.hod}, HoD {line.name}
@@ -173,6 +242,11 @@ function ReviewPanel({ tender }: { tender: Tender }) {
       <div className="rounded-xl bg-muted/30 p-4">
         <h3 className="mb-3 text-sm font-bold text-primary">HoD decision</h3>
         <DecisionPanel tender={tender} />
+        {!isHod && tender.status === "Awaiting HoD" && (
+          <Button variant="secondary" size="lg" className="mt-3 w-full" onClick={() => openHodEmail(tender.id)}>
+            <Mail /> Preview email to {line.hod}
+          </Button>
+        )}
       </div>
 
       <Comments tender={tender} />
