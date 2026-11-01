@@ -71,22 +71,7 @@ export function TenderDetail() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
-      <div className="flex shrink-0 items-center justify-between gap-3">
-        <nav aria-label="Breadcrumb" className="min-w-0">
-          <ol className="flex min-w-0 items-center gap-1.5 text-sm">
-            <li className="shrink-0">
-              <button onClick={goBack} className="font-medium text-muted-foreground transition-colors hover:text-primary hover:underline">
-                {back.label}
-              </button>
-            </li>
-            <li aria-hidden className="shrink-0 text-muted-foreground/60">
-              <ChevronRight className="size-4" />
-            </li>
-            <li aria-current="page" className="min-w-0 truncate font-semibold text-foreground">
-              {tender.id}
-            </li>
-          </ol>
-        </nav>
+      <div className="flex shrink-0 items-center justify-end gap-3">
         <button
           onClick={goBack}
           aria-label={`Close and return to ${back.label}`}
@@ -101,7 +86,22 @@ export function TenderDetail() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-card shadow-soft sm:rounded-3xl">
       {/* Header */}
       <div className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
+          <nav aria-label="Breadcrumb" className="mb-2 min-w-0">
+            <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+              <li className="shrink-0">
+                <button onClick={goBack} className="font-medium text-muted-foreground transition-colors hover:text-primary hover:underline">
+                  {back.label}
+                </button>
+              </li>
+              <li aria-hidden className="shrink-0 text-muted-foreground/60">
+                <ChevronRight className="size-4" />
+              </li>
+              <li aria-current="page" className="min-w-0 truncate font-semibold text-foreground">
+                {tender.id}
+              </li>
+            </ol>
+          </nav>
           <h1 className="max-w-3xl text-2xl font-semibold tracking-tight">{tender.title}</h1>
           <div className="text-sm text-muted-foreground">
             {tender.category} · {tender.buyer} · {tender.emirate}
