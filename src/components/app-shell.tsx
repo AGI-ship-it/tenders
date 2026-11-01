@@ -62,69 +62,76 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Scan Portal and the prospect page fit the window; long sections scroll inside their own cards.
   const fill = ["/sources", "/opportunity", "/pipeline", "/approvals"].includes(pathname);
 
-  return (
-    <div className={cn("flex flex-col", fill ? "h-dvh" : "min-h-screen")}>
-      <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
-        <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center gap-4 px-6 lg:px-10">
-          <Link href={isHod ? "/approvals" : "/sources"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-            <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <Radar className="size-5" />
-            </div>
-            <div className="leading-tight">
-              <div className="text-[13px] font-semibold tracking-tight">AGFS Tender</div>
-              <div className="text-[13px] font-semibold tracking-tight text-primary">Intelligence</div>
-            </div>
-          </Link>
-          <nav className="ml-6 hidden items-center gap-1 md:flex">
-            {nav.map((n) => {
-              const on = n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  aria-current={on ? "page" : undefined}
-                  className={cn(
-                    "relative rounded-lg px-3 py-1.5 text-sm transition-colors",
-                    on ? "font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  {n.label}
-                  {on && <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-magenta" />}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="hidden items-center gap-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50/70 px-2.5 py-1 text-[11px] font-medium text-amber-800 sm:inline-flex">
-              <FlaskConical className="size-3.5" /> Demo data
-            </span>
-            {demo && <ProfileMenu role={demo.role} hodLine={demo.hodLine} />}
-          </div>
-        </div>
-      </header>
+  // Steps and the screen below them form one section with the top bar.
+  const stepped = !isHod && (STEP_ROUTES.includes(pathname) || pathname === "/onboarding");
 
-      <main className={cn("app-canvas flex-1 px-6 py-8 lg:px-10", fill && "flex min-h-0 flex-col overflow-y-auto pb-6")}>
-        <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex min-h-[520px] flex-1 flex-col")}>
-          {demo && !blocked ? (
-            <>
-              {!isHod && (STEP_ROUTES.includes(pathname) || pathname === "/onboarding") ? (
-                // Steps and the screen below them read as one section; inner cards drop their own frame.
-                <div
-                  data-step-section
-                  className={cn("overflow-hidden rounded-3xl bg-card shadow-soft", fill && "flex min-h-0 flex-1 flex-col")}
-                >
-                  <StepTabs />
-                  {children}
-                </div>
-              ) : (
-                children
-              )}
-            </>
+  return (
+    // The app reads as one framed window, like a Power Apps screen: top bar, then the screen.
+    <div className={cn("app-canvas flex flex-col p-3 sm:p-5", fill ? "h-dvh" : "min-h-screen")}>
+      <div
+        data-step-section={stepped ? "" : undefined}
+        className={cn(
+          "mx-auto flex w-full max-w-[1360px] flex-1 flex-col overflow-clip rounded-3xl bg-card shadow-soft ring-1 ring-border/60",
+          fill && "min-h-0",
+        )}
+      >
+        <header className="sticky top-0 z-30 shrink-0 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+          <div className="flex h-16 w-full items-center gap-4 px-6">
+            <Link href={isHod ? "/approvals" : "/sources"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+              <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                <Radar className="size-5" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-[13px] font-semibold tracking-tight">AGFS Tender</div>
+                <div className="text-[13px] font-semibold tracking-tight text-primary">Intelligence</div>
+              </div>
+            </Link>
+            <nav className="ml-6 hidden items-center gap-1 md:flex">
+              {nav.map((n) => {
+                const on = n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    aria-current={on ? "page" : undefined}
+                    className={cn(
+                      "relative rounded-lg px-3 py-1.5 text-sm transition-colors",
+                      on ? "font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {n.label}
+                    {on && <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-magenta" />}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="ml-auto flex items-center gap-3">
+              <span className="hidden items-center gap-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50/70 px-2.5 py-1 text-[11px] font-medium text-amber-800 sm:inline-flex">
+                <FlaskConical className="size-3.5" /> Demo data
+              </span>
+              {demo && <ProfileMenu role={demo.role} hodLine={demo.hodLine} />}
+            </div>
+          </div>
+        </header>
+
+        {demo && !blocked ? (
+          stepped ? (
+            <div className={cn("flex flex-col", fill && "min-h-0 flex-1 overflow-y-auto")}>
+              <StepTabs />
+              {/* A floor height so the table stays usable on short windows; the section scrolls instead. */}
+              <div className={cn("flex flex-col", fill && "min-h-[440px] flex-1")}>{children}</div>
+            </div>
           ) : (
+            <main className={cn("flex-1 bg-zinc-50/70 px-6 py-8 lg:px-10", fill && "flex min-h-0 flex-col overflow-y-auto pb-6")}>
+              <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex min-h-[520px] flex-1 flex-col")}>{children}</div>
+            </main>
+          )
+        ) : (
+          <main className="flex-1 px-6 py-8">
             <LoadingState />
-          )}
-        </div>
-      </main>
+          </main>
+        )}
+      </div>
     </div>
   );
 }
