@@ -160,18 +160,21 @@
 }
 
 :root {
+  /* Warm ink: a soft brown-black for text and a warm taupe for secondary text, clearer than cool greys. */
+  --ink: #2a2320;
+  --ink-muted: #66574f;
   --background: var(--ag-white);
-  --foreground: var(--ag-grey-1000);
+  --foreground: var(--ink);
   --card: var(--ag-white);
-  --card-foreground: var(--ag-grey-1000);
+  --card-foreground: var(--ink);
   --popover: var(--ag-white);
-  --popover-foreground: var(--ag-grey-1000);
+  --popover-foreground: var(--ink);
   --primary: var(--ag-purple-800);
   --primary-foreground: var(--ag-white);
   --secondary: color-mix(in oklch, var(--ag-purple-200) 14%, white);
   --secondary-foreground: var(--ag-purple-800);
   --muted: var(--ag-grey-200);
-  --muted-foreground: var(--ag-grey-600);
+  --muted-foreground: var(--ink-muted);
   --accent: color-mix(in oklch, var(--ag-purple-200) 14%, white);
   --accent-foreground: var(--ag-purple-800);
   --destructive: oklch(0.577 0.2 27);
