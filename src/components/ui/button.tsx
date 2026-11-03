@@ -10,7 +10,7 @@ import { cn } from "cn"
  *   default      Primary action on a surface. One per area (Export CSV, Prequalify, Open on portal).
  *   success      Positive decision that completes a workflow step (HoD prequalifies).
  *   secondary    White with a purple border and purple label: supporting actions such as Filter.
- *   outline      Neutral bordered: Cancel, Sources, Request changes.
+ *   outline      Neutral bordered: Cancel, Sources.
  *   ghost        No chrome: icon buttons, Back, low-priority actions.
  *   destructive  Soft red: reject or remove.
  *   link         Inline text action.

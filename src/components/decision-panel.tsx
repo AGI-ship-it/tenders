@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, CloudUpload, ExternalLink, MessageSquareWarning, Send, ShieldCheck, X } from "lucide-react";
+import { Check, CloudUpload, ExternalLink, Send, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { decide, submitForApproval, useDemo } from "@/lib/store";
@@ -176,14 +176,9 @@ export function DecisionActions({ tender }: { tender: Tender }) {
       <Button variant="success" size="lg" className="w-full" onClick={() => act("Approved")}>
         <Check /> {tender.approval?.proposed === "Reject" ? "Confirm rejection" : "Prequalify"}
       </Button>
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" size="lg" onClick={() => act("Changes Requested")}>
-          <MessageSquareWarning /> Request changes
-        </Button>
-        <Button variant="destructive" size="lg" onClick={() => act("Rejected")}>
-          <X /> Not qualified
-        </Button>
-      </div>
+      <Button variant="destructive" size="lg" className="w-full" onClick={() => act("Rejected")}>
+        <X /> Not qualified
+      </Button>
     </div>
   );
 }
