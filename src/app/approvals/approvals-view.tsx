@@ -19,7 +19,7 @@ import { TablePagination, usePagination } from "@/components/table-pagination";
 import { DecisionPanel } from "@/components/decision-panel";
 import { openHodEmail } from "@/components/hod-email";
 import { motion } from "motion/react";
-import { D365, PageHeader, PrequalBadge, StatusBadge } from "@/components/shared";
+import { D365, PageHeader, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
@@ -102,7 +102,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
       {!embedded && (
         <PageHeader
           title="Prospects for Prequalification"
-          description={<>Each prospect is routed to the HoD of its service line. Prequalified prospects are pushed to <D365 /> as leads.</>}
+          description={<>Each prospect is routed to the HoD of its service line. Prequalifying pushes the prospect to <D365 /> as a lead automatically.</>}
         />
       )}
 
@@ -193,7 +193,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
 
 const DONE_LABEL: Partial<Record<Tender["status"], string>> = {
   Prequalified: "Prequalified",
-  "Lead in D365": "Prequalified",
+  "Lead in D365": "Prequalified & pushed to D365",
   "Not qualified": "Marked not qualified",
   "No-bid": "Rejection confirmed",
   "Changes Requested": "Changes requested",
@@ -225,7 +225,12 @@ function ReviewPanel({
         >
           <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
           <div className="min-w-0 flex-1 text-sm">
-            <div className="font-bold text-emerald-900">{done}</div>
+            <div className="font-bold text-emerald-900">{boldD365(done)}</div>
+            {tender.lead && (
+              <div className="text-emerald-900/80">
+                Lead <span className="font-mono font-semibold">{tender.lead.leadId}</span> created in <D365 />, owner {tender.lead.owner}.
+              </div>
+            )}
             <div className="text-emerald-900/80">
               {remaining ? `${remaining} more waiting for you` : "You're all caught up."}
             </div>
@@ -509,8 +514,6 @@ function Register({
                           <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
                           <div className="text-xs text-muted-foreground">{formatDate(t.lead.pushedAt)}</div>
                         </>
-                      ) : t.status === "Prequalified" ? (
-                        <span className="text-xs text-muted-foreground">Ready to push</span>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}

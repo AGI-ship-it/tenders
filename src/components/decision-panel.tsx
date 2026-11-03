@@ -6,7 +6,7 @@ import { Check, CloudUpload, ExternalLink, Send, ShieldCheck, X } from "lucide-r
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { decide, submitForApproval, useDemo } from "@/lib/store";
-import { hodLabel, serviceLineFor } from "@/lib/mock-data";
+import { PEOPLE, hodLabel, serviceLineFor } from "@/lib/mock-data";
 import { aiPrequalified } from "@/lib/scoring";
 import { formatDateTime } from "@/lib/format";
 import type { ApprovalRecord, Tender } from "@/lib/types";
@@ -23,7 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { D365, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
-import { PushToD365Button } from "@/components/d365-push";
 import { openHodEmail } from "@/components/hod-email";
 
 const SUBMITTABLE: Tender["status"][] = ["New", "Under Review", "Changes Requested"];
@@ -68,16 +67,14 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
           />
         ))}
 
-      {tender.status === "Prequalified" && <PushToD365Button tender={tender} />}
-
       {lead && (
         <div className="space-y-3 rounded-xl bg-teal-50 p-4 text-sm text-teal-700">
           <div className="flex items-center gap-1.5 font-semibold">
             <CloudUpload className="size-4" /> Lead {lead.leadId} in <D365 />
           </div>
           <div className="text-xs leading-relaxed">
-            {a?.decidedAt && <>Prequalified {formatDateTime(a.decidedAt)} · </>}
-            Owner {lead.owner} · pushed by {lead.pushedBy} · {formatDateTime(lead.pushedAt)}
+            Pushed automatically when {a?.decidedBy ?? lead.owner} prequalified · {formatDateTime(lead.pushedAt)} · Owner{" "}
+            {lead.owner}
           </div>
           <Button
             variant="outline"
@@ -148,9 +145,16 @@ export function DecisionActions({ tender }: { tender: Tender }) {
       setNeedComment(true);
       return;
     }
-    decide(tender.id, d, comment.trim());
+    const leadId = decide(tender.id, d, comment.trim());
     setComment("");
     setNeedComment(false);
+    if (leadId) {
+      toast.success(boldD365("Prequalified & pushed to D365"), {
+        description: boldD365(`Lead ${leadId} created in D365 · owner ${serviceLineFor(tender.category).hod}. ${PEOPLE.analyst.name.split(" ")[0]} sees it as approved.`),
+        duration: 8000,
+      });
+      return;
+    }
     const proposed = tender.approval?.proposed ?? "Prequalify";
     toast.success(
       d === "Approved" ? (proposed === "Prequalify" ? "Prequalified" : "Rejection confirmed") : d === "Rejected" ? "Marked not qualified" : "Changes requested",
@@ -174,7 +178,7 @@ export function DecisionActions({ tender }: { tender: Tender }) {
         />
       </div>
       <Button variant="success" size="lg" className="w-full" onClick={() => act("Approved")}>
-        <Check /> {tender.approval?.proposed === "Reject" ? "Confirm rejection" : "Prequalify"}
+        <Check /> {tender.approval?.proposed === "Reject" ? "Confirm rejection" : <>Prequalify & push to <D365 /></>}
       </Button>
       <Button variant="destructive" size="lg" className="w-full" onClick={() => act("Rejected")}>
         <X /> Not qualified

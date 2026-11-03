@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { AGENT_NAME, DEMO_VERSION, actingPerson, hodLabel, scanBatches, seedState, serviceLineFor } from "./mock-data";
+import { AGENT_NAME, AUTO_PUSH_ACTOR, DEMO_VERSION, actingPerson, hodLabel, scanBatches, seedState, serviceLineFor } from "./mock-data";
 import { isActive, priorityScore } from "./scoring";
 import type { ApprovalRecord, AuditEvent, DemoState, Role, Source, Tender } from "./types";
 
@@ -200,11 +200,18 @@ export function submitForApproval(id: string, input: { proposed: ApprovalRecord[
   });
 }
 
+/**
+ * Records the HoD's decision. Prequalifying also pushes the prospect to D365 as a lead straight away, so the
+ * Bid Analyst has nothing left to do. Returns the new lead number when one was created.
+ */
 export function decide(
   id: string,
   decision: NonNullable<ApprovalRecord["decision"]>,
   comment: string,
-) {
+): string | undefined {
+  const t0 = state?.tenders.find((x) => x.id === id);
+  const pushes = decision === "Approved" && (t0?.approval?.proposed ?? "Prequalify") === "Prequalify";
+  const leadId = pushes ? `LEAD-${Math.floor(10000 + Math.random() * 89999)}` : undefined;
   setState((s) => {
     const t = s.tenders.find((x) => x.id === id);
     // In the demo, the HoD role acts on behalf of whichever HoD the prospect is routed to.
@@ -216,7 +223,7 @@ export function decide(
         : decision === "Rejected"
           ? "Not qualified"
           : proposed === "Prequalify"
-            ? "Prequalified"
+            ? "Lead in D365"
             : "No-bid";
     const action =
       decision === "Changes Requested"
@@ -226,6 +233,7 @@ export function decide(
           : proposed === "Prequalify"
             ? "Prequalified"
             : "Confirmed rejection";
+    const at = now();
     return {
       ...s,
       tenders: patchTender(s, id, (x) => ({
@@ -235,16 +243,29 @@ export function decide(
           ...x.approval,
           decision,
           decidedBy: by,
-          decidedAt: now(),
+          decidedAt: at,
           decisionComment: comment,
         },
+        ...(leadId && { lead: { leadId, pushedBy: AUTO_PUSH_ACTOR, pushedAt: at, owner: serviceLineFor(x.category).hod } }),
       })),
       audit: [
+        ...(leadId
+          ? [
+              event({
+                actor: AUTO_PUSH_ACTOR,
+                role: "agent",
+                action: `Pushed to D365 as lead ${leadId}`,
+                tenderId: id,
+                detail: "Automatic on HoD prequalification (simulated)",
+              }),
+            ]
+          : []),
         event({ actor: by, role: s.role, action, tenderId: id, detail: comment || undefined }),
         ...s.audit,
       ],
     };
   });
+  return leadId;
 }
 
 export function addComment(id: string, text: string) {
@@ -351,28 +372,6 @@ export function completeOnboarding() {
 }
 
 /** Simulated push of a prequalified prospect to Dynamics 365 lead management. No real API call. */
-export function pushToD365(id: string): string {
-  const leadId = `LEAD-${Math.floor(10000 + Math.random() * 89999)}`;
-  setState((s) => {
-    const t = s.tenders.find((x) => x.id === id);
-    if (!t) return s;
-    const by = currentUser(s).name;
-    return {
-      ...s,
-      tenders: patchTender(s, id, (x) => ({
-        ...x,
-        status: "Lead in D365",
-        lead: { leadId, pushedBy: by, pushedAt: now(), owner: serviceLineFor(x.category).hod },
-      })),
-      audit: [
-        event({ actor: by, role: s.role, action: `Pushed to D365 as lead ${leadId}`, tenderId: id, detail: "Simulated" }),
-        ...s.audit,
-      ],
-    };
-  });
-  return leadId;
-}
-
 export type ScanMode = "discover" | "checkin";
 const PENDING_SCAN_KEY = "agfs-pending-scan";
 let pendingScan: ScanMode | null = null;

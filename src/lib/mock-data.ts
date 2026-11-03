@@ -622,7 +622,7 @@ export function seedTenders(): Tender[] {
         decision: "Approved",
         decidedBy: "Faisal Karim",
         decidedAt: hoursAgo(24 * 29),
-        decisionComment: "Approved. Relevant for Soft Services; push to D365 as a lead.",
+        decisionComment: "Approved. Relevant for Soft Services.",
       },
     }),
     tender({
@@ -870,7 +870,7 @@ const ROUTED_CASES: RoutedCase[] = [
     note: "All criteria met; similar tower contracts in portfolio.",
     submitted: 5,
     decided: 2,
-    comment: "Prequalified. Ready to push to D365.",
+    comment: "Prequalified.",
   },
   {
     id: "TND-2026-0289",
@@ -1250,16 +1250,50 @@ function seedAudit(): AuditEvent[] {
   ].sort((x, y) => y.at.localeCompare(x.at));
 }
 
-export const DEMO_VERSION = 16;
+export const DEMO_VERSION = 17;
+
+/** Prequalifying pushes the prospect to D365 straight away, so no seeded prospect waits on a manual push. */
+export const AUTO_PUSH_ACTOR = "D365 sync";
+
+export function autoLeadId(tenderId: string) {
+  const n = Number(tenderId.replace(/\D/g, "").slice(-4)) || 0;
+  return `LEAD-${48000 + ((n * 37) % 1000)}`;
+}
+
+function autoPushSeeds(): { tenders: Tender[]; audit: AuditEvent[] } {
+  const audit = seedAudit();
+  const tenders = seedTenders().map((t) => {
+    if (t.status !== "Prequalified" || t.lead) return t;
+    const at = t.approval?.decidedAt ?? hoursAgo(24);
+    const leadId = autoLeadId(t.id);
+    audit.push({
+      id: `auto-${t.id}`,
+      at,
+      actor: AUTO_PUSH_ACTOR,
+      role: "agent",
+      action: `Pushed to D365 as lead ${leadId}`,
+      tenderId: t.id,
+      detail: "Automatic on HoD prequalification (simulated)",
+    });
+    return {
+      ...t,
+      status: "Lead in D365" as const,
+      lead: { leadId, pushedBy: AUTO_PUSH_ACTOR, pushedAt: at, owner: serviceLineFor(t.category).hod },
+    };
+  });
+  audit.sort((x, y) => y.at.localeCompare(x.at));
+  return { tenders, audit };
+}
 
 export function seedState(): DemoState {
+  const { tenders, audit } = autoPushSeeds();
   return {
     version: DEMO_VERSION,
     role: "analyst",
     hodLine: "ifm",
-    tenders: seedTenders(),
+    tenders,
     sources: seedSources(),
-    audit: seedAudit(),
+    audit,
     scanCount: 0,
     lastScanAt: hoursAgo(26),
     // Yesterday's daily run, matching the "Daily scan completed" audit entry.

@@ -222,7 +222,7 @@ function decisionOf(t: Tender): { main: string; sub?: string; tone: string } {
     case "Prequalified":
     case "Lead in D365":
       main = `Approved by ${a?.decidedBy ?? hod}`;
-      sub = [decidedOn, t.lead ? `Lead ${t.lead.leadId}` : "Ready to push to D365"].filter(Boolean).join(" · ");
+      sub = [decidedOn, t.lead ? `Lead ${t.lead.leadId} in D365` : undefined].filter(Boolean).join(" · ");
       break;
     default:
       main = a?.decidedBy ? `Rejected by ${a.decidedBy}` : "Rejected";
