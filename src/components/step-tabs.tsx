@@ -89,7 +89,7 @@ export function StepTabs() {
   const awaitingList = tenders.filter((t) => t.status === "Awaiting HoD");
   const awaiting = awaitingList.length;
   const routed = tenders.filter((t) => t.approval);
-  const decided = routed.filter((t) => !["Awaiting HoD", "Changes Requested"].includes(t.status)).length;
+  const decided = routed.filter((t) => t.status !== "Awaiting HoD").length;
   const overdue = awaitingList.filter(
     (t) => t.approval && daysSince(t.approval.submittedAt) > DECISION_SLA_DAYS,
   ).length;

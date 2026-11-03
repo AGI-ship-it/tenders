@@ -676,7 +676,7 @@ export function seedTenders(): Tender[] {
       scope: ["Licensed guarding 24/7.", "CCTV monitoring room staffing.", "Event security support."],
       eligibility: genericEligibility(["partial", "met", "partial", "met", "met"]),
       aiNarrative: "Service is outside AGFS self-delivered lines; viable only with a licensed partner.",
-      status: "Changes Requested",
+      status: "Awaiting HoD",
       discoveredAt: hoursAgo(24 * 24),
       approval: {
         proposed: "Prequalify",
@@ -684,10 +684,6 @@ export function seedTenders(): Tender[] {
         submittedAt: hoursAgo(24 * 6),
         reviewer: "Nadia Yousef (HoD, Security & Specialist)",
         note: "Propose bidding with a licensed security partner.",
-        decision: "Changes Requested",
-        decidedBy: "Nadia Yousef",
-        decidedAt: hoursAgo(24 * 5),
-        decisionComment: "Please name the partner and confirm margin split before resubmitting.",
       },
     }),
     tender({
@@ -737,10 +733,10 @@ export function seedTenders(): Tender[] {
 }
 
 // ---------------------------------------------------------------------------
-// Routed prospects so that every HoD has each case: pending review, changes requested, prequalified (ready to push),
+// Routed prospects so that every HoD has each case: pending review, prequalified,
 // pushed to D365 as a lead, and rejected. Ages are in days before now.
 
-type RoutedStatus = "Awaiting HoD" | "Changes Requested" | "Prequalified" | "Lead in D365" | "Not qualified" | "No-bid";
+type RoutedStatus = "Awaiting HoD" | "Prequalified" | "Lead in D365" | "Not qualified" | "No-bid";
 
 interface RoutedCase {
   id: string;
@@ -778,9 +774,7 @@ function routedTender(c: RoutedCase): Tender {
   const decision: ApprovalRecord["decision"] =
     c.status === "Awaiting HoD"
       ? undefined
-      : c.status === "Changes Requested"
-        ? "Changes Requested"
-        : c.status === "Not qualified"
+      : c.status === "Not qualified"
           ? "Rejected"
           : "Approved";
   return tender({
@@ -842,11 +836,9 @@ const ROUTED_CASES: RoutedCase[] = [
     scope: ["Planned and reactive MEP maintenance.", "Cleaning of academic and residential buildings.", "CAFM helpdesk."],
     eligibility: ["met", "met", "met", "partial", "met"],
     aiNarrative: "Core IFM scope in a priority market and inside the value band. Student-housing references should be confirmed.",
-    status: "Changes Requested",
+    status: "Awaiting HoD",
     note: "Strong IFM fit; education references attached.",
     submitted: 6,
-    decided: 4,
-    comment: "Add the student-housing references and the CAFM approach before I prequalify.",
   },
   {
     id: "TND-2026-0296",
@@ -962,11 +954,9 @@ const ROUTED_CASES: RoutedCase[] = [
     scope: ["HV/LV switchgear maintenance.", "Standby generator servicing."],
     eligibility: ["met", "met", "met", "partial", "met"],
     aiNarrative: "Good hard FM fit in a priority market, at the lower end of the value band.",
-    status: "Changes Requested",
+    status: "Awaiting HoD",
     note: "Recommend prequalifying; HV competence in-house.",
     submitted: 7,
-    decided: 5,
-    comment: "Confirm the HV-authorised engineers we would assign.",
   },
   {
     id: "TND-2026-0299",
@@ -1082,11 +1072,9 @@ const ROUTED_CASES: RoutedCase[] = [
     scope: ["Daily housekeeping of units.", "Public-area cleaning.", "Laundry coordination."],
     eligibility: ["met", "met", "met", "met", "met"],
     aiNarrative: "Strong soft-services fit with an existing client.",
-    status: "Changes Requested",
+    status: "Awaiting HoD",
     note: "Existing client; recommend prequalifying.",
     submitted: 5,
-    decided: 3,
-    comment: "Please add staffing ratios before I prequalify.",
   },
   {
     id: "TND-2026-0293",
@@ -1227,13 +1215,7 @@ function seedAudit(): AuditEvent[] {
     const out = [e(c.submitted * 24, PEOPLE.analyst.name, "analyst", `Submitted for approval (proposed: ${proposed})`, c.id)];
     if (c.decided !== undefined) {
       const action =
-        c.status === "Changes Requested"
-          ? "Requested changes"
-          : c.status === "Not qualified"
-            ? "Marked not qualified"
-            : c.status === "No-bid"
-              ? "Confirmed rejection"
-              : "Prequalified";
+        c.status === "Not qualified" ? "Marked not qualified" : c.status === "No-bid" ? "Confirmed rejection" : "Prequalified";
       out.push(e(c.decided * 24, hod, "approver", action, c.id, c.comment));
     }
     if (c.lead) out.push(e(c.lead[1] * 24, hod, "approver", `Pushed to D365 as lead ${c.lead[0]}`, c.id));
@@ -1243,14 +1225,13 @@ function seedAudit(): AuditEvent[] {
     ...routed,
     e(20, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
     e(26, AGENT_NAME, "agent", "Daily scan completed", undefined, "4 sources scanned, 2 new tenders, 4 duplicates skipped (simulated)."),
-    e(24 * 5, "Nadia Yousef", "approver", "Requested changes", "TND-2026-0333", "Please name the partner and confirm margin split."),
     e(24 * 6, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0333"),
     e(24 * 27 - 3, "Faisal Karim", "approver", "Confirmed rejection", "TND-2026-0340", "Agree, not relevant for AGFS."),
     e(24 * 29, "Faisal Karim", "approver", "Prequalified", "TND-2026-0351", "Relevant for Soft Services."),
   ].sort((x, y) => y.at.localeCompare(x.at));
 }
 
-export const DEMO_VERSION = 17;
+export const DEMO_VERSION = 18;
 
 /** Prequalifying pushes the prospect to D365 straight away, so no seeded prospect waits on a manual push. */
 export const AUTO_PUSH_ACTOR = "D365 sync";

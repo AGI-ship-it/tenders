@@ -214,11 +214,6 @@ function decisionOf(t: Tender): { main: string; sub?: string; tone: string } {
       sub = a ? `Sent ${timeAgo(a.submittedAt).toLowerCase()}` : undefined;
       tone = "text-orange-700";
       break;
-    case "Changes Requested":
-      main = `Changes requested by ${a?.decidedBy ?? hod}`;
-      sub = decidedOn;
-      tone = "text-orange-700";
-      break;
     case "Prequalified":
     case "Lead in D365":
       main = `Approved by ${a?.decidedBy ?? hod}`;

@@ -218,21 +218,9 @@ export function decide(
     const by = currentUser(s).name;
     const proposed = t?.approval?.proposed ?? "Prequalify";
     const status: Tender["status"] =
-      decision === "Changes Requested"
-        ? "Changes Requested"
-        : decision === "Rejected"
-          ? "Not qualified"
-          : proposed === "Prequalify"
-            ? "Lead in D365"
-            : "No-bid";
+      decision === "Rejected" ? "Not qualified" : proposed === "Prequalify" ? "Lead in D365" : "No-bid";
     const action =
-      decision === "Changes Requested"
-        ? "Requested changes"
-        : decision === "Rejected"
-          ? "Marked not qualified"
-          : proposed === "Prequalify"
-            ? "Prequalified"
-            : "Confirmed rejection";
+      decision === "Rejected" ? "Marked not qualified" : proposed === "Prequalify" ? "Prequalified" : "Confirmed rejection";
     const at = now();
     return {
       ...s,

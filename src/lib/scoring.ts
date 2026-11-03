@@ -117,7 +117,7 @@ export function priorityScore(t: Tender): number {
   return Math.round(fitScore(t) * 0.85 + sizeFactor * 0.15);
 }
 
-export const ACTIVE_STATUSES = ["New", "Under Review", "Awaiting HoD", "Changes Requested", "Prequalified", "Lead in D365"] as const;
+export const ACTIVE_STATUSES = ["New", "Under Review", "Awaiting HoD", "Prequalified", "Lead in D365"] as const;
 
 export function isActive(t: Tender) {
   return (ACTIVE_STATUSES as readonly string[]).includes(t.status);

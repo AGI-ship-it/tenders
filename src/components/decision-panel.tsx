@@ -25,7 +25,7 @@ import {
 import { D365, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
 import { openHodEmail } from "@/components/hod-email";
 
-const SUBMITTABLE: Tender["status"][] = ["New", "Under Review", "Changes Requested"];
+const SUBMITTABLE: Tender["status"][] = ["New", "Under Review"];
 
 /** The single "what happens next" panel for a tender, adapted to role and status. */
 export function DecisionPanel({ tender }: { tender: Tender }) {
@@ -48,7 +48,7 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
       {SUBMITTABLE.includes(tender.status) &&
         (role === "analyst" ? (
           <Button className="w-full" size="lg" onClick={() => setSubmitOpen(true)}>
-            <Send /> {tender.status === "Changes Requested" ? "Resubmit to HoD" : "Submit for prequalification"}
+            <Send /> Submit for prequalification
           </Button>
         ) : (
           <RoleHint text={`Waiting for the Bid Analyst to submit this prospect for prequalification.`} />
@@ -122,7 +122,6 @@ function ApprovalSummary({ approval: a }: { approval: ApprovalRecord }) {
             "rounded-md p-2.5 text-xs",
             a.decision === "Approved" && "bg-emerald-50 text-emerald-900",
             a.decision === "Rejected" && "bg-rose-50 text-rose-900",
-            a.decision === "Changes Requested" && "bg-orange-50 text-orange-900",
           )}
         >
           <div className="font-semibold">
@@ -157,7 +156,7 @@ export function DecisionActions({ tender }: { tender: Tender }) {
     }
     const proposed = tender.approval?.proposed ?? "Prequalify";
     toast.success(
-      d === "Approved" ? (proposed === "Prequalify" ? "Prequalified" : "Rejection confirmed") : d === "Rejected" ? "Marked not qualified" : "Changes requested",
+      d === "Approved" ? (proposed === "Prequalify" ? "Prequalified" : "Rejection confirmed") : "Marked not qualified",
       { description: `${tender.id} pipeline status updated.` },
     );
   }

@@ -23,14 +23,13 @@ import { D365, PageHeader, PrequalBadge, StatusBadge, boldD365 } from "@/compone
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
-const PENDING: Tender["status"][] = ["Awaiting HoD", "Changes Requested"];
+const PENDING: Tender["status"][] = ["Awaiting HoD"];
 
 /** "order" is the default: pending first by due date, then the latest decisions. */
 type RegisterSort = "order" | "id" | "value" | "deadline" | "ai" | "hod" | "status" | "lead";
 
 const STATUS_RANK: Tender["status"][] = [
   "Awaiting HoD",
-  "Changes Requested",
   "Prequalified",
   "Lead in D365",
   "Not qualified",
@@ -196,7 +195,6 @@ const DONE_LABEL: Partial<Record<Tender["status"], string>> = {
   "Lead in D365": "Prequalified & pushed to D365",
   "Not qualified": "Marked not qualified",
   "No-bid": "Rejection confirmed",
-  "Changes Requested": "Changes requested",
 };
 
 function ReviewPanel({
@@ -495,11 +493,7 @@ function Register({
                       <StatusBadge status={t.status} />
                       <div className="mt-1.5 text-[11px] text-muted-foreground">
                         {pending ? (
-                          t.status === "Changes Requested" ? (
-                            "Changes requested"
-                          ) : (
-                            t.approval && `Submitted ${timeAgo(t.approval.submittedAt)}`
-                          )
+                          t.approval && `Submitted ${timeAgo(t.approval.submittedAt)}`
                         ) : (
                           <span className={cn("font-medium", !agrees && "text-magenta")}>
                             {agrees ? "Matches AI" : "Overrides AI"}

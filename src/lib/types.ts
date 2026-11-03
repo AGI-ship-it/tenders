@@ -24,7 +24,6 @@ export type TenderStatus =
   | "New"
   | "Under Review"
   | "Awaiting HoD"
-  | "Changes Requested"
   | "Prequalified"
   | "Lead in D365"
   | "No-bid"
@@ -68,7 +67,7 @@ export interface ApprovalRecord {
   submittedAt: string;
   reviewer: string;
   note: string;
-  decision?: "Approved" | "Rejected" | "Changes Requested";
+  decision?: "Approved" | "Rejected";
   decidedBy?: string;
   decidedAt?: string;
   decisionComment?: string;
