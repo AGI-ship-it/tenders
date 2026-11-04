@@ -26,7 +26,6 @@ export type TenderStatus =
   | "Awaiting HoD"
   | "Prequalified"
   | "Lead in D365"
-  | "No-bid"
   | "Not qualified";
 
 /**
@@ -64,8 +63,7 @@ export interface Comment {
 }
 
 export interface ApprovalRecord {
-  /** The Bid Analyst's proposal to the HoD. */
-  proposed: "Prequalify" | "Reject";
+  /** The Bid Analyst's submission to the HoD, with an optional note; only the HoD decides. */
   submittedBy: string;
   submittedAt: string;
   reviewer: string;

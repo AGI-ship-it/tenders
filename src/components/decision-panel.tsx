@@ -17,7 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -37,7 +36,7 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
   const lead = tender.lead;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Status</span>
         <StatusBadge status={tender.status} />
@@ -102,11 +101,7 @@ function RoleHint({ text }: { text: string }) {
 
 function ApprovalSummary({ approval: a }: { approval: ApprovalRecord }) {
   return (
-    <div className="space-y-3 rounded-lg border bg-muted/20 p-3 text-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground">Proposed</span>
-        <span className="font-medium">{a.proposed}</span>
-      </div>
+    <div className="space-y-3.5 rounded-xl border bg-card px-4 py-4 text-sm">
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground">Submitted by</span>
         <span>{a.submittedBy}</span>
@@ -115,7 +110,7 @@ function ApprovalSummary({ approval: a }: { approval: ApprovalRecord }) {
         <span className="text-muted-foreground">Routed to</span>
         <span>{a.reviewer.split(" (")[0]}</span>
       </div>
-      {a.note && <p className="border-t pt-2.5 text-xs text-muted-foreground italic">“{a.note}”</p>}
+      {a.note && <p className="border-t pt-3.5 text-sm text-muted-foreground italic">“{a.note}”</p>}
       {a.decision && (
         <div
           className={cn(
@@ -125,7 +120,7 @@ function ApprovalSummary({ approval: a }: { approval: ApprovalRecord }) {
           )}
         >
           <div className="font-semibold">
-            {a.decision === "Approved" ? "Prequalified" : a.decision === "Rejected" ? "Not qualified" : a.decision} by{" "}
+            {a.decision === "Approved" ? "Prequalified" : a.decision === "Rejected" ? "Rejected" : a.decision} by{" "}
             {a.decidedBy} · {a.decidedAt && formatDateTime(a.decidedAt)}
           </div>
           {a.decisionComment && <div className="mt-1">{a.decisionComment}</div>}
@@ -154,18 +149,14 @@ export function DecisionActions({ tender }: { tender: Tender }) {
       });
       return;
     }
-    const proposed = tender.approval?.proposed ?? "Prequalify";
-    toast.success(
-      d === "Approved" ? (proposed === "Prequalify" ? "Prequalified" : "Rejection confirmed") : "Marked not qualified",
-      { description: `${tender.id} pipeline status updated.` },
-    );
+    toast.success("Rejected", { description: `${tender.id} pipeline status updated.` });
   }
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1.5">
+    <div className="space-y-4">
+      <div className="space-y-2">
         <Label htmlFor={`c-${tender.id}`} className="text-xs text-muted-foreground">
-          HoD comment {needComment && <span className="text-rose-600">(required unless prequalifying)</span>}
+          HoD comment {needComment && <span className="text-rose-600">(required to reject)</span>}
         </Label>
         <Textarea
           id={`c-${tender.id}`}
@@ -176,12 +167,15 @@ export function DecisionActions({ tender }: { tender: Tender }) {
           onChange={(e) => setComment(e.target.value)}
         />
       </div>
-      <Button variant="success" size="lg" className="w-full" onClick={() => act("Approved")}>
-        <Check /> {tender.approval?.proposed === "Reject" ? "Confirm rejection" : <>Prequalify & push to <D365 /></>}
-      </Button>
-      <Button variant="destructive" size="lg" className="w-full" onClick={() => act("Rejected")}>
-        <X /> Not qualified
-      </Button>
+      {/* Reject on the left, Prequalify (the primary action) on the right. */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="destructive" size="lg" onClick={() => act("Rejected")}>
+          <X /> Reject
+        </Button>
+        <Button variant="success" size="lg" onClick={() => act("Approved")}>
+          <Check /> Prequalify
+        </Button>
+      </div>
     </div>
   );
 }
@@ -196,15 +190,13 @@ function SubmitDialog({
   onOpenChange: (o: boolean) => void;
 }) {
   const aiYes = aiPrequalified(tender);
-  const [proposed, setProposed] = useState<ApprovalRecord["proposed"]>(aiYes ? "Prequalify" : "Reject");
   const line = serviceLineFor(tender.category);
   const [note, setNote] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const router = useRouter();
-  const overrides = aiYes !== (proposed === "Prequalify");
 
   function submit() {
-    submitForApproval(tender.id, { proposed, note: note.trim() });
+    submitForApproval(tender.id, { note: note.trim() });
     toast.success(`Sent to ${line.hod} · email delivered`, {
       description: `HoD, ${line.name}. See what lands in their inbox.`,
       duration: 12000,
@@ -221,52 +213,35 @@ function SubmitDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Submit for prequalification</DialogTitle>
-          <DialogDescription>
-            AI pre-qualification: <PrequalBadge yes={aiYes} className="align-middle" />. You make the proposal; the
-            service-line HoD decides.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Your proposal</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {(["Prequalify", "Reject"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setProposed(p)}
-                  className={cn(
-                    "rounded-lg border px-3 py-2.5 text-sm font-medium transition-all",
-                    proposed === p
-                      ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
-                      : "text-muted-foreground hover:border-foreground/20 hover:text-foreground",
-                  )}
-                >
-                  {p}
-                </button>
-              ))}
+          <div className="divide-y rounded-xl bg-muted/50">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
+                {line.initials}
+              </span>
+              <div className="min-w-0 text-sm">
+                <div className="text-xs text-muted-foreground">Routed to</div>
+                <div className="font-semibold">{hodLabel(tender.category)}</div>
+              </div>
             </div>
-            {overrides && <p className="text-xs text-orange-700">This differs from the AI recommendation. Please explain why in the note.</p>}
-          </div>
-
-          <div className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5">
-            <span className="grid size-8 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
-              {line.initials}
-            </span>
-            <div className="text-sm">
-              <div className="text-xs text-muted-foreground">Routed automatically to</div>
-              <div className="font-medium">{hodLabel(tender.category)}</div>
+            <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+              <span className="text-muted-foreground">AI pre-qualification</span>
+              <PrequalBadge yes={aiYes} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="note">Note to HoD</Label>
-            <Textarea id="note" rows={3} placeholder="Key points, conditions or clarifications…" value={note} onChange={(e) => setNote(e.target.value)} />
+            <Label htmlFor="note">
+              Note to HoD <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea id="note" rows={4} placeholder="Your view, key points, conditions or clarifications…" value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
 
           <label className="flex items-start gap-2.5 text-sm">
             <Checkbox checked={confirmed} onCheckedChange={(c) => setConfirmed(Boolean(c))} className="mt-0.5" />
-            <span className="text-muted-foreground">I have reviewed the AI reasoning, eligibility and risks.</span>
+            <span className="text-muted-foreground">I have reviewed the AI reasoning and eligibility.</span>
           </label>
         </div>
 
@@ -274,7 +249,7 @@ function SubmitDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={!confirmed || (overrides && !note.trim())} onClick={submit}>
+          <Button disabled={!confirmed} onClick={submit}>
             <ShieldCheck /> Submit
           </Button>
         </DialogFooter>

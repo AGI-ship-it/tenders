@@ -10,7 +10,7 @@ import { clearPendingScan, completeScan, isScannable, peekPendingScan, useDemo }
 import { PEOPLE } from "@/lib/mock-data";
 import type { LastScan, Source, Tender } from "@/lib/types";
 import { aiPrequalified, fitScore } from "@/lib/scoring";
-import { formatDateTime, formatTime, formatValue, isToday } from "@/lib/format";
+import { formatDateTime, formatTime, isToday } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { PrequalBadge } from "@/components/shared";
 
@@ -65,7 +65,7 @@ function buildSteps(ready: Source[], blocked: Source[]): Step[] {
     {
       key: "score",
       label: "Scoring against AGFS criteria",
-      description: "Service, geography, contract size, eligibility, strategy and capacity",
+      description: "Service, geography, ISO, eligibility, strategy and capacity",
       duration: 1600,
       logs: ["Applied AGFS criteria v2.3 (demo)", "Generated recommendations and evidence links"],
     },
@@ -377,7 +377,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
                   </div>
                   <div className="mt-0.5 flex items-center justify-between gap-2">
                     <span className="truncate text-xs font-medium text-muted-foreground">
-                      {t.buyer} · {formatValue(t)}
+                      {t.buyer}
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
                       Pre-qual <PrequalBadge yes={aiPrequalified(t)} />

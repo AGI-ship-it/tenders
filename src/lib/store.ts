@@ -174,7 +174,7 @@ export function markUnderReview(id: string) {
 }
 
 /** Submits a prospect for prequalification; it is routed to the HoD of its service line. */
-export function submitForApproval(id: string, input: { proposed: ApprovalRecord["proposed"]; note: string }) {
+export function submitForApproval(id: string, input: { note: string }) {
   setState((s) => {
     const by = currentUser(s).name;
     const category = s.tenders.find((t) => t.id === id)?.category;
@@ -190,7 +190,7 @@ export function submitForApproval(id: string, input: { proposed: ApprovalRecord[
         event({
           actor: by,
           role: s.role,
-          action: `Routed to ${reviewer.split(" (")[0]} for prequalification (proposed: ${input.proposed})`,
+          action: `Submitted for prequalification, routed to ${reviewer.split(" (")[0]}`,
           tenderId: id,
           detail: input.note || undefined,
         }),
@@ -209,18 +209,12 @@ export function decide(
   decision: NonNullable<ApprovalRecord["decision"]>,
   comment: string,
 ): string | undefined {
-  const t0 = state?.tenders.find((x) => x.id === id);
-  const pushes = decision === "Approved" && (t0?.approval?.proposed ?? "Prequalify") === "Prequalify";
-  const leadId = pushes ? `LEAD-${Math.floor(10000 + Math.random() * 89999)}` : undefined;
+  const leadId = decision === "Approved" ? `LEAD-${Math.floor(10000 + Math.random() * 89999)}` : undefined;
   setState((s) => {
-    const t = s.tenders.find((x) => x.id === id);
     // In the demo, the HoD role acts on behalf of whichever HoD the prospect is routed to.
     const by = currentUser(s).name;
-    const proposed = t?.approval?.proposed ?? "Prequalify";
-    const status: Tender["status"] =
-      decision === "Rejected" ? "Not qualified" : proposed === "Prequalify" ? "Lead in D365" : "No-bid";
-    const action =
-      decision === "Rejected" ? "Marked not qualified" : proposed === "Prequalify" ? "Prequalified" : "Confirmed rejection";
+    const status: Tender["status"] = decision === "Rejected" ? "Not qualified" : "Lead in D365";
+    const action = decision === "Rejected" ? "Rejected" : "Prequalified";
     const at = now();
     return {
       ...s,

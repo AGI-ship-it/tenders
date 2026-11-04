@@ -1,13 +1,12 @@
 import type { Category, Emirate, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
 
-// AGFS pre-qualification criteria (illustrative, to be refined with Commercial).
+// AGFS pre-qualification criteria (illustrative, to be refined with Commercial): service, geography and ISO.
 // The pre-qualification score is a transparent weighted sum: every point is traceable to one of four criteria.
 
 export const CRITERIA_WEIGHTS = {
-  service: 40,
-  geography: 20,
-  size: 20,
-  iso: 20,
+  service: 50,
+  geography: 25,
+  iso: 25,
 } as const;
 
 /** ISO certifications AGFS currently holds (demo values). */
@@ -32,14 +31,6 @@ const GEO_PRIORITY: Record<Emirate, [number, string]> = {
   "Ras Al Khaimah": [50, "Secondary market; mobilisation cost uplift expected."],
   Fujairah: [40, "Outside the current operating footprint."],
 };
-
-export function sizeScore(valueAED: number): [number, string] {
-  const m = valueAED / 1_000_000;
-  if (m < 5) return [25, "Below the AGFS minimum contract value (AED 5M)."];
-  if (m < 10) return [70, "Within range but below the AED 10M sweet spot."];
-  if (m <= 150) return [100, "Inside the AGFS target band (AED 10M to 150M)."];
-  return [60, "Above the target band; would need a JV or consortium."];
-}
 
 export function missingIso(t: Tender): string[] {
   return t.isoRequired.filter((c) => !AGFS_ISO.includes(c));
@@ -70,12 +61,10 @@ export interface CriterionResult {
 export function fitBreakdown(t: Tender): CriterionResult[] {
   const [svc, svcNote] = SERVICE_COVERAGE[t.category];
   const [geo, geoNote] = GEO_PRIORITY[t.emirate];
-  const [size, sizeNote] = sizeScore(t.valueAED);
   const [iso, isoNote] = isoScore(t);
   const rows: Omit<CriterionResult, "points">[] = [
     { key: "service", label: "Service coverage", weight: CRITERIA_WEIGHTS.service, score: svc, rationale: svcNote },
     { key: "geography", label: "Geography", weight: CRITERIA_WEIGHTS.geography, score: geo, rationale: geoNote },
-    { key: "size", label: "Contract size", weight: CRITERIA_WEIGHTS.size, score: size, rationale: sizeNote },
     { key: "iso", label: "ISO certifications", weight: CRITERIA_WEIGHTS.iso, score: iso, rationale: isoNote },
   ];
   return rows.map((r) => ({ ...r, points: Math.round((r.score * r.weight) / 10) / 10 }));
@@ -98,8 +87,6 @@ export function fitScore(t: Tender): number {
 
 export function recommendation(t: Tender): Recommendation {
   const score = fitScore(t);
-  // Hard gate: below the AGFS minimum contract value is always a no-bid.
-  if (t.valueAED < 5_000_000) return "No-bid";
   // A missing ISO certificate or an unmet mandatory requirement means bidding needs conditions (e.g. a partner).
   const blocking = missingIso(t).length > 0 || t.eligibility.some((e) => e.status === "unmet");
   if (score >= 75 && !blocking) return "Bid";
@@ -134,7 +121,6 @@ export function prospectStatus(status: TenderStatus): ProspectStatus {
     case "Prequalified":
     case "Lead in D365":
       return "Prequalified";
-    case "No-bid":
     case "Not qualified":
       return "Rejected";
     case "Awaiting HoD":

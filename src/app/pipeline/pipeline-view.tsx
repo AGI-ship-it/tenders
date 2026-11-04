@@ -8,7 +8,7 @@ import { ChevronRight, Download } from "lucide-react";
 import Link from "next/link";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
-import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
+import { daysUntil, formatDate, timeAgo } from "@/lib/format";
 import { serviceLineFor } from "@/lib/mock-data";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ import { SortTh, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHeader, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
 
-type SortKey = "priority" | "id" | "value" | "deadline" | "fit" | "status";
+type SortKey = "priority" | "id" | "deadline" | "fit" | "status";
 
 
 export function PipelineView({ embedded = false }: { embedded?: boolean }) {
@@ -46,8 +46,6 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         case "fit":
           // Yes before No, then by the score behind it.
           return (aiPrequalified(t) ? 1000 : 0) + fitScore(t);
-        case "value":
-          return t.valueAED;
         case "deadline":
           return t.deadline;
         case "id":
@@ -107,9 +105,6 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 <SortTh sortKey="priority" sort={sort} onSort={toggleSort}>
                   Prospect
                 </SortTh>
-                <SortTh sortKey="value" sort={sort} onSort={toggleSort} className="text-right">
-                  Value
-                </SortTh>
                 <SortTh sortKey="deadline" sort={sort} onSort={toggleSort}>
                   Due date
                 </SortTh>
@@ -149,7 +144,6 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                       </div>
                       <div className="truncate text-xs text-muted-foreground">{t.buyer}</div>
                     </td>
-                    <td className="tabular px-3 py-3 text-right whitespace-nowrap font-medium">{formatValue(t)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <div>{formatDate(t.deadline)}</div>
                       <div className={cn("text-xs", days <= 14 ? "text-orange-700" : "text-muted-foreground")}>
@@ -181,7 +175,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>
@@ -237,11 +231,11 @@ function Decision({ tender }: { tender: Tender }) {
 }
 
 function exportCsv(tenders: Tender[]) {
-  const header = ["Tender ID", "Title", "Buyer", "Service", "Emirate", "Value (AED)", "Value disclosed", "Due date", "AI pre-qualification", "Status", "Decision", "Decision detail"];
+  const header = ["Tender ID", "Title", "Buyer", "Service", "Emirate", "Due date", "AI pre-qualification", "Status", "Decision", "Decision detail"];
   const rows = tenders.map((t) => {
     const d = decisionOf(t);
     return [
-      t.id, t.title, t.buyer, t.category, t.emirate, t.valueAED, t.valueDisclosed === false ? "No (AI estimate)" : "Yes",
+      t.id, t.title, t.buyer, t.category, t.emirate,
       t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No", prospectStatus(t.status), d.main, d.sub ?? "",
     ];
   });

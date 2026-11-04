@@ -41,7 +41,7 @@ const NAV = [
   { href: "/sources", label: "Dashboard", match: ["/sources", "/onboarding"] },
   { href: "/pipeline", label: "Pipeline", match: ["/pipeline", "/opportunity"] },
   { href: "/approvals", label: "Approvals", match: ["/approvals"] },
-  { href: "/portals", label: "Portals", match: ["/portals"] },
+  { href: "/portals", label: "Portal Registry", match: ["/portals"] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

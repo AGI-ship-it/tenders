@@ -166,7 +166,7 @@ const GENERIC_REQS = [
   "Valid UAE trade licence covering facilities management",
   "ISO 9001, 14001 and 45001 certifications",
   "Three comparable contracts in the last five years",
-  "Bid bond of 2% of tender value",
+  "Bid bond submitted with the offer",
   "Registered vendor with the issuing authority",
 ];
 
@@ -241,14 +241,14 @@ export function scanTenders(nowISO: string): Tender[] {
       eligibility: [
         { requirement: "Valid UAE trade licence covering integrated FM", status: "met", note: "Licence on file (demo register)." },
         { requirement: "ISO 9001, 14001, 45001 and ISO 41001", status: "met", note: "All four certificates current (demo)." },
-        { requirement: "Two healthcare FM references, min. AED 15M each", status: "partial", note: "One qualifying reference; second is AED 11M. Confirm if acceptable." },
+        { requirement: "Two comparable healthcare FM references", status: "partial", note: "One qualifying reference; the second is smaller in scope. Confirm if acceptable." },
         { requirement: "Infection-control trained supervisors (min. 6)", status: "met", note: "8 certified supervisors in HR records (demo)." },
-        { requirement: "Bid bond 2% of tender value", status: "met", note: "Within Treasury pre-approved limits." },
+        { requirement: "Bid bond submitted with the offer", status: "met", note: "Within Treasury pre-approved limits." },
       ],
       risks: [
         { title: "Healthcare reference threshold", severity: "Medium", mitigation: "Raise a clarification on aggregation of references before 18 Nov." },
         { title: "Mobilisation of 45 new hires in 30 days", severity: "Medium", mitigation: "Pre-engage recruitment agency; phase site takeover over 6 weeks." },
-        { title: "Liquidated damages capped at 15% of annual value", severity: "Low", mitigation: "Within AGFS standard risk appetite." },
+        { title: "Liquidated damages capped by contract", severity: "Low", mitigation: "Within AGFS standard risk appetite." },
       ],
       assumptions: [
         "Labour rates per AGFS 2026 cost book; healthcare cleaning premium of 8%.",
@@ -259,11 +259,11 @@ export function scanTenders(nowISO: string): Tender[] {
       evidence: [
         { label: "Scope", location: "RFP Section 3.1, p. 12", excerpt: "The Contractor shall provide integrated facilities management services across fourteen (14) primary healthcare centres…" },
         { label: "Evaluation weighting", location: "RFP Section 6.2, p. 31", excerpt: "Technical 60%, Commercial 40%. Minimum technical pass mark 70%." },
-        { label: "Reference requirement", location: "RFP Annex B, p. 44", excerpt: "Minimum two (2) healthcare FM contracts, each of value not less than AED 15,000,000." },
+        { label: "Reference requirement", location: "RFP Annex B, p. 44", excerpt: "Minimum two (2) healthcare FM contracts of comparable scope." },
         { label: "Submission deadline", location: "Tender notice", excerpt: "Closing date: 10 December 2026, 14:00 GST, via e-portal." },
       ],
       aiNarrative:
-        "Strong match to AGFS core integrated FM capability in a priority geography and inside the target value band. Technical-weighted evaluation favours AGFS healthcare references. The main open point is the second healthcare reference (AED 11M vs AED 15M threshold); a clarification is recommended before it goes to D365.",
+        "Strong match to AGFS core integrated FM capability in a priority geography. Technical-weighted evaluation favours AGFS healthcare references. The main open point is the second healthcare reference, which is smaller in scope; a clarification is recommended before it goes to D365.",
       status: "New",
       discoveredAt: nowISO,
       fromLatestScan: true,
@@ -315,14 +315,14 @@ export function scanTenders(nowISO: string): Tender[] {
         { label: "Bond", location: "Conditions of Contract, Cl. 4.2", excerpt: "Performance security of ten percent (10%) of the contract price." },
       ],
       aiNarrative:
-        "Good service and geography fit with a high-value, strategic government buyer. However, the ICV threshold is a hard eligibility gate that AGFS does not currently meet. Pre-qualifies only if a JV partner or ICV route is confirmed within 10 days.",
+        "Good service and geography fit with a strategic government buyer. However, the ICV threshold is a hard eligibility gate that AGFS does not currently meet. Pre-qualifies only if a JV partner or ICV route is confirmed within 10 days.",
       status: "New",
       discoveredAt: nowISO,
       fromLatestScan: true,
     }),
     tender({
       id: "TND-2026-0421",
-      isoRequired: ["ISO 9001", "ISO 14001"],
+      isoRequired: ["ISO 14001", "ISO 46001"],
       title: "Landscaping & irrigation maintenance for residential community",
       buyer: "Meridian Properties",
       buyerType: "Private client",
@@ -349,15 +349,14 @@ export function scanTenders(nowISO: string): Tender[] {
         { requirement: "Ras Al Khaimah municipality landscaping permit", status: "unmet", note: "Not held by AGFS." },
       ],
       risks: [
-        { title: "Below minimum contract value", severity: "High", mitigation: "Decline; offer to include in future IFM bundle for this client." },
+        { title: "Lowest-price award", severity: "High", mitigation: "Decline; offer to include in future IFM bundle for this client." },
         { title: "Missing local permit", severity: "High", mitigation: "Would need local subcontractor." },
       ],
       evidence: [
-        { label: "Value", location: "Tender notice", excerpt: "Estimated contract value AED 3.2 million over 24 months." },
         { label: "Evaluation", location: "RFQ Section 5", excerpt: "Award will be made to the lowest technically compliant bidder." },
       ],
       aiNarrative:
-        "Below the AGFS minimum contract value of AED 5M, outside priority geography and evaluated on lowest price. Does not pre-qualify; consider a relationship note to the client offering IFM bundling on future packages.",
+        "Outside priority geography, missing the local landscaping permit and ISO 46001 water-efficiency certification, and evaluated on lowest price. Does not pre-qualify; consider a relationship note to the client offering IFM bundling on future packages.",
       status: "New",
       discoveredAt: nowISO,
       fromLatestScan: true,
@@ -409,7 +408,7 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Four-year integrated FM for a 31-building campus including student housing, labs and sports facilities.",
           scope: ["Hard and soft services across academic and residential buildings.", "Lab and cleanroom environment maintenance.", "Events and term-break deep cleaning."],
           checks: ["met", "met", "met", "met", "partial"],
-          aiNarrative: "Strong IFM fit in an active market, inside the value band. Education references are strong; vendor registration needs renewal.",
+          aiNarrative: "Strong IFM fit in an active market. Education references are strong; vendor registration needs renewal.",
         },
         nowISO,
       ),
@@ -488,15 +487,16 @@ export function scanBatches(nowISO: string): Tender[][] {
           sourceId: "src-meridian",
           sourceRef: "DRH-PC-2026-2",
           category: "Pest Control",
-          emirate: "Dubai",
-          location: "Dubai (7 hotels)",
+          isoRequired: ["ISO 9001", "ISO 22000"],
+          emirate: "Fujairah",
+          location: "Fujairah (7 hotels)",
           valueAED: 2_400_000,
           durationMonths: 24,
           deadline: "2026-12-02",
           summary: "Integrated pest management across seven hotels.",
           scope: ["Monthly integrated pest management.", "Emergency call-outs within 4 hours."],
           checks: ["met", "met", "partial", "met", "met"],
-          aiNarrative: "Below the AGFS minimum contract value. Does not pre-qualify; pest control could be offered as part of a wider FM bundle.",
+          aiNarrative: "Outside the operating footprint, and the hotel kitchens require ISO 22000, which AGFS does not hold. Does not pre-qualify; pest control could be offered as part of a wider FM bundle.",
         },
         nowISO,
       ),
@@ -551,7 +551,7 @@ export function seedTenders(): Tender[] {
       ],
       eligibility: genericEligibility(["met", "met", "met", "met", "partial"]),
       aiNarrative:
-        "Strong soft-services fit in an active market and within the value band. Vendor registration with the directorate needs renewal before submission.",
+        "Strong soft-services fit in an active market. Vendor registration with the directorate needs renewal before submission.",
       status: "Under Review",
       discoveredAt: hoursAgo(24 * 14),
     }),
@@ -578,11 +578,10 @@ export function seedTenders(): Tender[] {
       ],
       eligibility: genericEligibility(["met", "met", "partial", "met", "met"]),
       aiNarrative:
-        "Solid IFM fit in a priority market and inside the value band. Limited transit references; the HoD should confirm a transit-specialist partner.",
+        "Solid IFM fit in a priority market. Limited transit references; the HoD should confirm a transit-specialist partner.",
       status: "Awaiting HoD",
       discoveredAt: hoursAgo(24 * 26),
       approval: {
-        proposed: "Prequalify",
         submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(20),
         reviewer: "Omar Rahman (HoD, Integrated FM)",
@@ -614,7 +613,6 @@ export function seedTenders(): Tender[] {
       status: "Prequalified",
       discoveredAt: hoursAgo(24 * 37),
       approval: {
-        proposed: "Prequalify",
         submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(24 * 30),
         reviewer: "Faisal Karim (HoD, Soft Services)",
@@ -633,6 +631,7 @@ export function seedTenders(): Tender[] {
       sourceId: "src-fed",
       sourceRef: "CDM-PC-26-12",
       category: "Pest Control",
+      isoRequired: ["ISO 9001", "ISO 22000"],
       emirate: "Fujairah",
       location: "Fujairah (5 markets)",
       valueAED: 1_800_000,
@@ -642,16 +641,15 @@ export function seedTenders(): Tender[] {
       summary: "Integrated pest management for five municipal fish and produce markets.",
       scope: ["Monthly integrated pest management.", "Emergency call-outs within 4 hours."],
       eligibility: genericEligibility(["met", "met", "partial", "met", "unmet"]),
-      aiNarrative: "Below minimum contract value and outside operating footprint.",
-      status: "No-bid",
+      aiNarrative: "Outside the operating footprint, and AGFS does not hold the ISO 22000 food-safety certification the markets require.",
+      status: "Not qualified",
       discoveredAt: hoursAgo(24 * 29),
       approval: {
-        proposed: "Reject",
         submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(24 * 27),
         reviewer: "Faisal Karim (HoD, Soft Services)",
-        note: "Below value threshold and outside footprint.",
-        decision: "Approved",
+        note: "Outside footprint; ISO 22000 not held. Sharing for your call.",
+        decision: "Rejected",
         decidedBy: "Faisal Karim",
         decidedAt: hoursAgo(24 * 27 - 3),
         decisionComment: "Agree, not relevant for AGFS.",
@@ -679,7 +677,6 @@ export function seedTenders(): Tender[] {
       status: "Awaiting HoD",
       discoveredAt: hoursAgo(24 * 24),
       approval: {
-        proposed: "Prequalify",
         submittedBy: "Cassandra Haddad",
         submittedAt: hoursAgo(24 * 6),
         reviewer: "Nadia Yousef (HoD, Security & Specialist)",
@@ -736,7 +733,7 @@ export function seedTenders(): Tender[] {
 // Routed prospects so that every HoD has each case: pending review, prequalified,
 // pushed to D365 as a lead, and rejected. Ages are in days before now.
 
-type RoutedStatus = "Awaiting HoD" | "Prequalified" | "Lead in D365" | "Not qualified" | "No-bid";
+type RoutedStatus = "Awaiting HoD" | "Prequalified" | "Lead in D365" | "Not qualified";
 
 interface RoutedCase {
   id: string;
@@ -798,7 +795,6 @@ function routedTender(c: RoutedCase): Tender {
     status: c.status,
     discoveredAt: daysAgo(c.submitted + 2),
     approval: {
-      proposed: c.status === "No-bid" ? "Reject" : "Prequalify",
       submittedBy: PEOPLE.analyst.name,
       submittedAt: daysAgo(c.submitted),
       reviewer: hodLabel(c.category),
@@ -835,7 +831,7 @@ const ROUTED_CASES: RoutedCase[] = [
     summary: "Hard and soft FM across academic buildings, student housing and sports facilities.",
     scope: ["Planned and reactive MEP maintenance.", "Cleaning of academic and residential buildings.", "CAFM helpdesk."],
     eligibility: ["met", "met", "met", "partial", "met"],
-    aiNarrative: "Core IFM scope in a priority market and inside the value band. Student-housing references should be confirmed.",
+    aiNarrative: "Core IFM scope in a priority market. Student-housing references should be confirmed.",
     status: "Awaiting HoD",
     note: "Strong IFM fit; education references attached.",
     submitted: 6,
@@ -857,7 +853,7 @@ const ROUTED_CASES: RoutedCase[] = [
     summary: "Total FM for a 38-floor headquarters, including front-of-house and energy management.",
     scope: ["MEP and BMS maintenance.", "Soft services and front-of-house.", "Monthly energy reporting."],
     eligibility: ["met", "met", "met", "met", "met"],
-    aiNarrative: "Excellent fit: core IFM, priority geography, target value band and all eligibility met.",
+    aiNarrative: "Excellent fit: core IFM, priority geography and all eligibility met.",
     status: "Prequalified",
     note: "All criteria met; similar tower contracts in portfolio.",
     submitted: 5,
@@ -906,7 +902,7 @@ const ROUTED_CASES: RoutedCase[] = [
     summary: "IFM for nine remote border facilities with on-site accommodation for staff.",
     scope: ["Reactive maintenance at remote sites.", "Cleaning and accommodation services."],
     eligibility: ["met", "partial", "met", "met", "unmet"],
-    aiNarrative: "Outside the operating footprint and below the target value band.",
+    aiNarrative: "Outside the operating footprint.",
     status: "Not qualified",
     note: "Borderline; HoD to decide on remote-site appetite.",
     submitted: 12,
@@ -953,7 +949,7 @@ const ROUTED_CASES: RoutedCase[] = [
     summary: "HV/LV electrical maintenance and generator servicing for a logistics hub.",
     scope: ["HV/LV switchgear maintenance.", "Standby generator servicing."],
     eligibility: ["met", "met", "met", "partial", "met"],
-    aiNarrative: "Good hard FM fit in a priority market, at the lower end of the value band.",
+    aiNarrative: "Good hard FM fit in a priority market.",
     status: "Awaiting HoD",
     note: "Recommend prequalifying; HV competence in-house.",
     submitted: 7,
@@ -1025,8 +1021,8 @@ const ROUTED_CASES: RoutedCase[] = [
     scope: ["Lift replacement works.", "Escalator modernisation."],
     eligibility: ["partial", "met", "unmet", "met", "met"],
     aiNarrative: "Specialist OEM works outside AGFS self-delivered scope, in a secondary market.",
-    status: "No-bid",
-    note: "Specialist OEM scope; propose rejecting.",
+    status: "Not qualified",
+    note: "Specialist OEM scope; sharing for your call.",
     submitted: 14,
     decided: 13,
     comment: "Agree. OEM-led works, not for us.",
@@ -1192,7 +1188,7 @@ const ROUTED_CASES: RoutedCase[] = [
     eligibility: ["unmet", "met", "met", "met", "partial"],
     aiNarrative: "Cash-in-transit needs a specialist licence AGFS does not hold.",
     status: "Not qualified",
-    note: "Large value; checking appetite with a partner.",
+    note: "Checking appetite with a partner.",
     submitted: 11,
     decided: 9,
     comment: "Not qualified. Cash-in-transit is outside our services.",
@@ -1211,11 +1207,10 @@ function seedAudit(): AuditEvent[] {
   });
   const routed = ROUTED_CASES.flatMap((c) => {
     const hod = serviceLineFor(c.category).hod;
-    const proposed = c.status === "No-bid" ? "Reject" : "Prequalify";
-    const out = [e(c.submitted * 24, PEOPLE.analyst.name, "analyst", `Submitted for approval (proposed: ${proposed})`, c.id)];
+    const out = [e(c.submitted * 24, PEOPLE.analyst.name, "analyst", "Submitted for prequalification", c.id)];
     if (c.decided !== undefined) {
       const action =
-        c.status === "Not qualified" ? "Marked not qualified" : c.status === "No-bid" ? "Confirmed rejection" : "Prequalified";
+        c.status === "Not qualified" ? "Rejected" : "Prequalified";
       out.push(e(c.decided * 24, hod, "approver", action, c.id, c.comment));
     }
     if (c.lead) out.push(e(c.lead[1] * 24, hod, "approver", `Pushed to D365 as lead ${c.lead[0]}`, c.id));
@@ -1223,15 +1218,15 @@ function seedAudit(): AuditEvent[] {
   });
   return [
     ...routed,
-    e(20, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
+    e(20, "Cassandra Haddad", "analyst", "Submitted for prequalification", "TND-2026-0362", "Recommend bidding with a transit-specialist subcontractor."),
     e(26, AGENT_NAME, "agent", "Daily scan completed", undefined, "4 sources scanned, 2 new tenders, 4 duplicates skipped (simulated)."),
-    e(24 * 6, "Cassandra Haddad", "analyst", "Submitted for approval (proposed: Prequalify)", "TND-2026-0333"),
-    e(24 * 27 - 3, "Faisal Karim", "approver", "Confirmed rejection", "TND-2026-0340", "Agree, not relevant for AGFS."),
+    e(24 * 6, "Cassandra Haddad", "analyst", "Submitted for prequalification", "TND-2026-0333"),
+    e(24 * 27 - 3, "Faisal Karim", "approver", "Rejected", "TND-2026-0340", "Agree, not relevant for AGFS."),
     e(24 * 29, "Faisal Karim", "approver", "Prequalified", "TND-2026-0351", "Relevant for Soft Services."),
   ].sort((x, y) => y.at.localeCompare(x.at));
 }
 
-export const DEMO_VERSION = 18;
+export const DEMO_VERSION = 20;
 
 /** Prequalifying pushes the prospect to D365 straight away, so no seeded prospect waits on a manual push. */
 export const AUTO_PUSH_ACTOR = "D365 sync";

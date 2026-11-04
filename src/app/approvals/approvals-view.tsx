@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, ArrowUpRight, CheckCircle2, Download, Inbox, Mail, MessageSquare, Send, X } from "lucide-react";
-import { toast } from "sonner";
-import { addComment, useDemo } from "@/lib/store";
+import { ArrowRight, ArrowUpRight, CheckCircle2, Download, Inbox, Mail, X } from "lucide-react";
+import { useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, prospectStatus } from "@/lib/scoring";
 import { downloadCsv } from "@/lib/csv";
-import { daysUntil, formatDate, formatValue, timeAgo } from "@/lib/format";
+import { daysUntil, formatDate, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } from "@/components/table-filters";
 import { SortTh, compareBy, nextSort, type SortState } from "@/components/sort-header";
 import { TablePagination, usePagination } from "@/components/table-pagination";
@@ -26,22 +24,19 @@ import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 const PENDING: Tender["status"][] = ["Awaiting HoD"];
 
 /** "order" is the default: pending first by due date, then the latest decisions. */
-type RegisterSort = "order" | "id" | "value" | "deadline" | "ai" | "hod" | "status" | "lead";
+type RegisterSort = "order" | "id" | "deadline" | "ai" | "hod" | "status" | "lead";
 
 const STATUS_RANK: Tender["status"][] = [
   "Awaiting HoD",
   "Prequalified",
   "Lead in D365",
   "Not qualified",
-  "No-bid",
 ];
 
 function registerValue(t: Tender, key: Exclude<RegisterSort, "order">): number | string {
   switch (key) {
     case "id":
       return t.id;
-    case "value":
-      return t.valueAED;
     case "deadline":
       return t.deadline;
     case "ai":
@@ -195,8 +190,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
 const DONE_LABEL: Partial<Record<Tender["status"], string>> = {
   Prequalified: "Prequalified",
   "Lead in D365": "Prequalified & pushed to D365",
-  "Not qualified": "Marked not qualified",
-  "No-bid": "Rejection confirmed",
+  "Not qualified": "Rejected",
 };
 
 function ReviewPanel({
@@ -215,7 +209,7 @@ function ReviewPanel({
   const line = serviceLineFor(tender.category);
   const done = isHod ? DONE_LABEL[tender.status] : undefined;
   return (
-    <div className="space-y-5 p-6">
+    <div className="space-y-7 p-7">
       {/* After the HoD decides: keep going through the queue without returning to the inbox. */}
       {done && (
         <motion.div
@@ -244,16 +238,16 @@ function ReviewPanel({
       )}
 
       <div className="pr-8">
-        <div className="text-xs text-muted-foreground">
-          <span className="font-mono">{tender.id}</span> · routed to {line.hod}, HoD {line.name}
+        <h2 className="text-lg leading-tight font-bold tracking-tight text-primary">{tender.title}</h2>
+        <div className="mt-1.5 text-sm text-muted-foreground">
+          {tender.buyer} · {tender.emirate}
         </div>
-        <h2 className="mt-1 text-lg font-semibold tracking-tight">{tender.title}</h2>
-        <div className="mt-1 text-sm text-muted-foreground">
-          {tender.buyer} · {tender.emirate} · {formatValue(tender)}
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          <span className="font-mono">{tender.id}</span> · routed to {line.hod}, HoD {line.name}
         </div>
       </div>
 
-      <div className="space-y-1.5 rounded-lg bg-secondary/60 p-3.5">
+      <div className="space-y-2.5 rounded-xl bg-secondary/60 p-5">
         <div className="flex items-center gap-2 text-sm font-semibold">
           AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
         </div>
@@ -264,8 +258,8 @@ function ReviewPanel({
         Open full prospect and AI reasoning <ArrowUpRight />
       </Button>
 
-      <div className="rounded-xl bg-muted/30 p-4">
-        <h3 className="mb-3 text-sm font-bold text-primary">HoD decision</h3>
+      <div className="rounded-xl bg-muted/30 p-5">
+        <h3 className="mb-4 text-sm font-bold text-primary">HoD decision</h3>
         <DecisionPanel tender={tender} />
         {!isHod && tender.status === "Awaiting HoD" && (
           <Button variant="secondary" size="lg" className="mt-3 w-full" onClick={() => openHodEmail(tender.id)}>
@@ -274,53 +268,6 @@ function ReviewPanel({
         )}
       </div>
 
-      <Comments tender={tender} />
-    </div>
-  );
-}
-
-function Comments({ tender }: { tender: Tender }) {
-  const [text, setText] = useState("");
-  return (
-    <div className="space-y-3 border-t pt-5">
-      <h3 className="flex items-center gap-1.5 text-sm font-bold text-primary">
-        <MessageSquare className="size-4 text-muted-foreground" /> Reviewer comments
-      </h3>
-      {tender.comments.length === 0 && <p className="text-xs text-muted-foreground">No comments yet.</p>}
-      <ul className="space-y-3">
-        {tender.comments.map((c) => (
-          <li key={c.id} className="flex gap-2.5">
-            <span
-              className={cn(
-                "grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-semibold",
-                c.role === "approver" ? "bg-pink-100 text-pink-800" : "bg-purple-100 text-purple-900",
-              )}
-            >
-              {c.author.split(" ").map((p) => p[0]).join("")}
-            </span>
-            <div className="text-sm">
-              <span className="font-medium">{c.author}</span>{" "}
-              <span className="text-xs text-muted-foreground">{timeAgo(c.at)}</span>
-              <p className="text-foreground/80">{c.text}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
-      <form
-        className="flex items-end gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!text.trim()) return;
-          addComment(tender.id, text.trim());
-          setText("");
-          toast("Comment added", { description: "Recorded in the audit trail." });
-        }}
-      >
-        <Textarea rows={2} placeholder="Add a comment…" value={text} onChange={(e) => setText(e.target.value)} className="min-h-0" />
-        <Button type="submit" size="icon" variant="outline" disabled={!text.trim()} aria-label="Post comment">
-          <Send />
-        </Button>
-      </form>
     </div>
   );
 }
@@ -332,12 +279,12 @@ function agreesWithAi(t: Tender): boolean {
 
 function exportCsv(tenders: Tender[]) {
   const header = [
-    "Tender ID", "Title", "Buyer", "Value (AED)", "Due date", "AI pre-qualification", "HoD", "Proposed",
+    "Tender ID", "Title", "Buyer", "Due date", "AI pre-qualification", "HoD",
     "Status", "Decided by", "Decided at", "Rationale", "D365 lead", "Submitted by", "Submission note",
   ];
   const rows = tenders.map((t) => [
-    t.id, t.title, t.buyer, t.valueAED, t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No",
-    serviceLineFor(t.category).hod, t.approval?.proposed ?? "", prospectStatus(t.status), t.approval?.decidedBy ?? "",
+    t.id, t.title, t.buyer, t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No",
+    serviceLineFor(t.category).hod, prospectStatus(t.status), t.approval?.decidedBy ?? "",
     t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "", t.lead?.leadId ?? "",
     t.approval?.submittedBy ?? "", t.approval?.note ?? "",
   ]);
@@ -430,9 +377,6 @@ function Register({
                 <SortTh sortKey="order" sort={sort} onSort={onSort}>
                   Prospect
                 </SortTh>
-                <SortTh sortKey="value" sort={sort} onSort={onSort} className="text-right">
-                  Value
-                </SortTh>
                 <SortTh sortKey="deadline" sort={sort} onSort={onSort}>
                   Due date
                 </SortTh>
@@ -476,7 +420,6 @@ function Register({
                       <div className="truncate font-medium">{t.title}</div>
                       <div className="truncate text-xs text-muted-foreground">{t.buyer}</div>
                     </td>
-                    <td className="tabular px-3 py-3 text-right whitespace-nowrap font-medium">{formatValue(t)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {formatDate(t.deadline)}
                       <div className={cn("text-xs", days <= 14 && days > 0 ? "text-orange-700" : "text-muted-foreground")}>
@@ -520,7 +463,7 @@ function Register({
               })}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={showHod ? 8 : 7} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={showHod ? 7 : 6} className="px-5 py-12 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>

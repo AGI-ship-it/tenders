@@ -52,7 +52,7 @@ export function SourcesSheet({ open, onOpenChange }: { open: boolean; onOpenChan
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full gap-0 p-0 sm:max-w-lg data-[side=right]:sm:max-w-lg">
           <SheetHeader className="border-b px-5 pt-5 pb-4">
-            <SheetTitle className="text-base font-bold text-primary">Sources</SheetTitle>
+            <SheetTitle>Sources</SheetTitle>
             <SheetDescription className="flex items-center gap-1.5">
               {connected} of {demo.sources.length} connected
               <Tooltip>
@@ -86,7 +86,7 @@ export function SourcesSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                 <Plus /> Add source
               </Button>
               <Button variant="outline" nativeButton={false} render={<Link href="/portals" />} onClick={() => onOpenChange(false)}>
-                Portal configuration <ArrowRight />
+                Portal Registry <ArrowRight />
               </Button>
             </div>
           </SheetHeader>

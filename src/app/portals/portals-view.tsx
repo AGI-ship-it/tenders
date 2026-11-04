@@ -28,7 +28,7 @@ export function PortalsView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Portal configuration"
+        title="Portal Registry"
         description={`${connected} of ${demo.sources.length} sources connected. Portals that need a login or UAE PASS are signed in by a named person; the agent never bypasses a login or CAPTCHA.`}
         actions={
           <Button size="lg" onClick={() => setAddOpen(true)}>

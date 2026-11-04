@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { markUnderReview, useDemo } from "@/lib/store";
 import { type CriterionBand, aiPrequalified, criterionBand, fitBreakdown } from "@/lib/scoring";
-import { daysUntil, formatAED, formatDate, timeAgo } from "@/lib/format";
+import { daysUntil, formatDate, timeAgo } from "@/lib/format";
 import type { CheckStatus, Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -113,7 +113,7 @@ export function TenderDetail() {
       </div>
 
       {/* Key facts, as listed on the portal */}
-      <dl className="grid shrink-0 grid-cols-2 gap-px border-y bg-border md:grid-cols-5">
+      <dl className="grid shrink-0 grid-cols-2 gap-px border-y bg-border md:grid-cols-4">
         <Fact label="Tender ID" value={<span className="font-mono">{tender.sourceRef}</span>} sub={`AGFS ref ${tender.id}`} />
         <Fact label="Bidding opens" value={formatDate(tender.publishedAt)} sub={source?.name} />
         <Fact
@@ -121,12 +121,6 @@ export function TenderDetail() {
           value={formatDate(tender.deadline)}
           sub={days > 0 ? `${days} days left` : "Closed"}
           tone={days <= 14 ? "text-orange-700" : undefined}
-        />
-        <Fact
-          label="Estimated value"
-          value={tender.valueDisclosed === false ? "Not disclosed" : formatAED(tender.valueAED, false)}
-          sub={tender.valueDisclosed === false ? `AI estimate ~${formatAED(tender.valueAED)} from scope` : "Published by buyer"}
-          tone={tender.valueDisclosed === false ? "text-magenta" : undefined}
         />
         <Fact label="Contract term" value={`${tender.durationMonths} months`} sub={tender.location.split(" (")[0]} />
       </dl>
@@ -144,7 +138,6 @@ export function TenderDetail() {
                 Eligibility
                 <CountDot items={tender.eligibility.filter((e) => e.status !== "met").length} />
               </TabsTrigger>
-              <TabsTrigger className={LINE_TAB} value="risks">Risks & assumptions</TabsTrigger>
               <TabsTrigger className={LINE_TAB} value="evidence">Evidence</TabsTrigger>
             </TabsList>
 
@@ -175,42 +168,6 @@ export function TenderDetail() {
                   </li>
                 ))}
               </ul>
-            </TabsContent>
-
-            <TabsContent value="risks" className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5 md:grid-cols-2">
-              <div className="space-y-3">
-                <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">Risks</h3>
-                {tender.risks.map((r) => (
-                  <div key={r.title} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium">{r.title}</span>
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-px text-[11px] font-medium",
-                          r.severity === "High" && "bg-rose-50 text-rose-700",
-                          r.severity === "Medium" && "bg-amber-50 text-amber-800",
-                          r.severity === "Low" && "bg-zinc-100 text-zinc-600",
-                        )}
-                      >
-                        {r.severity}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{r.mitigation}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">Commercial assumptions</h3>
-                <ul className="space-y-2">
-                  {tender.assumptions.map((a) => (
-                    <li key={a} className="flex gap-2.5 text-sm">
-                      <span className="mt-2 size-1 shrink-0 rounded-full bg-muted-foreground" />
-                      {a}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs text-muted-foreground">To be validated by Estimation before pricing.</p>
-              </div>
             </TabsContent>
 
             <TabsContent value="evidence" className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Archive, FileText, Forward, Grip, Inbox, Reply, ReplyAll, Search, Send, Sparkles, SquarePen, Trash2, X } from "lucide-react";
 import { useDemo } from "@/lib/store";
 import { aiPrequalified } from "@/lib/scoring";
-import { formatDate, formatDateTime, formatTime, formatValue, isToday } from "@/lib/format";
+import { formatDate, formatDateTime, formatTime, isToday } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { serviceLineFor } from "@/lib/mock-data";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -240,7 +240,7 @@ export function HodEmailHost() {
                     <div className="rounded-lg border border-[#e1dfdd] p-4">
                       <div className="font-bold text-zinc-900">{tender.title}</div>
                       <div className="mt-0.5 text-sm text-zinc-500">
-                        {tender.buyer} · {formatValue(tender)} · due {formatDate(tender.deadline)}
+                        {tender.buyer} · due {formatDate(tender.deadline)}
                       </div>
                       <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-zinc-900">
                         AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
@@ -251,7 +251,7 @@ export function HodEmailHost() {
                     {tender.approval?.note && (
                       <div className="rounded-r-lg border-l-2 border-[#410266]/50 bg-[#f6f0fb] py-2.5 pr-3 pl-4 text-sm">
                         <div className="text-xs font-semibold text-zinc-500">
-                          Note from {tender.approval.submittedBy} · proposes {tender.approval.proposed.toLowerCase()}
+                          Note from {tender.approval.submittedBy}
                         </div>
                         <p className="mt-1 text-zinc-800 italic">“{tender.approval.note}”</p>
                       </div>
