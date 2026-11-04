@@ -1,4 +1,4 @@
-import type { Category, CheckStatus, Emirate, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
+import type { Category, Emirate, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
 
 // AGFS pre-qualification criteria (illustrative, to be refined with Commercial).
 // The pre-qualification score is a transparent weighted sum: every point is traceable to one of four criteria.
@@ -81,11 +81,14 @@ export function fitBreakdown(t: Tender): CriterionResult[] {
   return rows.map((r) => ({ ...r, points: Math.round((r.score * r.weight) / 10) / 10 }));
 }
 
-/** Whether a single criterion is met, partly met or not met; shown instead of the underlying number. */
-export function criterionStatus(c: CriterionResult): CheckStatus {
-  if (c.score >= 70) return "met";
-  if (c.score >= 50) return "partial";
-  return "unmet";
+/** How well a prospect scores on one criterion, by band: 100% full, above 50% high, 25–50% mid, 25% or below low. */
+export type CriterionBand = "full" | "high" | "mid" | "low";
+
+export function criterionBand(c: CriterionResult): CriterionBand {
+  if (c.score >= 100) return "full";
+  if (c.score > 50) return "high";
+  if (c.score > 25) return "mid";
+  return "low";
 }
 
 /** Internal ranking value, 0 to 100. Not shown to users: the pre-qualification they see is Yes / No. */
@@ -123,7 +126,7 @@ export function isActive(t: Tender) {
   return (ACTIVE_STATUSES as readonly string[]).includes(t.status);
 }
 
-export const PROSPECT_STATUSES: ProspectStatus[] = ["Pending Review", "Prequalified", "Rejected"];
+export const PROSPECT_STATUSES: ProspectStatus[] = ["Not submitted", "Pending Review", "Prequalified", "Rejected"];
 
 /** Collapses the workflow state to the status shown to users. */
 export function prospectStatus(status: TenderStatus): ProspectStatus {
@@ -134,7 +137,9 @@ export function prospectStatus(status: TenderStatus): ProspectStatus {
     case "No-bid":
     case "Not qualified":
       return "Rejected";
-    default:
+    case "Awaiting HoD":
       return "Pending Review";
+    default:
+      return "Not submitted";
   }
 }

@@ -126,11 +126,13 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex shrink-0 flex-wrap items-center gap-3 rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground"
+              className="flex shrink-0 flex-wrap items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground shadow-soft"
             >
-              <Mail className="size-4 shrink-0" />
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary">
+                <Mail className="size-4" />
+              </span>
               <span className="min-w-0 flex-1">
-                <span className="font-semibold">Welcome, {myLine.hod.split(" ")[0]}.</span>{" "}
+                <span className="font-semibold text-foreground">Welcome, {myLine.hod.split(" ")[0]}.</span>{" "}
                 {focused ? (
                   <>
                     You opened <span className="font-semibold text-foreground">{focused.title}</span> from your email.
@@ -144,7 +146,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                   Review now <ArrowRight />
                 </Button>
               )}
-              <button onClick={() => setFromEmail(false)} aria-label="Dismiss" className="rounded-md p-1 hover:bg-primary/10">
+              <button onClick={() => setFromEmail(false)} aria-label="Dismiss" className="rounded-md p-1 hover:bg-muted hover:text-foreground">
                 <X className="size-4" />
               </button>
             </motion.div>
@@ -372,7 +374,8 @@ function Register({
   const [q, setQ] = useState("");
   const filters = useTableFilters();
   const facets: Facet[] = [
-    { key: "status", label: "Status", options: [...PROSPECT_STATUSES] },
+    // Only submitted prospects are listed here, so "Not submitted" never applies.
+    { key: "status", label: "Status", options: PROSPECT_STATUSES.filter((x) => x !== "Not submitted") },
     ...(showHod ? [{ key: "hod", label: "HoD", options: SERVICE_LINES.map((l) => l.hod) }] : []),
     { key: "ai", label: "AI pre-qual", options: ["Yes", "No"] },
   ];
@@ -463,7 +466,7 @@ function Register({
                       "cursor-pointer align-top transition-colors hover:bg-muted/30",
                       t.status === "Awaiting HoD" && "bg-amber-50/40",
                       selectedId === t.id && "bg-primary/5",
-                      highlightId === t.id && "bg-secondary shadow-[inset_3px_0_0_var(--primary)]",
+                      highlightId === t.id && "bg-primary/[0.035] shadow-[inset_2px_0_0_color-mix(in_oklab,var(--primary)_55%,transparent)]",
                     )}
                   >
 <td className="py-3 pr-3 pl-5 whitespace-nowrap">

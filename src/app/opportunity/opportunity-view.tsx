@@ -6,16 +6,18 @@ import { useEffect } from "react";
 import {
   AlertTriangle,
   ChevronRight,
+  BadgeCheck,
   CheckCircle2,
   CircleDashed,
   CircleHelp,
+  MinusCircle,
   FileText,
   Sparkles,
   X,
   XCircle,
 } from "lucide-react";
 import { markUnderReview, useDemo } from "@/lib/store";
-import { aiPrequalified, criterionStatus, fitBreakdown } from "@/lib/scoring";
+import { type CriterionBand, aiPrequalified, criterionBand, fitBreakdown } from "@/lib/scoring";
 import { daysUntil, formatAED, formatDate, timeAgo } from "@/lib/format";
 import type { CheckStatus, Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -303,7 +305,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
       <ul className="grid gap-2 sm:grid-cols-2">
         {fitBreakdown(tender).map((c) => (
           <li key={c.key} className="flex gap-2.5 rounded-lg bg-card/80 px-3 py-2.5 ring-1 ring-primary/10">
-            <CheckIcon status={criterionStatus(c)} />
+            <BandIcon band={criterionBand(c)} />
             <div className="min-w-0 text-sm">
               <div className="font-medium">{c.label}</div>
               <div className="text-xs text-muted-foreground">{c.rationale}</div>
@@ -313,6 +315,17 @@ function PrequalCard({ tender }: { tender: Tender }) {
       </ul>
     </div>
   );
+}
+
+/** Criterion bands: 100% purple, above 50% green, 25–50% orange, 25% or below grey. */
+function BandIcon({ band }: { band: CriterionBand }) {
+  const map = {
+    full: <BadgeCheck className="size-4.5 text-primary" />,
+    high: <CheckCircle2 className="size-4.5 text-emerald-600" />,
+    mid: <AlertTriangle className="size-4.5 text-orange-500" />,
+    low: <MinusCircle className="size-4.5 text-zinc-400" />,
+  };
+  return <span className="mt-0.5 shrink-0">{map[band]}</span>;
 }
 
 function CheckIcon({ status }: { status: CheckStatus }) {

@@ -29,8 +29,11 @@ export type TenderStatus =
   | "No-bid"
   | "Not qualified";
 
-/** The three statuses shown to users; the workflow states above map onto these. */
-export type ProspectStatus = "Pending Review" | "Prequalified" | "Rejected";
+/**
+ * The four statuses shown to users; the workflow states above map onto these. Each says who holds the prospect:
+ * Not submitted (Bid Analyst), Pending Review (HoD), then Prequalified or Rejected.
+ */
+export type ProspectStatus = "Not submitted" | "Pending Review" | "Prequalified" | "Rejected";
 
 export type CheckStatus = "met" | "partial" | "unmet" | "unknown";
 
