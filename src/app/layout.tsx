@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AGFS Tender Intelligence (Demo)",
   description:
-    "Clickable prototype: AI prospect scanning, ranking, HoD prequalification and D365 lead hand-off. All data simulated.",
+    "Clickable prototype: tender alerts and portal scans become D365 leads, AI prequalifies, VP Commercial approves for bidding. All data simulated.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <AppShell>{children}</AppShell>
             </Suspense>
           </TooltipProvider>
-          <Toaster position="bottom-right" />
+          <Toaster position="top-right" offset={{ top: 64 }} />
         </ThemeProvider>
       </body>
     </html>

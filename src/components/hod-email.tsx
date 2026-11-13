@@ -7,21 +7,21 @@ import { useDemo } from "@/lib/store";
 import { aiPrequalified } from "@/lib/scoring";
 import { formatDate, formatDateTime, formatTime, isToday } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { serviceLineFor } from "@/lib/mock-data";
+import { PEOPLE } from "@/lib/mock-data";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PrequalBadge } from "@/components/shared";
 
-/** Days an HoD has to decide; shown in the email as "Decision needed by". */
+/** Days VP Commercial has to decide; shown in the email as "Decision needed by". */
 const DECISION_SLA_DAYS = 3;
 
-// Which prospect's HoD email is being previewed. A tiny store so any screen can open it.
+// Which prospect's approval email is being previewed. A tiny store so any screen can open it.
 let previewId: string | null = null;
 const listeners = new Set<() => void>();
 function emit() {
   listeners.forEach((l) => l());
 }
 
-/** Open the simulated email the HoD receives for this prospect. */
+/** Open the simulated email VP Commercial receives for this prospect. */
 export function openHodEmail(tenderId: string) {
   previewId = tenderId;
   emit();
@@ -44,8 +44,8 @@ function usePreviewId() {
 }
 
 /**
- * The email an HoD gets when a prospect is routed to them, shown as a simulated Outlook window.
- * "Review & decide" signs in as that HoD and opens the prospect in the Approval Center.
+ * The email VP Commercial gets when a prospect is sent for approval, shown as a simulated Outlook window.
+ * "Review & decide" signs in as VP Commercial and opens the prospect in the Approval Center.
  */
 export function HodEmailHost() {
   const id = usePreviewId();
@@ -54,20 +54,19 @@ export function HodEmailHost() {
   const tender = demo?.tenders.find((t) => t.id === id);
   if (!demo) return null;
 
-  const line = tender ? serviceLineFor(tender.category) : null;
-  // Other prospects still waiting for this HoD; they appear as earlier emails in the inbox.
-  const waiting = tender
-    ? demo.tenders.filter((t) => t.id !== tender.id && t.status === "Awaiting HoD" && line?.categories.includes(t.category))
-    : [];
+  // The email goes to VP Commercial, who approves every prospect for bidding.
+  const vp = PEOPLE.vp;
+  // Other prospects still waiting for VP Commercial; they appear as earlier emails in the inbox.
+  const waiting = tender ? demo.tenders.filter((t) => t.id !== tender.id && t.status === "BD Head review") : [];
   const sentAt = tender?.approval?.submittedAt ?? new Date(0).toISOString();
   const dueBy = new Date(new Date(sentAt).getTime() + DECISION_SLA_DAYS * 86_400_000).toISOString();
   const when = (iso: string) => (isToday(iso) ? formatTime(iso) : formatDate(iso));
 
-  /** The email link opens the app's sign-in; after signing in the HoD lands on their Approval Center. */
+  /** The email link opens the app's sign-in; after signing in VP Commercial lands on the Approval Center. */
   function reviewAndDecide() {
-    if (!tender || !line) return;
+    if (!tender) return;
     closeHodEmail();
-    router.push(`/?from=email&line=${line.id}&prospect=${encodeURIComponent(tender.id)}`);
+    router.push(`/?from=email&prospect=${encodeURIComponent(tender.id)}`);
   }
 
   const inbox: InboxItem[] = tender
@@ -75,7 +74,7 @@ export function HodEmailHost() {
         {
           id: tender.id,
           from: "AGFS Tender Intelligence",
-          subject: `Prequalification needed · due ${formatDate(dueBy)}`,
+          subject: `Approval for bidding needed · due ${formatDate(dueBy)}`,
           preview: tender.title,
           time: when(sentAt),
           unread: true,
@@ -85,7 +84,7 @@ export function HodEmailHost() {
         ...waiting.slice(0, 2).map((t) => ({
           id: t.id,
           from: "AGFS Tender Intelligence",
-          subject: "Prequalification needed",
+          subject: "Approval for bidding needed",
           preview: t.title,
           time: t.approval ? when(t.approval.submittedAt) : "",
           unread: true,
@@ -108,7 +107,7 @@ export function HodEmailHost() {
         style={{ "--border": "#e1dfdd", colorScheme: "light" } as React.CSSProperties}
         className="flex bg-white text-zinc-900 h-[85vh] max-h-[760px] flex-col gap-0 overflow-hidden rounded-xl p-0 [font-family:'Segoe_UI',system-ui,sans-serif] sm:max-w-6xl"
       >
-        <DialogTitle className="sr-only">Email to {line?.hod}</DialogTitle>
+        <DialogTitle className="sr-only">Email to {vp.name}</DialogTitle>
 
         {/* App bar */}
         <div className="flex h-12 shrink-0 items-center gap-3 bg-[#0f6cbd] px-3 text-white">
@@ -118,7 +117,7 @@ export function HodEmailHost() {
             <Search className="size-4" /> Search
           </div>
           <span className="rounded bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">Simulated</span>
-          <span className="grid size-8 place-items-center rounded-full bg-white/20 text-xs font-semibold">{line?.initials}</span>
+          <span className="grid size-8 place-items-center rounded-full bg-white/20 text-xs font-semibold">{vp.initials}</span>
           <button
             aria-label="Close email"
             onClick={closeHodEmail}
@@ -149,7 +148,7 @@ export function HodEmailHost() {
           })}
         </div>
 
-        {tender && line && (
+        {tender && (
           <div className="relative flex min-h-0 flex-1">
             {/* Folder pane */}
             <nav className="hidden w-48 shrink-0 flex-col gap-0.5 border-r bg-[#faf9f8] p-2 text-[13px] text-zinc-700 lg:flex">
@@ -206,12 +205,12 @@ export function HodEmailHost() {
             {/* Reading pane */}
             <div className="flex min-w-0 flex-1 flex-col bg-white">
               <div className="shrink-0 border-b px-6 pt-5 pb-4">
-                <h2 className="text-xl font-semibold text-zinc-900">Prequalification needed · due {formatDate(dueBy)}</h2>
+                <h2 className="text-xl font-semibold text-zinc-900">Approval for bidding needed · due {formatDate(dueBy)}</h2>
                 <div className="mt-4 flex items-start gap-3">
                   <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">AT</span>
                   <div className="min-w-0 flex-1 text-[13px] leading-snug">
                     <div className="font-semibold text-zinc-900">AGFS Tender Intelligence</div>
-                    <div className="text-[#605e5c]">To: {line.hod}</div>
+                    <div className="text-[#605e5c]">To: {vp.name}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1 text-zinc-500">
                     {[Reply, ReplyAll, Forward].map((I, i) => (
@@ -232,9 +231,9 @@ export function HodEmailHost() {
                     <span className="text-sm font-bold tracking-tight">AGFS Tender Intelligence</span>
                   </div>
                   <div className="space-y-5 p-6">
-                    <p className="text-sm">Dear {line.hod.split(" ")[0]},</p>
+                    <p className="text-sm">Dear {vp.name.split(" ")[0]},</p>
                     <p className="text-sm text-[#605e5c]">
-                      {tender.approval?.submittedBy ?? "The Bid Analyst"} has routed a prospect to you for prequalification.
+                      {tender.approval?.submittedBy ?? "The Bid Analyst"} has created lead {tender.lead.leadId} in D365 and it needs your review as BD Head. Approving sends it to the Bid Head for the final go.
                     </p>
 
                     <div className="rounded-lg border border-[#e1dfdd] p-4">
@@ -271,13 +270,13 @@ export function HodEmailHost() {
                       {waiting.length > 0 && (
                         <>
                           {" "}
-                          · {waiting.length} other prospect{waiting.length === 1 ? "" : "s"} waiting for you
+                          · {waiting.length} other lead{waiting.length === 1 ? "" : "s"} waiting for you
                         </>
                       )}
                     </p>
                   </div>
                   <div className="bg-[#faf9f8] px-6 py-3 text-[11px] text-zinc-400">
-                    Sent by AGFS Tender Intelligence. You receive this because you are the HoD for {line.name}.
+                    Sent by AGFS Tender Intelligence. You receive this because you are the BD Head.
                   </div>
                 </div>
               </div>

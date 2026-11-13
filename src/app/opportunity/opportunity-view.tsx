@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 import {
   AlertTriangle,
   ChevronRight,
@@ -16,7 +15,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { markUnderReview, useDemo } from "@/lib/store";
+import { useDemo } from "@/lib/store";
 import { type CriterionBand, aiPrequalified, criterionBand, fitBreakdown } from "@/lib/scoring";
 import { daysUntil, formatDate, timeAgo } from "@/lib/format";
 import type { CheckStatus, Tender } from "@/lib/types";
@@ -30,9 +29,9 @@ import { D365, PrequalBadge } from "@/components/shared";
 
 /** Where "back" returns to, keyed by the ?from= the opening link passed. */
 const BACK: Record<string, { href: string; label: string }> = {
-  pipeline: { href: "/pipeline", label: "Prospects" },
-  approvals: { href: "/approvals", label: "Approval Center" },
-  sources: { href: "/sources", label: "Scan Portal" },
+  pipeline: { href: "/pipeline", label: "Lead Pipeline" },
+  approvals: { href: "/approvals", label: "Approvals" },
+  inbox: { href: "/inbox", label: "Inbox" },
 };
 
 export function TenderDetail() {
@@ -48,19 +47,15 @@ export function TenderDetail() {
     else router.push(back.href);
   }
   const demo = useDemo()!;
-  // An HoD has no Prospects screen, so their default way back is Approvals.
-  const back = BACK[from ?? ""] ?? (demo.role === "approver" ? BACK.approvals : BACK.pipeline);
+  // VP Commercial has no Lead Pipeline screen, so their default way back is Approvals.
+  const back = BACK[from ?? ""] ?? (demo.role !== "analyst" ? BACK.approvals : BACK.pipeline);
   const tender = demo.tenders.find((t) => t.id === id);
   const source = demo.sources.find((s) => s.id === tender?.sourceId);
-
-  useEffect(() => {
-    if (tender?.status === "New" && demo.role === "analyst") markUnderReview(tender.id);
-  }, [tender?.id, tender?.status, demo.role]);
 
   if (!tender) {
     return (
       <div className="py-24 text-center">
-        <p className="text-muted-foreground">This tender isn’t in the pipeline. It may need an AI scan first.</p>
+        <p className="text-muted-foreground">This tender isn’t in the pipeline.</p>
         <Button variant="outline" className="mt-4" nativeButton={false} render={<Link href="/pipeline" />}>
           Back to pipeline
         </Button>
@@ -247,8 +242,8 @@ function PrequalCard({ tender }: { tender: Tender }) {
                 <CircleHelp className="size-3.5" />
               </TooltipTrigger>
               <TooltipContent className="max-w-64">
-                The AI checks the prospect against four AGFS criteria and recommends Yes or No. It does not decide
-                whether to bid. The HoD validates it before anything goes to <D365 />.
+                The AI checks the lead against the AGFS criteria and recommends Yes or No. It does not decide.
+                The HoD, BD Head and Bid Head approve; the Bid Head&apos;s approval creates the <D365 /> opportunity.
               </TooltipContent>
             </Tooltip>
           </div>

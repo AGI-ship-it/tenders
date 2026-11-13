@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, CircleDashed, Fingerprint, Loader2, PauseCircle, Radar, Sparkles } from "lucide-react";
+import { ArrowRight, Check, CircleDashed, Fingerprint, Loader2, Mail, PauseCircle, Radar, Repeat2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { clearPendingScan, completeScan, isScannable, peekPendingScan, useDemo } from "@/lib/store";
+import { alreadyLeadsFromEmail, clearPendingScan, completeScan, isScannable, peekPendingScan, useDemo } from "@/lib/store";
 import { PEOPLE } from "@/lib/mock-data";
 import type { LastScan, Source, Tender } from "@/lib/types";
 import { aiPrequalified, fitScore } from "@/lib/scoring";
@@ -22,51 +22,68 @@ interface Step {
   logs: string[];
 }
 
-function buildSteps(ready: Source[], blocked: Source[]): Step[] {
+/**
+ * The run follows the to-be process: tenders come in by email alert (main path) or portal scan, are matched against
+ * existing leads, become D365 leads, are summarised with their dates, fees and NDAs logged as actions, then scored.
+ */
+function buildSteps(ready: Source[], blocked: Source[], alreadyLeads: Tender[]): Step[] {
   return [
     {
       key: "connect",
-      label: "Connecting to sources",
-      description: "Opening simulated connections to configured portals",
+      label: "Reading alerts & portals",
+      description: "Tender alert emails first, then the daily scan of each portal",
       duration: 1600,
       logs: [
         ...ready.map((s) =>
-          s.access === "CAPTCHA"
-            ? `✓ ${s.name}: CAPTCHA on portal, read via email alerts`
-            : `✓ ${s.name}: simulated connection ready`,
+          s.kind === "Email"
+            ? `✉ ${s.name}: reading tender alerts (email with link)`
+            : s.access === "CAPTCHA"
+              ? `✓ ${s.name}: CAPTCHA on portal, read via email alerts`
+              : `✓ ${s.name}: daily scan, simulated connection ready`,
         ),
         ...blocked.map((s) => `⏸ ${s.name}: ${s.access} sign-in needed, skipped. Reminder sent to ${PEOPLE.analyst.name}`),
       ],
     },
     {
       key: "discover",
-      label: "Discovering new notices",
-      description: "Listing notices published since the last scan",
-      duration: 1500,
-      logs: ["Found 7 notices published in the last 24 h", "Filtered 0 notices outside FM categories"],
-    },
-    {
-      key: "extract",
-      label: "Extracting RFP details",
-      description: "Reading scope, value, deadline and eligibility from sample documents",
-      duration: 1800,
-      logs: [
-        "Parsed 7 tender notices and 5 sample RFP packs",
-        "Extracted value, deadline, geography and mandatory requirements",
-      ],
+      label: "Discovering new tenders",
+      description: "Alerts received and notices published since the last run",
+      duration: 1400,
+      logs: ["Found 7 tenders: 4 from email alerts, 3 from portal scans", "Filtered 0 notices outside FM categories"],
     },
     {
       key: "dedupe",
-      label: "Deduplicating",
-      description: "Matching against tenders already in the pipeline",
-      duration: 1200,
-      logs: ["Matched on buyer reference and title similarity", "Merged cross-posted notices"],
+      label: "Matching existing leads",
+      description: "A tender seen by email and on a portal becomes one lead",
+      duration: 1400,
+      logs: [
+        "Matched on buyer reference and title similarity",
+        ...alreadyLeads.map((t) => `↺ ${t.id}: also on portal; already lead ${t.lead.leadId} from email alert, no second lead`),
+      ],
+    },
+    {
+      key: "lead",
+      label: "Creating D365 leads",
+      description: "Every new tender becomes a lead, documents and links attached",
+      duration: 1400,
+      logs: ["Created a D365 lead for each new tender (simulated)", "Attached tender documents and portal links"],
+    },
+    {
+      key: "extract",
+      label: "Summarising & logging actions",
+      description: "Scope, deadlines, site visits, fees and NDAs on the lead",
+      duration: 1700,
+      logs: [
+        "One summary per tender: scope, deadlines, site visit, fees",
+        "Logged dates, tender fees and NDAs as actions on each lead",
+        "Flagged items the AI could not read clearly for the Bid Analyst",
+      ],
     },
     {
       key: "score",
       label: "Scoring against AGFS criteria",
-      description: "Service, geography, ISO, eligibility, strategy and capacity",
-      duration: 1600,
+      description: "Service, geography and ISO",
+      duration: 1400,
       logs: ["Applied AGFS criteria v2.3 (demo)", "Generated recommendations and evidence links"],
     },
   ];
@@ -129,7 +146,7 @@ export function ScanPanel({
 
   function start(discover = true) {
     clearTimers();
-    const plan = buildSteps(ready, blocked);
+    const plan = buildSteps(ready, blocked, discover ? alreadyLeadsFromEmail(demo.tenders) : []);
     setSteps(plan);
     setPhase("running");
     setStep(0);
@@ -150,8 +167,8 @@ export function ScanPanel({
         setStep(plan.length);
         setPhase("done");
         toast.success(
-          r.newTenders.length ? `${r.newTenders.length} new prospects added` : "Scan complete: portals checked",
-          { description: `${r.duplicates} duplicates skipped · simulated scan` },
+          r.newTenders.length ? `${r.newTenders.length} new leads created in D365` : "Run complete: alerts and portals checked",
+          { description: `${r.duplicates} duplicates matched to existing leads · simulated` },
         );
       }, t + 300),
     );
@@ -180,7 +197,7 @@ export function ScanPanel({
         <span className="grid size-16 place-items-center rounded-2xl bg-primary/10 text-primary">
           <Radar className="size-8" />
         </span>
-        <h2 className="mt-5 text-xl font-bold text-primary tracking-tight">Scan connected portals</h2>
+        <h2 className="mt-5 text-xl font-bold text-primary tracking-tight">Check tender alerts & scan portals</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {ready.length} portals ready
           {demo.lastScanAt && <> · last scan {formatDateTime(demo.lastScanAt)}</>}
@@ -223,7 +240,7 @@ export function ScanPanel({
                   </>
                 )
               ) : (
-                "Scanning portals…"
+                "Reading alerts & scanning portals…"
               )}
             </h2>
           </div>
@@ -321,6 +338,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
   const tracked = (scan.foundIds ?? []).map((id) => demo.tenders.find((t) => t.id === id)).filter((t): t is Tender => !!t);
   const found = (id: string) => newTenders.filter((t) => t.sourceId === id).length;
   const list = newTenders.length ? newTenders : tracked;
+  const alreadyLeads = (scan.alreadyLeadIds ?? []).map((id) => demo.tenders.find((t) => t.id === id)).filter((t): t is Tender => !!t);
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       <div className="space-y-6">
@@ -329,7 +347,9 @@ function ScanResults({ scan }: { scan: LastScan }) {
         <ul className="divide-y rounded-xl bg-card ring-1 ring-border">
           {runs.map(({ source, outcome }) => (
             <li key={source.id} className="flex items-center gap-2.5 px-3 py-2.5 text-sm">
-              {outcome === "scanned" ? (
+              {outcome === "scanned" && source.kind === "Email" ? (
+                <Mail className="size-4 shrink-0 text-emerald-600" />
+              ) : outcome === "scanned" ? (
                 <Check className="size-4 shrink-0 text-emerald-600" />
               ) : (
                 <PauseCircle className="size-4 shrink-0 text-amber-600" />
@@ -352,7 +372,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
 
       <section className="space-y-2">
         <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">
-          {newTenders.length ? "New prospects" : "Prospects found"}
+          {newTenders.length ? "New leads in D365" : "Prospects found"}
         </h3>
         {list.length === 0 ? (
           <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
@@ -383,9 +403,31 @@ function ScanResults({ scan }: { scan: LastScan }) {
                       Pre-qual <PrequalBadge yes={aiPrequalified(t)} />
                     </span>
                   </div>
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <span className="font-mono font-medium text-teal-700">{t.lead.leadId}</span>
+                    <span>·</span>
+                    {t.intake === "Email alert" ? <Mail className="size-3" /> : <Radar className="size-3" />}
+                    {t.intake === "Email alert" ? "from email alert" : "from portal scan"}
+                    <span>·</span>
+                    {t.actions.length} actions logged
+                  </div>
                 </Link>
               </motion.div>
             ))
+        )}
+        {alreadyLeads.length > 0 && (
+          <div className="space-y-1.5 pt-3">
+            <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">Already leads from email</h3>
+            {alreadyLeads.map((t) => (
+              <div key={t.id} className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                <Repeat2 className="size-3.5 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{t.title}</span>
+                <span className="shrink-0">
+                  also on portal · <span className="font-mono font-medium text-teal-700">{t.lead.leadId}</span>, no second lead
+                </span>
+              </div>
+            ))}
+          </div>
         )}
       </section>
     </div>

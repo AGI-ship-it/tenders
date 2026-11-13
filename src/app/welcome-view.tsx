@@ -3,48 +3,54 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, ChevronDown, KeyRound, Loader2, Mail, Radar, ShieldCheck, UserRound } from "lucide-react";
-import { completeOnboarding, requestScan, setRole, useDemo } from "@/lib/store";
-import { PEOPLE, SERVICE_LINES } from "@/lib/mock-data";
+import { ArrowRight, KeyRound, Loader2, Mail, Radar, ShieldCheck, Trophy, UserRound } from "lucide-react";
+import { ensureReturningMailboxes, requestScan, resetDemo, setRole, useDemo } from "@/lib/store";
+import { PEOPLE } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 
 /**
- * Two sign-ins, one per persona. The Bid Analyst lands on first-time setup until portals have been set up, then on
- * Scan Portal. An HoD picks which service line they head and lands on the prospects routed to them.
- * "Reset demo" in the profile menu replays first-time setup.
+ * Two sign-ins, one per persona. The Bid Analyst lands on the tender alert inbox; VP Commercial lands on the leads
+ * waiting for approval.
  */
 export function WelcomeView() {
   const demo = useDemo()!;
   const router = useRouter();
   const analyst = PEOPLE.analyst;
-  const [hodLine, setHodLine] = useState(demo?.hodLine ?? SERVICE_LINES[0].id);
-  // Arriving from the "Review & decide" link in an HoD's email.
+  const vp = PEOPLE.vp;
+  // Arriving from the "Review & decide" link in VP Commercial's email.
   const params = useSearchParams();
-  const emailLine = params.get("from") === "email" ? SERVICE_LINES.find((l) => l.id === params.get("line")) : undefined;
+  const fromEmail = params.get("from") === "email";
   const emailProspect = demo.tenders.find((t) => t.id === params.get("prospect"));
   const [otherAccount, setOtherAccount] = useState(false);
 
-  function signInAnalyst() {
+  /**
+   * First time: a fresh start with no mailbox connected, so the first screen walks through connecting one or more.
+   * Returning: the mailboxes are already connected, so signing in starts the AI's run straight away.
+   */
+  function signInAnalyst(firstTime: boolean) {
+    if (firstTime) resetDemo();
+    else ensureReturningMailboxes();
     setRole("analyst");
-    // Signing in always runs a scan. A fresh workspace discovers new prospects; after that, sign-in re-checks
-    // portals and shows what's already tracked. (First-time setup can be replayed with Reset demo.)
-    requestScan(demo.onboarded ? "checkin" : "discover");
-    if (!demo.onboarded) completeOnboarding();
-    router.push("/sources");
+    requestScan("discover");
+    router.push("/inbox");
   }
 
-  function signInHod() {
-    setRole("approver", hodLine);
+  function signInVp() {
+    setRole("vp");
     router.push("/approvals");
   }
 
-  if (emailLine && !otherAccount) {
+  function signInBid() {
+    setRole("bid");
+    router.push("/approvals");
+  }
+
+  if (fromEmail && !otherAccount) {
     return (
       <EmailSignIn
-        line={emailLine}
         prospectTitle={emailProspect?.title}
         onSignedIn={() => {
-          setRole("approver", emailLine.id);
+          setRole("vp");
           const focus = emailProspect ? `&focus=${encodeURIComponent(emailProspect.id)}` : "";
           router.push(`/approvals?via=email${focus}`);
         }}
@@ -65,48 +71,46 @@ export function WelcomeView() {
           <Radar className="size-6" />
         </div>
         <h1 className="mt-6 text-3xl font-bold text-primary tracking-tight sm:text-4xl">AGFS Tender Intelligence</h1>
-        <p className="mt-3 max-w-md text-muted-foreground">
-          Scan tender portals every day, rank the prospects that fit, and prequalify them with service-line HoDs.
-        </p>
 
-        <div className="mt-10 grid w-full max-w-2xl gap-4 text-left sm:grid-cols-2">
+        <div className="mt-10 grid w-full max-w-4xl gap-4 text-left sm:grid-cols-2 lg:grid-cols-3">
           <LoginCard
             icon={<UserRound className="size-5" />}
             tone="bg-purple-100 text-purple-900"
             title="Bid Analyst"
-            description="Scan portals, review AI pre-qualification and track every prospect in the register."
-            footer={
-              <p className="text-xs text-muted-foreground">
-                Signs in as {analyst.name}
-              </p>
+            description="Review the lead drafts the AI prepared from the mailboxes and create each lead in D365."
+            footer={<p className="text-xs text-muted-foreground">Signs in as {analyst.name}</p>}
+            actions={
+              <div className="mt-4 grid min-w-0 gap-2">
+                <Button size="xl" onClick={() => signInAnalyst(false)} className="w-full">
+                  Sign in <ArrowRight />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => signInAnalyst(true)}
+                  className="w-full"
+                  title="Starts the demo fresh, with no mailbox connected"
+                >
+                  <Mail /> First time? Connect mailboxes
+                </Button>
+              </div>
             }
-            onSignIn={signInAnalyst}
           />
           <LoginCard
             icon={<ShieldCheck className="size-5" />}
             tone="bg-pink-100 text-pink-800"
-            title="Head of Department"
-            description="Review the prospects routed to your service line and prequalify or reject them."
-            footer={
-              <label className="block space-y-1">
-                <span className="text-xs text-muted-foreground">Sign in as</span>
-                <span className="relative block">
-                  <select
-                    value={hodLine}
-                    onChange={(e) => setHodLine(e.target.value)}
-                    className="h-9 w-full cursor-pointer appearance-none rounded-lg border bg-card pr-9 pl-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                  >
-                    {SERVICE_LINES.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.hod} · HoD, {l.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                </span>
-              </label>
-            }
-            onSignIn={signInHod}
+            title="BD Head"
+            description="Review each lead after the HoD's reply, or bypass the HoD, then approve it for the Bid Head or reject it."
+            footer={<p className="text-xs text-muted-foreground">Signs in as {vp.name} · VP Commercial</p>}
+            onSignIn={signInVp}
+          />
+          <LoginCard
+            icon={<Trophy className="size-5" />}
+            tone="bg-violet-100 text-violet-800"
+            title="Bid Head"
+            description="Give the final approval, which creates the D365 opportunity and hands it to the bidding agent."
+            footer={<p className="text-xs text-muted-foreground">Signs in as {PEOPLE.bid.name}</p>}
+            onSignIn={signInBid}
           />
         </div>
         <p className="mt-4 text-xs text-muted-foreground">Demo sign-in · no password needed</p>
@@ -121,6 +125,7 @@ function LoginCard({
   title,
   description,
   footer,
+  actions,
   onSignIn,
 }: {
   icon: React.ReactNode;
@@ -128,7 +133,9 @@ function LoginCard({
   title: string;
   description: string;
   footer: React.ReactNode;
-  onSignIn: () => void;
+  /** Replaces the single Sign in button. */
+  actions?: React.ReactNode;
+  onSignIn?: () => void;
 }) {
   return (
     <div className="flex flex-col rounded-2xl bg-card p-5 shadow-soft">
@@ -136,26 +143,26 @@ function LoginCard({
         <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${tone}`}>{icon}</span>
         <h2 className="text-base font-bold text-primary">{title}</h2>
       </div>
-      <p className="mt-3 flex-1 text-sm text-muted-foreground">{description}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{description}</p>
       <div className="mt-4">{footer}</div>
-      <Button size="xl" onClick={onSignIn} className="mt-4 w-full">
-        Sign in <ArrowRight />
-      </Button>
+      {actions ?? (
+        <Button size="xl" onClick={onSignIn} className="mt-4 w-full">
+          Sign in <ArrowRight />
+        </Button>
+      )}
     </div>
   );
 }
 
 /**
- * Sign-in reached from the HoD's email: the account is already known, so it is one step with the work account.
+ * Sign-in reached from VP Commercial's email: the account is already known, so it is one step with the work account.
  * The context strip reminds them why they are here.
  */
 function EmailSignIn({
-  line,
   prospectTitle,
   onSignedIn,
   onOtherAccount,
 }: {
-  line: (typeof SERVICE_LINES)[number];
   prospectTitle?: string;
   onSignedIn: () => void;
   onOtherAccount: () => void;
@@ -193,11 +200,11 @@ function EmailSignIn({
         <div className="mt-4 w-full rounded-2xl bg-card p-5 text-left shadow-soft">
           <div className="flex items-center gap-3">
             <span className="grid size-11 shrink-0 place-items-center rounded-full bg-pink-100 text-sm font-semibold text-pink-800">
-              {line.initials}
+              {PEOPLE.vp.initials}
             </span>
             <div className="min-w-0 leading-tight">
-              <div className="font-bold">{line.hod}</div>
-              <div className="text-xs text-muted-foreground">HoD, {line.name}</div>
+              <div className="font-bold">{PEOPLE.vp.name}</div>
+              <div className="text-xs text-muted-foreground">{PEOPLE.vp.title}</div>
             </div>
           </div>
           <Button size="xl" className="mt-5 w-full" onClick={signIn} disabled={busy}>
@@ -215,7 +222,7 @@ function EmailSignIn({
         </div>
 
         <button onClick={onOtherAccount} className="mt-5 text-xs font-medium text-muted-foreground hover:text-primary hover:underline">
-          Not {line.hod.split(" ")[0]}? Use another account
+          Not {PEOPLE.vp.name.split(" ")[0]}? Use another account
         </button>
       </motion.div>
     </div>

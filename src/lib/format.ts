@@ -54,3 +54,8 @@ export function timeAgo(iso: string | null) {
 export function formatValue(t: { valueAED: number; valueDisclosed?: boolean }) {
   return t.valueDisclosed === false ? `~${formatAED(t.valueAED)}` : formatAED(t.valueAED);
 }
+
+/** Whole hours left until a timestamp (0 once passed). */
+export function hoursLeft(iso: string) {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 3_600_000));
+}

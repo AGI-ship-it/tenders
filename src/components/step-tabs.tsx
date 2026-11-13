@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { animate, motion, useReducedMotion } from "motion/react";
 import { useDemo } from "@/lib/store";
-import { aiPrequalified, isActive } from "@/lib/scoring";
+import { aiPrequalified, inD365 } from "@/lib/scoring";
 import { daysSince } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { boldD365 } from "@/components/shared";
 
-export const STEP_ROUTES = ["/sources", "/pipeline", "/approvals"];
+export const STEP_ROUTES = ["/inbox", "/lead", "/pipeline", "/approvals"];
 
-/** Days an HoD has to decide before a prospect counts as overdue. */
+/** Days VP Commercial has to decide before a prospect counts as overdue. */
 const DECISION_SLA_DAYS = 3;
 
 /**
@@ -21,7 +21,7 @@ const DECISION_SLA_DAYS = 3;
  */
 function FlowLine({ filled }: { filled: boolean }) {
   return (
-    <div aria-hidden className="relative mt-8 h-[3px] min-w-4 flex-1 overflow-hidden rounded-full bg-zinc-300/60 sm:mt-12 md:mt-14">
+    <div aria-hidden className="relative mt-[27px] h-[3px] min-w-4 flex-1 overflow-hidden rounded-full bg-zinc-300/60 sm:mt-[31px] md:mt-[35px]">
       <motion.span
         className="absolute inset-0 origin-left rounded-full bg-linear-to-r from-primary/80 to-magenta/70"
         initial={false}
@@ -45,7 +45,7 @@ function FlowLine({ filled }: { filled: boolean }) {
 }
 
 /** Counts up to the value on arrival and pops briefly whenever it changes. */
-function CountUp({ value }: { value: number }) {
+export function CountUp({ value }: { value: number }) {
   const reduce = useReducedMotion();
   const [shown, setShown] = useState(0);
   const from = useRef(0);
@@ -73,84 +73,102 @@ function CountUp({ value }: { value: number }) {
 }
 
 /**
- * Scan Portal → Prospects → Approval Center. Each circle shows its key number and opens its screen below.
+ * Tender discovery → D365 lead → Lead pipeline → Approvals. Each circle shows its key number and opens its screen below.
  */
 export function StepTabs() {
-  // First-time setup belongs to step 1, so Scan Portal shows as selected there.
-  const path = usePathname();
-  const pathname = path.startsWith("/onboarding") ? "/sources" : path;
+  const pathname = usePathname();
   const demo = useDemo();
   if (!demo) return null;
 
   const { tenders } = demo;
-  const openList = tenders.filter(isActive);
-  const open = openList.length;
-  const aiYes = openList.filter(aiPrequalified).length;
-  const awaitingList = tenders.filter((t) => t.status === "Awaiting HoD");
+  const alerts = tenders.filter((t) => t.status === "Draft").length;
+  // Leads exist in D365 only once the Bid Analyst creates them from a draft.
+  const leads = tenders.filter(inD365);
+  const found = tenders.filter((t) => t.status !== "Not a tender");
+  const aiYes = leads.filter(aiPrequalified).length;
+  const awaitingList = tenders.filter((t) => t.status === "Awaiting HoD" || t.status === "BD Head review" || t.status === "Bid Head approval");
   const awaiting = awaitingList.length;
-  const routed = tenders.filter((t) => t.approval);
-  const decided = routed.filter((t) => t.status !== "Awaiting HoD").length;
+  const decided = leads.filter((t) => t.status === "Opportunity created" || t.status === "Rejected").length;
+  const opportunities = tenders.filter((t) => t.status === "Opportunity created").length;
   const overdue = awaitingList.filter(
     (t) => t.approval && daysSince(t.approval.submittedAt) > DECISION_SLA_DAYS,
   ).length;
-  const portals = demo.sources.filter((s) => s.kind !== "Upload");
-  const connected = portals.filter((s) => s.status === "Connected").length;
-  const needSignIn = portals.filter((s) => s.status !== "Paused" && s.accessState === "Action needed").length;
-  const fresh = tenders.filter((t) => t.fromLatestScan).length;
   const ratio = (n: number, d: number) => (d ? n / d : 0);
 
   const steps = [
     {
-      href: "/sources",
-      title: "Scan Portal",
-      action: "Connect & scan",
-      value: connected,
-      unit: "sources",
-      progress: ratio(connected, portals.length),
-      gauge: `${connected} of ${portals.length} portals connected`,
-      badge: needSignIn ? { text: `${needSignIn} sign-in`, tone: "amber" as const } : null,
+      href: "/inbox",
+      title: "Tender discovery",
+      action: "AI reads mailboxes · prepares drafts",
+      short: "Finds tenders · drafts leads",
+      value: alerts,
+      unit: "drafts",
+      progress: ratio(leads.length, found.length),
+      gauge: `${alerts} lead drafts prepared from the connected mailboxes`,
+      badge: null,
+      who: "AI agent",
+    },
+    {
+      href: "/lead",
+      title: "D365 lead",
+      action: "Review · create in D365",
+      short: "Review draft · create in D365",
+      value: alerts,
+      unit: "to review",
+      progress: ratio(leads.length, found.length),
+      gauge: `${alerts} drafts to review and push to D365`,
+      badge: null,
+      who: "Bid Analyst",
+      verb: "creates",
     },
     {
       href: "/pipeline",
-      title: "Prospects",
-      action: "Review & send for approval",
-      value: open,
-      unit: "open",
-      progress: ratio(aiYes, open),
-      gauge: `${aiYes} of ${open} open prospects recommended by AI`,
-      badge: fresh ? { text: `+${fresh} new`, tone: "teal" as const } : null,
+      title: "Lead pipeline",
+      action: "AI pre-qualification",
+      short: "AI pre-qualification",
+      value: leads.length,
+      unit: "leads",
+      progress: ratio(aiYes, leads.length),
+      gauge: `${aiYes} of ${leads.length} D365 leads recommended by AI`,
+      badge: null,
+      who: "AI agent",
     },
     {
       href: "/approvals",
-      title: "Approval Center",
-      action: "HoD approves → D365",
+      title: "Approvals",
+      action: "HoD → BD Head → Bid Head",
+      short: "HoD → BD Head → Bid Head",
       value: awaiting,
-      unit: "awaiting",
-      progress: ratio(decided, routed.length),
-      gauge: `${decided} of ${routed.length} routed prospects decided`,
+      unit: "pending",
+      progress: ratio(decided, leads.length),
+      gauge: `${decided} of ${leads.length} leads decided · ${opportunities} opportunities`,
       badge: overdue ? { text: `${overdue} overdue`, tone: "coral" as const } : null,
+      who: "HoD · BD · Bid Head",
+      verb: "decide",
     },
   ];
+  const current = steps.findIndex((x) => pathname.startsWith(x.href));
 
   return (
-    <div className="dot-grid shrink-0 border-b bg-zinc-50/60 pt-4 pb-2 sm:pt-5 sm:pb-3">
-      <ol className="mx-auto flex max-w-4xl items-start px-1 pt-2 pb-1 sm:px-2">
+    // One root, so first-time setup can hide it.
+    <div className="dot-grid shrink-0 border-b bg-zinc-50/60">
+      <div className="py-2.5">
+      <ol className="mx-auto flex max-w-4xl items-start px-1 pt-1 sm:px-2">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);
-          const current = steps.findIndex((x) => pathname.startsWith(x.href));
           return (
             <li key={s.href} className="contents">
               <Link
                 href={s.href}
                 aria-current={on ? "page" : undefined}
                 title={s.gauge}
-                className="group flex w-24 shrink-0 flex-col items-center text-center sm:w-36 md:w-48"
+                className="group flex w-20 shrink-0 flex-col items-center text-center sm:w-32 md:w-44"
               >
                 <span
                   className={cn(
-                    "relative grid size-16 place-items-center rounded-full transition-all duration-300 sm:size-24 md:size-28",
+                    "relative grid size-14 place-items-center rounded-full transition-all duration-300 sm:size-16 md:size-[72px]",
                     on
-                      ? "bg-primary text-primary-foreground shadow-soft-lg ring-4 ring-primary/10 md:ring-8"
+                      ? "bg-primary text-primary-foreground shadow-soft-lg ring-4 ring-primary/10 md:ring-4"
                       : "bg-card text-foreground shadow-soft group-hover:-translate-y-0.5",
                   )}
                 >
@@ -160,24 +178,24 @@ export function StepTabs() {
                   <span className="flex flex-col items-center leading-none">
                     <span
                       className={cn(
-                        "tabular text-xl font-extrabold tracking-tight sm:text-3xl md:text-[2.25rem]",
+                        "tabular text-lg font-extrabold tracking-tight sm:text-xl md:text-2xl",
                         // Open prospects and awaiting approvals are the counts to act on, so they stand out in dark purple.
                         !on && i > 0 && "text-primary",
                       )}
                     >
                       <CountUp value={s.value} />
                     </span>
-                    <span className={cn("mt-0.5 text-[8px] font-medium uppercase sm:mt-1 sm:text-[10px]", on ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                    <span className={cn("mt-0.5 text-[7px] font-medium uppercase sm:text-[8px]", on ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {s.unit}
                     </span>
                   </span>
                 </span>
-                <span className={cn("mt-2 text-xs font-bold sm:mt-3 sm:text-sm", on ? "text-primary" : "text-foreground")}>{s.title}</span>
-                <span className="mt-0.5 hidden text-xs text-muted-foreground sm:block">{boldD365(s.action)}</span>
+                <span className={cn("mt-1.5 text-xs font-bold sm:text-sm", on ? "text-primary" : "text-foreground")}>{s.title}</span>
+                <span className="hidden text-[11px] whitespace-nowrap text-muted-foreground md:block">{boldD365(s.short)}</span>
                 {on && (
                   <motion.span
                     layoutId="step-tab"
-                    className="mt-2 h-[3px] w-8 rounded-full bg-magenta sm:mt-2.5 sm:w-10"
+                    className="mt-1.5 h-[3px] w-8 rounded-full bg-magenta"
                     transition={{ type: "spring", stiffness: 500, damping: 40 }}
                   />
                 )}
@@ -187,9 +205,11 @@ export function StepTabs() {
           );
         })}
       </ol>
+      </div>
     </div>
   );
 }
+
 
 /**
  * A dashed track with a progress arc on top, so each circle doubles as a gauge.

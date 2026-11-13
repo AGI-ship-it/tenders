@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, FlaskConical, LogOut, Menu, Monitor, Moon, Radar, RotateCcw, Sun } from "lucide-react";
+import { ChevronDown, FlaskConical, LogOut, Menu, Monitor, Moon, Radar, RotateCcw, Settings, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -32,16 +32,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-/** Screens only the Bid Analyst uses; an HoD signed in is sent to Approvals instead. */
-const ANALYST_ONLY = ["/sources", "/onboarding", "/pipeline", "/portals"];
+/** Screens only the Bid Analyst uses; VP Commercial signed in is sent to Approvals instead. */
+const ANALYST_ONLY = ["/sources", "/onboarding", "/pipeline", "/portals", "/inbox", "/lead", "/settings"];
 
 const HOD_NAV = [{ href: "/approvals", label: "Approvals", match: ["/approvals", "/opportunity"] }];
 
+// Portal scanning (Scan Portal, Portal Registry) is out of scope for phase one; those screens stay in the code but
+// are not linked.
 const NAV = [
-  { href: "/sources", label: "Dashboard", match: ["/sources", "/onboarding"] },
-  { href: "/pipeline", label: "Pipeline", match: ["/pipeline", "/opportunity"] },
+  { href: "/inbox", label: "Inbox", match: ["/inbox", "/lead"] },
+  { href: "/pipeline", label: "Lead Pipeline", match: ["/pipeline", "/opportunity"] },
   { href: "/approvals", label: "Approvals", match: ["/approvals"] },
-  { href: "/portals", label: "Portal Registry", match: ["/portals"] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -49,7 +50,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname().replace(/(.)\/$/, "$1");
   const demo = useDemo();
   const router = useRouter();
-  const isHod = demo?.role === "approver";
+  // VP Commercial (and HoDs) only see Approvals.
+  const isHod = !!demo && demo.role !== "analyst";
   const blocked = isHod && ANALYST_ONLY.includes(pathname);
   useEffect(() => {
     if (blocked) router.replace("/approvals");
@@ -62,14 +64,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Scan Portal and the prospect page fit the window; long sections scroll inside their own cards.
-  const fill = ["/sources", "/opportunity", "/pipeline", "/approvals"].includes(pathname);
+  const fill = ["/sources", "/opportunity", "/pipeline", "/approvals", "/inbox", "/lead"].includes(pathname);
 
   return (
     // On large screens the work screens fit the window and scroll inside; on smaller screens the page scrolls normally.
-    <div className={cn("flex min-h-screen flex-col", fill && "lg:h-dvh lg:min-h-0")}>
+    // While the first screen is connecting mailboxes for the first time, the menu links are hidden too.
+    <div className={cn("flex min-h-screen flex-col [&:has([data-onboarding])_[data-main-nav]]:hidden!", fill && "lg:h-dvh lg:min-h-0")}>
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
-        <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center gap-2 px-4 sm:gap-4 sm:px-6 lg:px-10">
-          <Link href={isHod ? "/approvals" : "/sources"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+        <div className="mx-auto flex h-13 w-full max-w-[1320px] items-center gap-2 px-4 sm:gap-4 sm:px-6 lg:px-10">
+          <Link href={isHod ? "/approvals" : "/inbox"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
             <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
               <Radar className="size-5" />
             </div>
@@ -78,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="text-[13px] font-semibold tracking-tight text-primary">Intelligence</div>
             </div>
           </Link>
-          <nav className="ml-6 hidden items-center gap-1 md:flex">
+          <nav data-main-nav className="ml-6 hidden items-center gap-1 md:flex">
             {nav.map((n) => {
               const on = n.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
               return (
@@ -101,8 +104,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="hidden items-center gap-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50/70 px-2.5 py-1 text-[11px] font-medium text-amber-800 sm:inline-flex">
               <FlaskConical className="size-3.5" /> Demo data
             </span>
-            {nav.length > 1 && <MobileNav nav={nav} pathname={pathname} />}
-            {demo && <ProfileMenu role={demo.role} hodLine={demo.hodLine} />}
+            {nav.length > 1 && (
+              <span data-main-nav className="contents">
+                <MobileNav nav={nav} pathname={pathname} />
+              </span>
+            )}
+            {demo && <ProfileMenu role={demo.role} opsLine={demo.opsLine} />}
           </div>
         </div>
       </header>
@@ -115,10 +122,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 // Steps and the screen below them read as one section; inner cards drop their own frame.
                 <div
                   data-step-section
-                  className={cn("overflow-hidden rounded-2xl bg-card shadow-soft sm:rounded-3xl", fill && "flex flex-col lg:min-h-0 lg:flex-1")}
+                  className={cn(
+                    "overflow-hidden rounded-2xl bg-card shadow-soft sm:rounded-3xl",
+                    // While the first screen is connecting mailboxes, only the connection shows: no step KPIs.
+                    "[&:has([data-onboarding])>:first-child]:hidden",
+                    fill && "flex flex-col lg:min-h-0 lg:flex-1",
+                  )}
                 >
                   <StepTabs />
-                  {children}
+                  <div className={cn("flex min-w-0 flex-1 flex-col", fill && "lg:min-h-0")}>{children}</div>
                 </div>
               ) : (
                 children
@@ -210,8 +222,8 @@ function MobileNav({ nav, pathname }: { nav: typeof NAV; pathname: string }) {
 /** Row spacing shared with the table Filter menu. */
 const MENU_ITEM = "gap-2.5 rounded-lg px-2.5 py-2 text-sm";
 
-function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
-  const person = actingPerson(role, hodLine);
+function ProfileMenu({ role, opsLine }: { role: Role; opsLine?: string }) {
+  const person = actingPerson(role, opsLine);
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
 
@@ -226,7 +238,7 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
           <span
             className={cn(
               "grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold",
-              role === "approver" ? "bg-pink-100 text-pink-800" : "bg-purple-100 text-purple-900",
+              role !== "analyst" ? "bg-pink-100 text-pink-800" : "bg-purple-100 text-purple-900",
             )}
           >
             {person.initials}
@@ -247,6 +259,11 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
           <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
           <div className="space-y-0.5">
             <AppearanceSwitch />
+            {role === "analyst" && (
+              <DropdownMenuItem className={MENU_ITEM} onClick={() => router.push("/settings")}>
+                <Settings /> Settings · mailboxes
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className={MENU_ITEM} onClick={() => setResetOpen(true)}>
               <RotateCcw /> Reset demo
             </DropdownMenuItem>
@@ -256,7 +273,7 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
             className={MENU_ITEM}
             onClick={() => {
               router.push("/");
-              toast("Logged out", { description: "Sign in as the Bid Analyst or an HoD. Your demo progress is saved in this browser." });
+              toast("Logged out", { description: "Sign in as the Bid Analyst or VP Commercial. Your demo progress is saved in this browser." });
             }}
           >
             <LogOut /> Log out
@@ -269,8 +286,7 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
           <DialogHeader>
             <DialogTitle>Reset demo data?</DialogTitle>
             <DialogDescription>
-              Restores the original sample data, clears scans, decisions and comments saved in this browser, and
-              starts first-time setup again.
+              Restores the original sample data and clears the leads, decisions and comments saved in this browser.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -279,8 +295,8 @@ function ProfileMenu({ role, hodLine }: { role: Role; hodLine?: string }) {
               onClick={() => {
                 resetDemo();
                 setResetOpen(false);
-                router.push("/onboarding");
-                toast("Demo reset", { description: "Fresh data restored. Starting first-time setup." });
+                router.push("/");
+                toast("Demo reset", { description: "Fresh data restored. Sign in to start again." });
               }}
             >
               Reset demo

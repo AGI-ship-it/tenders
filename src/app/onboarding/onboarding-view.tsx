@@ -24,7 +24,7 @@ export function OnboardingView() {
   const connected = sources.filter((s) => s.status === "Connected").length;
 
   function finish() {
-    // First-time setup is for the Bid Analyst; the HoD role is available from the profile menu.
+    // First-time setup is for the Bid Analyst; the VP Commercial role is available from the profile menu.
     setRole("analyst");
     completeOnboarding();
     requestScan("discover");

@@ -1,9 +1,10 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { AGENT_NAME, AUTO_PUSH_ACTOR, DEMO_VERSION, actingPerson, hodLabel, scanBatches, seedState, serviceLineFor } from "./mock-data";
-import { isActive, priorityScore } from "./scoring";
-import type { ApprovalRecord, AuditEvent, DemoState, Role, Source, Tender } from "./types";
+import { AGENT_NAME, BIDDING_AGENT, DEMO_VERSION, PEOPLE, VP_LABEL, actingPerson, autoOppId, scanBatches, seedState, serviceLineFor, tenderHistory } from "./mock-data";
+import { aiPrequalified, isActive, priorityScore } from "./scoring";
+import type { ApprovalRecord, AuditEvent, DemoState, MailboxConnection, OpsInput, Role, Source, Tender } from "./types";
+import { MAILBOX_ADDRESS, TENDERS_ADDRESS } from "./mailbox";
 
 const KEY = "agfs-tender-intelligence-demo";
 
@@ -53,8 +54,8 @@ export function useDemo(): DemoState | null {
 const now = () => new Date().toISOString();
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export function currentUser(s: Pick<DemoState, "role" | "hodLine">) {
-  return actingPerson(s.role, s.hodLine);
+export function currentUser(s: Pick<DemoState, "role" | "opsLine">) {
+  return actingPerson(s.role, s.opsLine);
 }
 
 function event(e: Omit<AuditEvent, "id" | "at">): AuditEvent {
@@ -65,9 +66,9 @@ function patchTender(s: DemoState, id: string, fn: (t: Tender) => Tender): Tende
   return s.tenders.map((t) => (t.id === id ? fn(t) : t));
 }
 
-/** Switches the demo role; for the HoD role, hodLine picks which service line's HoD to act as. */
-export function setRole(role: Role, hodLine?: string) {
-  setState((s) => ({ ...s, role, hodLine: hodLine ?? s.hodLine }));
+/** Switches the demo role; for the HoD role, opsLine picks which service line's HoD to act as. */
+export function setRole(role: Role, opsLine?: string) {
+  setState((s) => ({ ...s, role, opsLine: opsLine ?? s.opsLine }));
 }
 
 export function resetDemo() {
@@ -81,6 +82,17 @@ export function resetDemo() {
 /** A source is scanned only when it is not paused and no sign-in is outstanding. */
 export function isScannable(src: Source) {
   return src.status !== "Paused" && src.accessState === "Ready";
+}
+
+/**
+ * Tenders the portal scan also finds that already arrived as email alerts. They are matched to the existing lead,
+ * so no second lead is created (shown in the scan log and results).
+ */
+export function alreadyLeadsFromEmail(tenders: Tender[]): Tender[] {
+  return tenders
+    .filter((t) => t.intake === "Email alert" && isActive(t))
+    .sort((a, b) => b.lead.createdAt.localeCompare(a.lead.createdAt))
+    .slice(0, 2);
 }
 
 export interface ScanResult {
@@ -102,7 +114,9 @@ export function completeScan({ discover = true }: { discover?: boolean } = {}): 
   const active = s.sources.filter((src) => isScannable(src) && src.kind !== "Upload");
   const existing = new Set(s.tenders.map((t) => t.id));
   const batch = discover ? scanBatches(at).find((b) => b.some((t) => !existing.has(t.id))) ?? [] : [];
+  // Each new tender becomes a D365 lead straight away, with its dates, fees and NDAs logged as actions.
   const fresh = batch.filter((t) => !existing.has(t.id));
+  const alreadyLeads = discover ? alreadyLeadsFromEmail(s.tenders) : [];
   const matched = [...s.tenders].filter(isActive).sort((x, y) => priorityScore(y) - priorityScore(x));
   // Duplicates are re-postings of prospects already in the pipeline.
   const duplicates = Math.min(matched.length, 4) + (batch.length - fresh.length);
@@ -118,6 +132,7 @@ export function completeScan({ discover = true }: { discover?: boolean } = {}): 
       duplicates,
       newIds: fresh.map((t) => t.id),
       foundIds: fresh.length ? [] : matched.slice(0, 5).map((t) => t.id),
+      alreadyLeadIds: alreadyLeads.map((t) => t.id),
       runs: portals.map((src) => ({
         sourceId: src.id,
         outcome: src.status === "Paused" ? "paused" : isScannable(src) ? "scanned" : "sign-in",
@@ -141,10 +156,16 @@ export function completeScan({ discover = true }: { discover?: boolean } = {}): 
         actor: AGENT_NAME,
         role: "agent",
         action: "AI scan completed",
-        detail: `${active.length} sources scanned, ${fresh.length} new tenders, ${duplicates} duplicates skipped (simulated).`,
+        detail: `${active.length} sources checked, ${fresh.length} new tenders, ${fresh.length} leads created in D365, ${duplicates} duplicates skipped (simulated).`,
       }),
-      ...fresh.map((t) =>
-        event({ actor: AGENT_NAME, role: "agent", action: "Tender discovered and scored", tenderId: t.id }),
+      ...fresh.flatMap(tenderHistory).map((e) => ({ ...e, id: uid() })),
+      ...alreadyLeads.map((t) =>
+        event({
+          actor: AGENT_NAME,
+          role: "agent",
+          action: `Found on portal scan; already lead ${t.lead.leadId} from email alert`,
+          tenderId: t.id,
+        }),
       ),
       ...st.audit,
     ],
@@ -158,96 +179,160 @@ export function completeScan({ discover = true }: { discover?: boolean } = {}): 
   };
 }
 
-export function markUnderReview(id: string) {
+/** Lead fields the Bid Analyst can correct on the D365 lead form before confirming. */
+export type LeadEdits = Partial<Pick<Tender, "title" | "buyer" | "summary" | "category" | "emirate" | "location" | "publishedAt" | "deadline">>;
+
+/**
+ * Screen 2: the Bid Analyst checks the draft the AI prepared and pushes it: the lead is created in D365 with their
+ * corrections, the AI prequalifies it, and it goes to the service line's HoD automatically (interested or not, 24 h).
+ */
+export function createLead(id: string, edits: LeadEdits) {
   setState((s) => {
+    const by = currentUser(s).name;
+    const at = now();
     const t = s.tenders.find((x) => x.id === id);
-    if (!t || t.status !== "New") return s;
+    if (!t || t.status !== "Draft") return s;
+    const line = serviceLineFor(edits.category ?? t.category);
+    const next: Tender = {
+      ...t,
+      ...edits,
+      status: "Awaiting HoD",
+      opsInput: { person: line.opsHead, line: line.name, askedAt: at, dueAt: new Date(Date.now() + 24 * 3_600_000).toISOString(), remindersSent: 0 },
+      fromLatestScan: false,
+      actions: t.actions.map((a) => ({ ...a, confirmed: true })),
+      lead: { ...t.lead, createdBy: by, createdAt: at, confirmedBy: by, confirmedAt: at },
+      approval: { submittedBy: by, submittedAt: at, reviewer: VP_LABEL, note: "" },
+    };
     return {
       ...s,
-      tenders: patchTender(s, id, (x) => ({ ...x, status: "Under Review" })),
+      tenders: s.tenders.map((x) => (x.id === id ? next : x)),
       audit: [
-        event({ actor: currentUser(s).name, role: s.role, action: "Opened for review", tenderId: id }),
+        event({ actor: AGENT_NAME, role: "agent", action: `Asked ${line.opsHead} (HoD) to prequalify within 24 h`, tenderId: id, detail: "Logged in D365" }),
+        event({ actor: AGENT_NAME, role: "agent", action: `AI prequalified: ${aiPrequalified(next) ? "Yes" : "No"}`, tenderId: id }),
+        event({ actor: by, role: s.role, action: `Created lead ${t.lead.leadId} in D365 from the AI draft`, tenderId: id, detail: Object.keys(edits).length ? `Corrected: ${Object.keys(edits).join(", ")}` : undefined }),
         ...s.audit,
       ],
     };
   });
 }
 
-/** Submits a prospect for prequalification; it is routed to the HoD of its service line. */
-export function submitForApproval(id: string, input: { note: string }) {
+/** The Bid Analyst dismisses a draft: it is not a tender, so no lead is created. The reason teaches the AI. */
+export function dismissDraft(id: string, reason: string) {
   setState((s) => {
-    const by = currentUser(s).name;
-    const category = s.tenders.find((t) => t.id === id)?.category;
-    const reviewer = category ? hodLabel(category) : "HoD";
+    const t = s.tenders.find((x) => x.id === id);
+    if (!t || t.status !== "Draft") return s;
     return {
       ...s,
-      tenders: patchTender(s, id, (t) => ({
-        ...t,
-        status: "Awaiting HoD",
-        approval: { ...input, reviewer, submittedBy: by, submittedAt: now() },
+      tenders: s.tenders.map((x) => (x.id === id ? { ...x, status: "Not a tender" as const, fromLatestScan: false } : x)),
+      audit: [event({ actor: currentUser(s).name, role: s.role, action: "Dismissed the draft: not a tender", tenderId: id, detail: reason }), ...s.audit],
+    };
+  });
+}
+
+/** The HoD's reply (simulated in the demo), logged on the D365 lead. The lead moves on to the BD Head. */
+export function recordHodReply(id: string, reply: NonNullable<OpsInput["reply"]>) {
+  setState((s) => {
+    const t = s.tenders.find((x) => x.id === id);
+    if (!t?.opsInput || t.status !== "Awaiting HoD") return s;
+    return {
+      ...s,
+      tenders: patchTender(s, id, (x) => ({
+        ...x,
+        status: "BD Head review",
+        opsInput: x.opsInput && { ...x.opsInput, reply, repliedAt: now() },
       })),
-      audit: [
-        event({
-          actor: by,
-          role: s.role,
-          action: `Submitted for prequalification, routed to ${reviewer.split(" (")[0]}`,
-          tenderId: id,
-          detail: input.note || undefined,
-        }),
-        ...s.audit,
-      ],
+      audit: [event({ actor: t.opsInput.person, role: "ops", action: `HoD: ${reply.toLowerCase()} to bid`, tenderId: id, detail: "Logged in D365" }), ...s.audit],
+    };
+  });
+}
+
+/** The BD Head moves a lead on without waiting for the HoD, with a reason. It is then theirs to decide. */
+export function bypassHod(id: string, reason: string) {
+  setState((s) => {
+    const t = s.tenders.find((x) => x.id === id);
+    if (!t?.opsInput || t.status !== "Awaiting HoD") return s;
+    return {
+      ...s,
+      tenders: patchTender(s, id, (x) => ({
+        ...x,
+        status: "BD Head review",
+        opsInput: x.opsInput && { ...x.opsInput, bypassed: true, bypassReason: reason },
+      })),
+      audit: [event({ actor: currentUser(s).name, role: s.role, action: `Bypassed the HoD (${t.opsInput.person})`, tenderId: id, detail: reason }), ...s.audit],
     };
   });
 }
 
 /**
- * Records the HoD's decision. Prequalifying also pushes the prospect to D365 as a lead straight away, so the
- * Bid Analyst has nothing left to do. Returns the new lead number when one was created.
+ * A decision in the approval chain, logged on the D365 lead. The BD Head approves (on to the Bid Head) or rejects;
+ * the Bid Head gives the final go, which converts the lead into a D365 opportunity and hands it to the bidding agent,
+ * or rejects. Rejecting at either step disqualifies the lead.
  */
-export function decide(
-  id: string,
-  decision: NonNullable<ApprovalRecord["decision"]>,
-  comment: string,
-): string | undefined {
-  const leadId = decision === "Approved" ? `LEAD-${Math.floor(10000 + Math.random() * 89999)}` : undefined;
+export function decide(id: string, decision: NonNullable<ApprovalRecord["decision"]>, comment: string) {
   setState((s) => {
-    // In the demo, the HoD role acts on behalf of whichever HoD the prospect is routed to.
     const by = currentUser(s).name;
-    const status: Tender["status"] = decision === "Rejected" ? "Not qualified" : "Lead in D365";
-    const action = decision === "Rejected" ? "Rejected" : "Prequalified";
     const at = now();
+    const t = s.tenders.find((x) => x.id === id);
+    if (!t) return s;
+    const base = t.approval ?? { submittedBy: PEOPLE.analyst.name, submittedAt: at, reviewer: VP_LABEL, note: "" };
+    const approved = decision === "Approved";
+
+    // The BD Head's step (from BD Head review, or straight from Awaiting HoD, which bypasses the HoD).
+    if (t.status === "BD Head review" || t.status === "Awaiting HoD") {
+      return {
+        ...s,
+        tenders: patchTender(s, id, (x) => ({
+          ...x,
+          status: approved ? "Bid Head approval" : "Rejected",
+          approval: {
+            ...base,
+            bdDecision: decision,
+            bdBy: by,
+            bdAt: at,
+            bdComment: comment,
+            ...(!approved && { decision, decidedBy: by, decidedAt: at, decisionComment: comment }),
+          },
+          opsInput: x.opsInput && !x.opsInput.reply ? { ...x.opsInput, bypassed: true } : x.opsInput,
+          lead: { ...x.lead, state: approved ? x.lead.state : "Disqualified" },
+        })),
+        audit: [
+          event({
+            actor: by,
+            role: s.role,
+            action: approved ? "BD Head approved; sent to the Bid Head" : "BD Head rejected; lead disqualified",
+            tenderId: id,
+            detail: [comment, "Logged in D365"].filter(Boolean).join(" · "),
+          }),
+          ...s.audit,
+        ],
+      };
+    }
+
+    // The Bid Head's final decision.
+    if (t.status !== "Bid Head approval") return s;
+    const oppId = autoOppId(id);
     return {
       ...s,
       tenders: patchTender(s, id, (x) => ({
         ...x,
-        status,
-        approval: x.approval && {
-          ...x.approval,
-          decision,
-          decidedBy: by,
-          decidedAt: at,
-          decisionComment: comment,
-        },
-        ...(leadId && { lead: { leadId, pushedBy: AUTO_PUSH_ACTOR, pushedAt: at, owner: serviceLineFor(x.category).hod } }),
+        status: approved ? "Opportunity created" : "Rejected",
+        approval: { ...base, decision, decidedBy: by, decidedAt: at, decisionComment: comment },
+        lead: { ...x.lead, state: approved ? "Qualified" : "Disqualified" },
+        opportunity: approved ? { oppId, createdBy: by, createdAt: at, handedTo: BIDDING_AGENT } : undefined,
       })),
       audit: [
-        ...(leadId
-          ? [
-              event({
-                actor: AUTO_PUSH_ACTOR,
-                role: "agent",
-                action: `Pushed to D365 as lead ${leadId}`,
-                tenderId: id,
-                detail: "Automatic on HoD prequalification (simulated)",
-              }),
-            ]
-          : []),
-        event({ actor: by, role: s.role, action, tenderId: id, detail: comment || undefined }),
+        ...(approved ? [event({ actor: AGENT_NAME, role: "agent", action: `Handed to the ${BIDDING_AGENT}`, tenderId: id })] : []),
+        event({
+          actor: by,
+          role: s.role,
+          action: approved ? `Bid Head approved; opportunity ${oppId} created in D365` : "Bid Head rejected; lead disqualified",
+          tenderId: id,
+          detail: comment || undefined,
+        }),
         ...s.audit,
       ],
     };
   });
-  return leadId;
 }
 
 export function addComment(id: string, text: string) {
@@ -349,11 +434,61 @@ export function authoriseSource(id: string) {
   });
 }
 
+/** Connects an Outlook mailbox (simulated sign-in) and sets which folders the agent reads. */
+export function connectMailbox(m: Pick<MailboxConnection, "address" | "kind" | "folders">) {
+  setState((s) => {
+    const by = currentUser(s).name;
+    const conn: MailboxConnection = { ...m, connectedBy: by, connectedAt: now() };
+    return {
+      ...s,
+      mailboxes: [...s.mailboxes.filter((x) => x.address !== m.address), conn],
+      audit: [
+        event({ actor: by, role: s.role, action: `Connected Outlook mailbox ${m.address}`, detail: `Reading: ${m.folders.join(", ")} (simulated)` }),
+        ...s.audit,
+      ],
+    };
+  });
+}
+
+/**
+ * A returning Bid Analyst set up their mailboxes on an earlier visit. If this demo has none yet, connects the usual
+ * two (sales@ and tenders@) as if done two weeks ago, so sign-in goes straight to the run.
+ */
+export function ensureReturningMailboxes() {
+  setState((s) => {
+    if (s.mailboxes.length) return s;
+    const by = actingPerson("analyst").name;
+    const at = new Date(Date.now() - 14 * 86_400_000).toISOString();
+    return {
+      ...s,
+      mailboxes: [
+        { address: MAILBOX_ADDRESS, kind: "Shared", folders: ["Inbox", "Inbox / Tenders"], connectedBy: by, connectedAt: at },
+        { address: TENDERS_ADDRESS, kind: "Shared", folders: ["Inbox", "Junk Email"], connectedBy: by, connectedAt: at },
+      ],
+    };
+  });
+}
+
+export function setMailboxFolders(address: string, folders: string[]) {
+  setState((s) => ({
+    ...s,
+    mailboxes: s.mailboxes.map((x) => (x.address === address ? { ...x, folders } : x)),
+    audit: [event({ actor: currentUser(s).name, role: s.role, action: `Changed folders read in ${address}`, detail: folders.join(", ") }), ...s.audit],
+  }));
+}
+
+export function disconnectMailbox(address: string) {
+  setState((s) => ({
+    ...s,
+    mailboxes: s.mailboxes.filter((x) => x.address !== address),
+    audit: [event({ actor: currentUser(s).name, role: s.role, action: `Disconnected Outlook mailbox ${address}` }), ...s.audit],
+  }));
+}
+
 export function completeOnboarding() {
   setState((s) => ({ ...s, onboarded: true }));
 }
 
-/** Simulated push of a prequalified prospect to Dynamics 365 lead management. No real API call. */
 export type ScanMode = "discover" | "checkin";
 const PENDING_SCAN_KEY = "agfs-pending-scan";
 let pendingScan: ScanMode | null = null;

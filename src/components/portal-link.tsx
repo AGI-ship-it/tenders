@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, Copy, ExternalLink, Mail } from "lucide-react";
 import { toast } from "sonner";
 import type { Source, Tender } from "@/lib/types";
@@ -24,6 +24,8 @@ export function portalDeepLink(source: Source | undefined, tender: Tender): stri
 export function PortalLinkButton({ tender, source }: { tender: Tender; source: Source | undefined }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Open with focus on the dialog itself, so no button shows a focus ring until the user tabs.
+  const body = useRef<HTMLDivElement>(null);
   const link = portalDeepLink(source, tender);
   const needsSignIn = source && source.access !== "Public";
 
@@ -43,7 +45,7 @@ export function PortalLinkButton({ tender, source }: { tender: Tender; source: S
         Open on portal <ExternalLink />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" initialFocus={body}>
           <DialogHeader>
             <DialogTitle>Open original tender</DialogTitle>
             <DialogDescription>
@@ -51,9 +53,9 @@ export function PortalLinkButton({ tender, source }: { tender: Tender; source: S
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2.5">
-              <div>
+          <div ref={body} tabIndex={-1} className="min-w-0 space-y-3 outline-none">
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2.5">
+              <div className="min-w-0">
                 <div className="text-[11px] text-muted-foreground">Portal tender ID</div>
                 <div className="font-mono text-sm font-medium">{tender.sourceRef}</div>
               </div>
@@ -64,9 +66,9 @@ export function PortalLinkButton({ tender, source }: { tender: Tender; source: S
             </div>
 
             {link ? (
-              <div className="rounded-lg border px-3 py-2.5">
+              <div className="min-w-0 rounded-lg border px-3 py-2.5">
                 <div className="text-[11px] text-muted-foreground">Link</div>
-                <div className="truncate font-mono text-xs">{link}</div>
+                <div className="font-mono text-xs break-all">{link}</div>
               </div>
             ) : (
               <div className="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground">

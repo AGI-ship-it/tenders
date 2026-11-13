@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, ArrowUpRight, CheckCircle2, Download, Inbox, Mail, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CheckCircle2, Clock, Download, Inbox, Mail, X } from "lucide-react";
 import { useDemo } from "@/lib/store";
-import { PROSPECT_STATUSES, aiPrequalified, prospectStatus } from "@/lib/scoring";
+import { APPROVAL_STATUSES, IN_APPROVAL, aiPrequalified, prospectStatus } from "@/lib/scoring";
 import { downloadCsv } from "@/lib/csv";
-import { daysUntil, formatDate, timeAgo } from "@/lib/format";
+import { daysUntil, formatDate, formatDateTime, hoursLeft, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,19 +19,26 @@ import { openHodEmail } from "@/components/hod-email";
 import { motion } from "motion/react";
 import { D365, PageHeader, PrequalBadge, StatusBadge, boldD365 } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
+import { PEOPLE, SERVICE_LINES, serviceLineFor } from "@/lib/mock-data";
 
-const PENDING: Tender["status"][] = ["Awaiting HoD"];
+const PENDING: readonly Tender["status"][] = IN_APPROVAL;
 
 /** "order" is the default: pending first by due date, then the latest decisions. */
-type RegisterSort = "order" | "id" | "deadline" | "ai" | "hod" | "status" | "lead";
+type RegisterSort = "order" | "id" | "deadline" | "ai" | "ops" | "status" | "lead";
 
-const STATUS_RANK: Tender["status"][] = [
-  "Awaiting HoD",
-  "Prequalified",
-  "Lead in D365",
-  "Not qualified",
-];
+const STATUS_RANK: Tender["status"][] = ["Awaiting HoD", "BD Head review", "Bid Head approval", "Opportunity created", "Rejected"];
+
+/** The HoD's prequalification in a few words. */
+function opsSummary(t: Tender): { text: string; tone: string } {
+  const o = t.opsInput;
+  if (!o) return { text: "Not asked", tone: "text-muted-foreground" };
+  if (o.reply === "Interested") return { text: "Interested", tone: "text-emerald-700" };
+  if (o.reply === "Not interested") return { text: "Not interested", tone: "text-rose-700" };
+  if (o.bypassed) return { text: "Bypassed by BD Head", tone: "text-muted-foreground" };
+  return new Date(o.dueAt).getTime() > Date.now()
+    ? { text: `Awaiting · ${hoursLeft(o.dueAt)} h left`, tone: "text-amber-700" }
+    : { text: "Overdue · escalated", tone: "text-orange-700" };
+}
 
 function registerValue(t: Tender, key: Exclude<RegisterSort, "order">): number | string {
   switch (key) {
@@ -41,18 +48,18 @@ function registerValue(t: Tender, key: Exclude<RegisterSort, "order">): number |
       return t.deadline;
     case "ai":
       return aiPrequalified(t) ? 1 : 0;
-    case "hod":
-      return serviceLineFor(t.category).hod;
+    case "ops":
+      return opsSummary(t).text;
     case "status":
       return STATUS_RANK.indexOf(t.status);
     case "lead":
-      return t.lead?.leadId ?? "";
+      return t.opportunity?.oppId ?? t.lead.leadId;
   }
 }
 
 export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const demo = useDemo()!;
-  // Deep link from "Submit for prequalification": /approvals?id=TND-...
+  // Deep link to one lead: /approvals?id=TND-...
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -61,9 +68,9 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
     router.replace(id ? `${pathname}?id=${encodeURIComponent(id)}` : pathname, { scroll: false });
   }
   const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
-  // Arrived by clicking "Review & decide" in the HoD's email.
+  // Arrived by clicking "Review & decide" in VP Commercial's email.
   const [fromEmail, setFromEmail] = useState(params.get("via") === "email");
-  // The prospect the email was about, highlighted in the HoD's list.
+  // The prospect the email was about, highlighted in the list.
   const [focusId, setFocusId] = useState<string | null>(params.get("focus"));
   // Follow new deep links even when this page is already open.
   const linkKey = params.toString();
@@ -75,16 +82,52 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
     if (params.get("focus")) setFocusId(params.get("focus"));
   }
 
-  const isHod = demo.role === "approver";
-  const myLine = SERVICE_LINES.find((l) => l.id === demo.hodLine) ?? SERVICE_LINES[0];
+  // The approvers: the BD Head (VP Commercial) and the Bid Head. Everyone else sees the register.
+  const isHod = demo.role === "vp" || demo.role === "bid";
+  const vp = demo.role === "bid" ? PEOPLE.bid : PEOPLE.vp;
   const routed = demo.tenders.filter((t) => t.approval);
-  const mine = routed.filter((t) => myLine.categories.includes(t.category));
-  const notSubmitted = demo.tenders.filter((t) => ["New", "Under Review"].includes(t.status)).length;
-  const myAwaiting = mine.filter((t) => t.status === "Awaiting HoD").length;
+  // Each approver's own step: the BD Head reviews after the HoD (and can bypass it); the Bid Head gives the final go.
+  const myStatuses: Tender["status"][] = demo.role === "bid" ? ["Bid Head approval"] : ["Awaiting HoD", "BD Head review"];
+  const mine = routed;
+  const notSubmitted = demo.tenders.filter((t) => t.status === "Draft").length;
+  const myAwaiting = mine.filter((t) => myStatuses.includes(t.status) && (t.status !== "Awaiting HoD" || hodOverdue(t))).length;
   const selected = demo.tenders.find((t) => t.id === selectedId);
   const focused = demo.tenders.find((t) => t.id === focusId);
-  // The HoD's queue, soonest due first, for "Review next".
-  const myQueue = mine.filter((t) => t.status === "Awaiting HoD").sort((a, b) => a.deadline.localeCompare(b.deadline));
+  // This approver's queue, soonest due first, for "Review next".
+  const myQueue = mine
+    .filter((t) => (demo.role === "bid" ? t.status === "Bid Head approval" : t.status === "BD Head review"))
+    .sort((a, b) => a.deadline.localeCompare(b.deadline));
+  const [view, setView] = useState<"register" | "tracker">("register");
+  const hodRequests = routed.filter((t) => t.opsInput);
+  const hodOpen = hodRequests.filter((t) => t.status === "Awaiting HoD").length;
+  // Switch between the register of every lead in the chain and the tracker of HoD requests, in the table header.
+  const tabs = (
+    <div role="tablist" aria-label="View" className="flex flex-wrap gap-1.5">
+        {(
+          [
+            ["register", "Approval register", routed.length],
+            ["tracker", "HoD tracker", hodOpen],
+          ] as const
+        ).map(([k, label, n]) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={view === k}
+            onClick={() => setView(k)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
+              view === k ? "bg-primary text-primary-foreground ring-primary" : "bg-card text-muted-foreground ring-border hover:text-foreground",
+            )}
+          >
+            {label}
+            <span className={cn("tabular rounded-full px-1.5 text-[10px]", view === k ? "bg-white/20" : "bg-muted")}>
+              {n}
+              {k === "tracker" && " open"}
+            </span>
+          </button>
+        ))}
+      </div>
+  );
 
   function open(id: string) {
     setSelectedId(id);
@@ -95,25 +138,25 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
     <div className="flex min-h-0 flex-1 flex-col gap-6">
       {!embedded && (
         <PageHeader
-          title="Prospects for Prequalification"
-          description={<>Each prospect is routed to the HoD of its service line. Prequalifying pushes the prospect to <D365 /> as a lead automatically.</>}
+          title="Approval for Bidding"
+          description={<>Each lead goes to the HoD (interested or not, 24 h), then the BD Head, then the Bid Head, whose approval creates the <D365 /> opportunity.</>}
         />
       )}
 
       {isHod ? (
-        // HoD view: only the prospects routed to this HoD's service line.
+        // VP Commercial's view: every prospect sent for approval.
         <>
           <div className="flex shrink-0 items-center gap-3 border-b pb-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pink-100 text-xs font-semibold text-pink-800">
-              {myLine.initials}
+              {vp.initials}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">Routed to you · {myLine.hod}</div>
-              <div className="text-xs text-muted-foreground">HoD, {myLine.name}</div>
+              <div className="text-sm font-semibold">Your approvals · {vp.name}</div>
+              <div className="text-xs text-muted-foreground">{vp.title}</div>
             </div>
             {myAwaiting > 0 && (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                {myAwaiting} pending your review
+                {myAwaiting} for you
               </span>
             )}
           </div>
@@ -127,7 +170,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                 <Mail className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="font-semibold text-foreground">Welcome, {myLine.hod.split(" ")[0]}.</span>{" "}
+                <span className="font-semibold text-foreground">Welcome, {vp.name.split(" ")[0]}.</span>{" "}
                 {focused ? (
                   <>
                     You opened <span className="font-semibold text-foreground">{focused.title}</span> from your email.
@@ -136,7 +179,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                   "Signed in from your email."
                 )}
               </span>
-              {focused && focused.status === "Awaiting HoD" && (
+              {focused && PENDING.includes(focused.status) && (
                 <Button size="lg" onClick={() => open(focused.id)}>
                   Review now <ArrowRight />
                 </Button>
@@ -146,20 +189,24 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
               </button>
             </motion.div>
           )}
-          {mine.length ? (
-            <Register tenders={mine} onOpen={open} selectedId={selectedId} highlightId={fromEmail ? focusId : null} showHod={false} />
-          ) : (
-            <EmptyState text="Nothing has been routed to you yet." />
-          )}
         </>
+      ) : null}
+
+      {view === "tracker" ? (
+        <HodTracker tenders={hodRequests} onOpen={open} tabs={tabs} />
+      ) : routed.length ? (
+        <Register
+          tenders={routed}
+          onOpen={open}
+          selectedId={selectedId}
+          highlightId={fromEmail ? focusId : null}
+          showHod
+          mine={isHod ? myStatuses : undefined}
+          tabs={tabs}
+          notSubmitted={isHod ? undefined : notSubmitted}
+        />
       ) : (
-        <>
-          {routed.length ? (
-            <Register tenders={routed} onOpen={open} selectedId={selectedId} showHod notSubmitted={notSubmitted} />
-          ) : (
-            <EmptyState text="No prospects have been routed to an HoD yet." />
-          )}
-        </>
+        <EmptyState text="No leads have been created in D365 yet." />
       )}
 
       <Sheet
@@ -188,9 +235,8 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
 }
 
 const DONE_LABEL: Partial<Record<Tender["status"], string>> = {
-  Prequalified: "Prequalified",
-  "Lead in D365": "Prequalified & pushed to D365",
-  "Not qualified": "Rejected",
+  "Opportunity created": "Opportunity created in D365",
+  Rejected: "Rejected",
 };
 
 function ReviewPanel({
@@ -206,11 +252,10 @@ function ReviewPanel({
   remaining: number;
   onOpen: (id: string) => void;
 }) {
-  const line = serviceLineFor(tender.category);
   const done = isHod ? DONE_LABEL[tender.status] : undefined;
   return (
     <div className="space-y-7 p-7">
-      {/* After the HoD decides: keep going through the queue without returning to the inbox. */}
+      {/* After VP Commercial decides: keep going through the queue without returning to the inbox. */}
       {done && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
@@ -220,11 +265,17 @@ function ReviewPanel({
           <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
           <div className="min-w-0 flex-1 text-sm">
             <div className="font-bold text-emerald-900">{boldD365(done)}</div>
-            {tender.lead && (
-              <div className="text-emerald-900/80">
-                Lead <span className="font-mono font-semibold">{tender.lead.leadId}</span> created in <D365 />, owner {tender.lead.owner}.
-              </div>
-            )}
+            <div className="text-emerald-900/80">
+              {tender.opportunity ? (
+                <>
+                  Opportunity <span className="font-mono font-semibold">{tender.opportunity.oppId}</span> handed to the bidding agent.
+                </>
+              ) : (
+                <>
+                  Lead <span className="font-mono font-semibold">{tender.lead.leadId}</span> {tender.lead.state.toLowerCase()} in <D365 />.
+                </>
+              )}
+            </div>
             <div className="text-emerald-900/80">
               {remaining ? `${remaining} more waiting for you` : "You're all caught up."}
             </div>
@@ -243,7 +294,7 @@ function ReviewPanel({
           {tender.buyer} · {tender.emirate}
         </div>
         <div className="mt-0.5 text-xs text-muted-foreground">
-          <span className="font-mono">{tender.id}</span> · routed to {line.hod}, HoD {line.name}
+          <span className="font-mono">{tender.id}</span> · lead <span className="font-mono">{tender.lead.leadId}</span> · {tender.category}
         </div>
       </div>
 
@@ -255,15 +306,15 @@ function ReviewPanel({
       </div>
 
       <Button variant="link" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
-        Open full prospect and AI reasoning <ArrowUpRight />
+        Open full lead and AI reasoning <ArrowUpRight />
       </Button>
 
       <div className="rounded-xl bg-muted/30 p-5">
-        <h3 className="mb-4 text-sm font-bold text-primary">HoD decision</h3>
+        <h3 className="mb-4 text-sm font-bold text-primary">Approval · HoD → BD Head → Bid Head</h3>
         <DecisionPanel tender={tender} />
-        {!isHod && tender.status === "Awaiting HoD" && (
+        {!isHod && PENDING.includes(tender.status) && (
           <Button variant="secondary" size="lg" className="mt-3 w-full" onClick={() => openHodEmail(tender.id)}>
-            <Mail /> Preview email to {line.hod}
+            <Mail /> Preview email to {PEOPLE.vp.name}
           </Button>
         )}
       </div>
@@ -272,23 +323,24 @@ function ReviewPanel({
   );
 }
 
-/** Whether the HoD's final decision matches the AI's Yes / No. */
+/** Whether VP Commercial's final decision matches the AI's Yes / No. */
 function agreesWithAi(t: Tender): boolean {
-  return aiPrequalified(t) === (t.status === "Prequalified" || t.status === "Lead in D365");
+  return aiPrequalified(t) === (t.status === "Opportunity created");
 }
 
 function exportCsv(tenders: Tender[]) {
   const header = [
-    "Tender ID", "Title", "Buyer", "Due date", "AI pre-qualification", "HoD",
-    "Status", "Decided by", "Decided at", "Rationale", "D365 lead", "Submitted by", "Submission note",
+    "Tender ID", "Title", "Buyer", "Due date", "AI pre-qualification", "HoD", "HoD input", "BD Head", "BD Head decision",
+    "Status", "Decided by", "Decided at", "Rationale", "D365 lead", "Lead state", "D365 opportunity", "Lead created by", "Note",
   ];
   const rows = tenders.map((t) => [
     t.id, t.title, t.buyer, t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No",
-    serviceLineFor(t.category).hod, prospectStatus(t.status), t.approval?.decidedBy ?? "",
-    t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "", t.lead?.leadId ?? "",
+    serviceLineFor(t.category).opsHead, opsSummary(t).text, t.approval?.bdBy ?? "", t.approval?.bdDecision ?? "",
+    prospectStatus(t.status), t.approval?.decidedBy ?? "",
+    t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "", t.lead.leadId, t.lead.state, t.opportunity?.oppId ?? "",
     t.approval?.submittedBy ?? "", t.approval?.note ?? "",
   ]);
-  downloadCsv("agfs-prequalification-register.csv", header, rows, "Register exported");
+  downloadCsv("agfs-approval-register.csv", header, rows, "Register exported");
 }
 
 /** Pending first (soonest due date first), then decided (most recent first). */
@@ -300,43 +352,47 @@ function registerOrder(a: Tender, b: Tender) {
   return (b.approval?.decidedAt ?? "").localeCompare(a.approval?.decidedAt ?? "");
 }
 
-/** Register of routed prospects: who they are assigned to, their status and, once prequalified, the D365 lead. */
+/** Register of D365 leads: AI pre-qualification, HoD input, status, and the D365 lead or opportunity. */
 function Register({
   tenders,
   onOpen,
   selectedId,
   highlightId,
-  showHod,
+  mine,
   notSubmitted,
+  tabs,
 }: {
   tenders: Tender[];
   onOpen: (id: string) => void;
   selectedId: string | null;
   /** A row to draw attention to, e.g. the prospect an email linked to. */
   highlightId?: string | null;
-  showHod: boolean;
-  /** Prospects not yet sent to an HoD; linked to the Pipeline in the toolbar. */
+  showHod?: boolean;
+  /** The signed-in approver's own step(s): those rows are marked "Your step". */
+  mine?: Tender["status"][];
+  tabs?: React.ReactNode;
+  /** Drafts not yet created as leads; linked in the toolbar. */
   notSubmitted?: number;
 }) {
   const [q, setQ] = useState("");
   const filters = useTableFilters();
   const facets: Facet[] = [
-    // Only submitted prospects are listed here, so "Not submitted" never applies.
-    { key: "status", label: "Status", options: PROSPECT_STATUSES.filter((x) => x !== "Not submitted") },
-    ...(showHod ? [{ key: "hod", label: "HoD", options: SERVICE_LINES.map((l) => l.hod) }] : []),
+    // Only prospects sent for approval are listed here.
+    { key: "status", label: "Status", options: APPROVAL_STATUSES },
+    { key: "line", label: "Service line", options: SERVICE_LINES.map((l) => l.name) },
     { key: "ai", label: "AI pre-qual", options: ["Yes", "No"] },
   ];
   const [sort, setSort] = useState<SortState<RegisterSort>>({ key: "order", dir: "asc" });
-  const onSort = (key: RegisterSort) => setSort((s) => nextSort(s, key, ["order", "id", "deadline", "hod", "status"]));
+  const onSort = (key: RegisterSort) => setSort((s) => nextSort(s, key, ["order", "id", "deadline", "ops", "status"]));
 
   const needle = q.trim().toLowerCase();
   const sorted = tenders
     .filter(
       (t) =>
         filters.matches("status", prospectStatus(t.status)) &&
-        filters.matches("hod", serviceLineFor(t.category).hod) &&
+        filters.matches("line", serviceLineFor(t.category).name) &&
         filters.matches("ai", aiPrequalified(t) ? "Yes" : "No") &&
-        (!needle || `${t.id} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
+        (!needle || `${t.id} ${t.lead.leadId} ${t.opportunity?.oppId ?? ""} ${t.title} ${t.buyer}`.toLowerCase().includes(needle)),
     )
     .sort((a, b) => {
       if (sort.key === "order") return sort.dir === "asc" ? registerOrder(a, b) : registerOrder(b, a);
@@ -348,17 +404,13 @@ function Register({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      {!showHod && (
-        <p className="shrink-0 text-sm text-muted-foreground">
-          Prospects routed to your service line. Open one to prequalify or reject it.
-        </p>
-      )}
+
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
-        <TableHeader title={showHod ? "Prequalification register" : "Routed to you"} count={sorted.length} search={q} onSearch={setQ}>
+        <TableHeader title="Approval register" count={sorted.length} search={q} onSearch={setQ} tabs={tabs}>
           {notSubmitted ? (
-            <Link href="/pipeline" className="px-1 text-xs text-muted-foreground hover:text-primary">
-              {notSubmitted} not yet submitted →
+            <Link href="/lead" className="px-1 text-xs text-muted-foreground hover:text-primary">
+              {notSubmitted} draft{notSubmitted === 1 ? "" : "s"} still to review →
             </Link>
           ) : null}
           <FilterMenu facets={facets} filters={filters} />
@@ -383,16 +435,14 @@ function Register({
                 <SortTh sortKey="ai" sort={sort} onSort={onSort}>
                   AI pre-qual
                 </SortTh>
-                {showHod && (
-                  <SortTh sortKey="hod" sort={sort} onSort={onSort}>
-                    HoD
-                  </SortTh>
-                )}
+                <SortTh sortKey="ops" sort={sort} onSort={onSort}>
+                  HoD input
+                </SortTh>
                 <SortTh sortKey="status" sort={sort} onSort={onSort}>
                   Status
                 </SortTh>
                 <SortTh sortKey="lead" sort={sort} onSort={onSort} className="pr-5">
-                  D365 lead
+                  D365
                 </SortTh>
               </tr>
             </thead>
@@ -402,13 +452,14 @@ function Register({
                 const pending = PENDING.includes(t.status);
                 const days = daysUntil(t.deadline);
                 const agrees = agreesWithAi(t);
+                const ops = opsSummary(t);
                 return (
                   <tr
                     key={t.id}
                     onClick={() => onOpen(t.id)}
                     className={cn(
                       "cursor-pointer align-top transition-colors hover:bg-muted/30",
-                      t.status === "Awaiting HoD" && "bg-amber-50/40",
+                      PENDING.includes(t.status) && "bg-amber-50/40",
                       selectedId === t.id && "bg-primary/5",
                       highlightId === t.id && "bg-primary/[0.035] shadow-[inset_2px_0_0_color-mix(in_oklab,var(--primary)_55%,transparent)]",
                     )}
@@ -429,17 +480,19 @@ function Register({
                     <td className="px-3 py-3">
                       <PrequalBadge yes={aiPrequalified(t)} />
                     </td>
-                    {showHod && (
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        {line.hod}
-                        <div className="text-xs text-muted-foreground">{line.name}</div>
-                      </td>
-                    )}
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className={cn("text-sm", ops.tone)}>{ops.text}</span>
+                      <div className="text-xs text-muted-foreground">
+                        {line.opsHead} · {line.name}
+                      </div>
+                    </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <StatusBadge status={t.status} />
                       <div className="mt-1.5 text-[11px] text-muted-foreground">
-                        {pending ? (
-                          t.approval && `Submitted ${timeAgo(t.approval.submittedAt)}`
+                        {mine?.includes(t.status) && (t.status !== "Awaiting HoD" || hodOverdue(t)) ? (
+                          <span className="font-semibold text-primary">{t.status === "Awaiting HoD" ? "Escalated to you" : "Your step"}</span>
+                        ) : pending ? (
+                          t.approval && `Lead created ${timeAgo(t.approval.submittedAt).toLowerCase()}`
                         ) : (
                           <span className={cn("font-medium", !agrees && "text-magenta")}>
                             {agrees ? "Matches AI" : "Overrides AI"}
@@ -449,13 +502,16 @@ function Register({
                       </div>
                     </td>
                     <td className="px-3 py-3 pr-5 whitespace-nowrap">
-                      {t.lead ? (
+                      {t.opportunity ? (
                         <>
-                          <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
-                          <div className="text-xs text-muted-foreground">{formatDate(t.lead.pushedAt)}</div>
+                          <span className="font-mono text-xs font-medium text-emerald-700">{t.opportunity.oppId}</span>
+                          <div className="text-xs text-muted-foreground">Opportunity · from {t.lead.leadId}</div>
                         </>
                       ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <>
+                          <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
+                          <div className="text-xs text-muted-foreground">Lead · {t.lead.state}</div>
+                        </>
                       )}
                     </td>
                   </tr>
@@ -463,7 +519,7 @@ function Register({
               })}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={showHod ? 7 : 6} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={7} className="px-5 py-12 text-center text-sm text-muted-foreground">
                     No prospects match these filters.
                   </td>
                 </tr>
@@ -472,6 +528,102 @@ function Register({
           </table>
         </div>
         <TablePagination {...pager} overall={tenders.length} />
+      </div>
+    </div>
+  );
+}
+
+/** An HoD request past its 24 hours, still unanswered: escalated to the BD Head. */
+function hodOverdue(t: Tender) {
+  return !!t.opsInput && !t.opsInput.reply && !t.opsInput.bypassed && hoursLeft(t.opsInput.dueAt) <= 0;
+}
+
+/**
+ * Tracker of HoD requests (workshop: "Tracker / Status / Response of HoDs"): who was asked, when it is due against the
+ * 24-hour SLA, the reply, reminders, and where the lead is now. Open requests first, soonest due first.
+ */
+function HodTracker({ tenders, onOpen, tabs }: { tenders: Tender[]; onOpen: (id: string) => void; tabs: React.ReactNode }) {
+  const rows = [...tenders].sort((a, b) => {
+    const oa = a.status === "Awaiting HoD";
+    const ob = b.status === "Awaiting HoD";
+    if (oa !== ob) return oa ? -1 : 1;
+    return oa ? a.opsInput!.dueAt.localeCompare(b.opsInput!.dueAt) : b.opsInput!.askedAt.localeCompare(a.opsInput!.askedAt);
+  });
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
+      <div className="flex min-h-[65px] shrink-0 flex-wrap items-center gap-2 border-b px-4 py-3 sm:px-5">
+        {tabs}
+        <span className="text-xs text-muted-foreground sm:ml-auto">Interested or not within 24 h · overdue requests escalate to the BD Head</span>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full min-w-[960px] text-sm">
+          <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
+            <tr>
+              <th className="py-3 pr-3 pl-5 font-medium">HoD</th>
+              <th className="px-3 py-3 font-medium">Lead</th>
+              <th className="px-3 py-3 font-medium">Asked</th>
+              <th className="px-3 py-3 font-medium">24 h SLA</th>
+              <th className="px-3 py-3 font-medium">Response</th>
+              <th className="px-3 py-3 font-medium">Reminders</th>
+              <th className="px-3 py-3 pr-5 font-medium">Now with</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {rows.map((t) => {
+              const o = t.opsInput!;
+              const open = t.status === "Awaiting HoD";
+              const left = hoursLeft(o.dueAt);
+              const ops = opsSummary(t);
+              return (
+                <tr key={t.id} onClick={() => onOpen(t.id)} className={cn("cursor-pointer align-top transition-colors hover:bg-muted/30", open && "bg-amber-50/40")}>
+                  <td className="py-3 pr-3 pl-5 whitespace-nowrap">
+                    <div className="font-medium">{o.person}</div>
+                    <div className="text-xs text-muted-foreground">{o.line}</div>
+                  </td>
+                  <td className="max-w-[300px] px-3 py-3">
+                    <div className="truncate font-medium">{t.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-mono">{t.lead.leadId}</span> · {t.buyer}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-xs whitespace-nowrap text-muted-foreground">{formatDateTime(o.askedAt)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    {open ? (
+                      left > 0 ? (
+                        <span className="flex items-center gap-1 text-xs font-medium text-amber-700">
+                          <Clock className="size-3.5" /> {left} h left
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-orange-700">Overdue · escalated to BD Head</span>
+                      )
+                    ) : o.repliedAt ? (
+                      <span className={cn("text-xs", new Date(o.repliedAt) <= new Date(o.dueAt) ? "text-emerald-700" : "text-orange-700")}>
+                        {new Date(o.repliedAt) <= new Date(o.dueAt) ? "Within SLA" : "Late"}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Missed</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    <span className={cn("text-sm", ops.tone)}>{ops.text}</span>
+                    <div className="text-xs text-muted-foreground">{o.reply ? "Logged in D365" : o.bypassReason ?? ""}</div>
+                  </td>
+                  <td className="tabular px-3 py-3 text-xs">{o.remindersSent}</td>
+                  <td className="px-3 py-3 pr-5 whitespace-nowrap">
+                    <StatusBadge status={t.status} />
+                  </td>
+                </tr>
+              );
+            })}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  No HoD requests yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

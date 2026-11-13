@@ -8,7 +8,7 @@ import { cn } from "cn"
  *
  * Variants (emphasis, high to low):
  *   default      Primary action on a surface. One per area (Export CSV, Prequalify, Open on portal).
- *   success      Positive decision that completes a workflow step (HoD prequalifies).
+ *   success      Positive decision that completes a workflow step (VP Commercial approves for bidding).
  *   secondary    White with a purple border and purple label: supporting actions such as Filter.
  *   outline      Neutral bordered: Cancel, Sources.
  *   ghost        No chrome: icon buttons, Back, low-priority actions.

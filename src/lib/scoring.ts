@@ -1,4 +1,4 @@
-import type { Category, Emirate, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
+import type { Category, Emirate, Priority, ProspectStatus, Recommendation, Tender, TenderStatus } from "./types";
 
 // AGFS pre-qualification criteria (illustrative, to be refined with Commercial): service, geography and ISO.
 // The pre-qualification score is a transparent weighted sum: every point is traceable to one of four criteria.
@@ -107,25 +107,47 @@ export function priorityScore(t: Tender): number {
   return Math.round(fitScore(t) * 0.85 + sizeFactor * 0.15);
 }
 
-export const ACTIVE_STATUSES = ["New", "Under Review", "Awaiting HoD", "Prequalified", "Lead in D365"] as const;
-
-export function isActive(t: Tender) {
-  return (ACTIVE_STATUSES as readonly string[]).includes(t.status);
+/**
+ * AI priority (workshop step 5): how strongly the tender fits, weighed against how soon it closes. Not-recommended
+ * tenders are always Low.
+ */
+export function aiPriority(t: Tender, now = Date.now()): Priority {
+  if (!aiPrequalified(t)) return "Low";
+  const days = (new Date(t.deadline).getTime() - now) / 86_400_000;
+  const score = fitScore(t);
+  if (score >= 75 && days <= 30) return "High";
+  if (score >= 75 || days <= 21) return "Medium";
+  return "Low";
 }
 
-export const PROSPECT_STATUSES: ProspectStatus[] = ["Not submitted", "Pending Review", "Prequalified", "Rejected"];
+/** Still being worked: not yet an opportunity and not rejected. */
+export const ACTIVE_STATUSES: readonly TenderStatus[] = ["Draft", "Awaiting HoD", "BD Head review", "Bid Head approval"];
 
-/** Collapses the workflow state to the status shown to users. */
+/** In the approval chain, not yet decided: HoD → BD Head → Bid Head. */
+export const IN_APPROVAL: readonly TenderStatus[] = ["Awaiting HoD", "BD Head review", "Bid Head approval"];
+
+export function isActive(t: Tender) {
+  return ACTIVE_STATUSES.includes(t.status);
+}
+
+/** Every status, in journey order, as listed in the Lead Pipeline: drafts, the approval chain and its outcomes. */
+export const PROSPECT_STATUSES: ProspectStatus[] = [
+  "Draft",
+  "Awaiting HoD",
+  "BD Head review",
+  "Bid Head approval",
+  "Opportunity created",
+  "Rejected",
+  "Not a tender",
+];
+
+/** Statuses of D365 leads in the approval chain and its outcomes, as listed in Approvals. */
+export const APPROVAL_STATUSES: ProspectStatus[] = PROSPECT_STATUSES.filter((s) => s !== "Draft" && s !== "Not a tender");
+
+/** In D365: pushed by the Bid Analyst (not a draft, not dismissed). */
+export const inD365 = (t: Tender) => t.status !== "Draft" && t.status !== "Not a tender";
+
+/** The status shown to users is the workflow status. */
 export function prospectStatus(status: TenderStatus): ProspectStatus {
-  switch (status) {
-    case "Prequalified":
-    case "Lead in D365":
-      return "Prequalified";
-    case "Not qualified":
-      return "Rejected";
-    case "Awaiting HoD":
-      return "Pending Review";
-    default:
-      return "Not submitted";
-  }
+  return status;
 }

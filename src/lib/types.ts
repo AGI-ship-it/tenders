@@ -1,4 +1,8 @@
-export type Role = "analyst" | "approver";
+/**
+ * Bid Analyst (creates leads), BD Head (VP Commercial: reviews after the HoD, can bypass the HoD), Bid Head (final
+ * approval, creates the opportunity), HoD of a service line (interested or not, 24 h).
+ */
+export type Role = "analyst" | "vp" | "bid" | "ops";
 
 export type Emirate =
   | "Dubai"
@@ -20,19 +24,59 @@ export type Category =
 
 export type Recommendation = "Bid" | "Bid with conditions" | "Review" | "No-bid";
 
-export type TenderStatus =
-  | "New"
-  | "Under Review"
-  | "Awaiting HoD"
-  | "Prequalified"
-  | "Lead in D365"
-  | "Not qualified";
-
 /**
- * The four statuses shown to users; the workflow states above map onto these. Each says who holds the prospect:
- * Not submitted (Bid Analyst), Pending Review (HoD), then Prequalified or Rejected.
+ * Lead-to-opportunity journey (workshop: manual push, then HoD → BD Head → Bid Head):
+ * Draft (the AI prepared a lead draft; nothing in D365 yet) → Awaiting HoD (the Bid Analyst created the D365 lead; it
+ * goes to the service line's HoD automatically, interested or not within 24 h) → BD Head review (after the HoD's reply,
+ * or the BD Head bypassed the HoD) → Bid Head approval (BD Head approved) → Opportunity created (Bid Head approved;
+ * handed to the bidding agent) or Rejected (by the BD Head or the Bid Head). A dismissed draft is "Not a tender".
+ * Every response is logged on the D365 lead.
  */
-export type ProspectStatus = "Not submitted" | "Pending Review" | "Prequalified" | "Rejected";
+export type TenderStatus =
+  | "Draft"
+  | "Not a tender"
+  | "BD Head review"
+  | "Awaiting HoD"
+  | "Bid Head approval"
+  | "Opportunity created"
+  | "Rejected";
+
+/** The statuses shown to users are the workflow statuses themselves. */
+export type ProspectStatus = TenderStatus;
+
+/** How the tender reached the agent: an emailed alert with a link (the main path), the daily portal scan, or an upload. */
+export type Intake = "Email alert" | "Portal scan" | "Upload";
+
+export type Priority = "High" | "Medium" | "Low";
+
+/** A date, fee or obligation the AI read from the tender and logged as an action on the D365 lead. */
+export interface TenderAction {
+  id: string;
+  kind: "Submission deadline" | "Clarification deadline" | "Site visit" | "Tender fee" | "NDA";
+  label: string;
+  due?: string;
+  amountAED?: number;
+  /** "Low" when the AI could not read it clearly; the Bid Analyst should check it. */
+  confidence: "High" | "Low";
+  /** Where in the tender the AI found it. */
+  foundIn: string;
+  /** Checked by the Bid Analyst. */
+  confirmed: boolean;
+}
+
+/** The service-line HoD's prequalification, asked automatically when the lead is created: interested or not, 24 h. */
+export interface OpsInput {
+  person: string;
+  line: string;
+  askedAt: string;
+  dueAt: string;
+  reply?: "Interested" | "Not interested";
+  repliedAt?: string;
+  remindersSent: number;
+  /** The BD Head moved the lead on without the HoD's reply. */
+  bypassed?: boolean;
+  bypassReason?: string;
+}
 
 export type CheckStatus = "met" | "partial" | "unmet" | "unknown";
 
@@ -63,23 +107,46 @@ export interface Comment {
 }
 
 export interface ApprovalRecord {
-  /** The Bid Analyst's submission to the HoD, with an optional note; only the HoD decides. */
+  /** Routing: HoD → BD Head (reviewer) → Bid Head (final decision in decision / decidedBy). */
   submittedBy: string;
   submittedAt: string;
   reviewer: string;
   note: string;
+  /** The BD Head's step. */
+  bdDecision?: "Approved" | "Rejected";
+  bdBy?: string;
+  bdAt?: string;
+  bdComment?: string;
+  /** The final outcome: the Bid Head's decision, or the BD Head's rejection. */
   decision?: "Approved" | "Rejected";
   decidedBy?: string;
   decidedAt?: string;
   decisionComment?: string;
 }
 
-/** Simulated record of a prospect pushed to Dynamics 365 lead management. */
+/**
+ * Simulated Dynamics 365 lead. The AI prepares a draft for every tender it spots; the lead exists in D365 only once the
+ * Bid Analyst pushes it (createdBy/createdAt are then the analyst's). For a draft, leadId is the number it will get.
+ */
 export interface D365Lead {
   leadId: string;
-  pushedBy: string;
-  pushedAt: string;
+  createdBy: string;
+  createdAt: string;
   owner: string;
+  /** Set when the Bid Analyst confirms the details the AI filled in. */
+  confirmedBy?: string;
+  confirmedAt?: string;
+  /** Open while being worked; Qualified once converted to an opportunity; Disqualified when rejected. */
+  state: "Open" | "Qualified" | "Disqualified";
+}
+
+/** Simulated D365 opportunity, created when the Bid Head gives the final approval. */
+export interface D365Opportunity {
+  oppId: string;
+  createdBy: string;
+  createdAt: string;
+  /** Who takes it on for the bid/no-bid work. */
+  handedTo: string;
 }
 
 export interface Tender {
@@ -108,10 +175,15 @@ export interface Tender {
   evidence: Evidence[];
   aiNarrative: string;
   status: TenderStatus;
+  intake: Intake;
+  /** Dates, fees and NDAs logged as actions on the lead. */
+  actions: TenderAction[];
   discoveredAt: string;
   fromLatestScan?: boolean;
   approval?: ApprovalRecord;
-  lead?: D365Lead;
+  opsInput?: OpsInput;
+  lead: D365Lead;
+  opportunity?: D365Opportunity;
   comments: Comment[];
 }
 
@@ -155,14 +227,27 @@ export interface LastScan {
   newIds: string[];
   /** Prospects the scan matched that were already in the pipeline (shown when nothing new was found). */
   foundIds?: string[];
+  /** Tenders the portal scan found that had already arrived by email alert: no second lead was created. */
+  alreadyLeadIds?: string[];
   runs: { sourceId: string; outcome: "scanned" | "sign-in" | "paused" }[];
+}
+
+/** An Outlook (Microsoft 365) mailbox the agent reads for tenders. Simulated. */
+export interface MailboxConnection {
+  address: string;
+  /** "Shared" for a team mailbox such as sales@; "Personal" for one person's mailbox. */
+  kind: "Shared" | "Personal";
+  /** Folders the agent reads. */
+  folders: string[];
+  connectedBy: string;
+  connectedAt: string;
 }
 
 export interface DemoState {
   version: number;
   role: Role;
-  /** Service line of the HoD being acted as when role is "approver". */
-  hodLine?: string;
+  /** Service line of the HoD being acted as when role is "ops". */
+  opsLine?: string;
   tenders: Tender[];
   sources: Source[];
   audit: AuditEvent[];
@@ -170,4 +255,6 @@ export interface DemoState {
   lastScanAt: string | null;
   lastScan?: LastScan;
   onboarded: boolean;
+  /** Outlook mailboxes connected for the agent to read. Empty until someone connects one. */
+  mailboxes: MailboxConnection[];
 }

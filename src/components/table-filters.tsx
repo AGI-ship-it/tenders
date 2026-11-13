@@ -65,9 +65,12 @@ export function TableHeader({
   search,
   onSearch,
   searchPlaceholder = "Search ID, title or buyer",
+  tabs,
   children,
 }: {
   title: string;
+  /** Shown in place of the title and count, e.g. tabs switching between views of the same data. */
+  tabs?: React.ReactNode;
   count: number;
   search: string;
   onSearch: (q: string) => void;
@@ -77,8 +80,12 @@ export function TableHeader({
 }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-3 sm:px-5">
-      <h2 className="text-sm font-bold text-primary">{title}</h2>
-      <span className="tabular rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">{count}</span>
+      {tabs ?? (
+        <>
+          <h2 className="text-sm font-bold text-primary">{title}</h2>
+          <span className="tabular rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">{count}</span>
+        </>
+      )}
       <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
         <div className="relative w-full sm:w-72">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
