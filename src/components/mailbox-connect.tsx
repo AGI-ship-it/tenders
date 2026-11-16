@@ -88,7 +88,7 @@ export function MailboxConnect({
   const valid = EMAIL_RE.test(address);
   const already = taken.has(address);
   const kind: MailboxConnection["kind"] = address === ANALYST_EMAIL ? "Personal" : "Shared";
-  const error = !touched ? "" : !address ? "Enter the mailbox email address." : !valid ? "That doesn't look like an email address." : already ? "This mailbox is already connected." : "";
+  const error = !touched ? "" : !address ? "Enter the email address." : !valid ? "That doesn't look like an email address." : already ? "This email is already connected." : "";
   const suggestions = [MAILBOX_ADDRESS, TENDERS_ADDRESS, ANALYST_EMAIL].filter((a) => !taken.has(a));
 
   function next() {
@@ -119,13 +119,13 @@ export function MailboxConnect({
       {step === "start" && (
         <div className="flex flex-col items-center text-center">
           <MailTile kind="Shared" />
-          <h2 className="mt-5 text-xl font-bold tracking-tight text-primary">Connect the sales mailbox</h2>
+          <h2 className="mt-5 text-xl font-bold tracking-tight text-primary">Connect the sales email</h2>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Tenders arrive by email. Connect the Outlook (Microsoft 365) mailbox they come into, and the AI reads it for
-            tenders and creates a D365 lead for each one.
+            Connect the Outlook (Microsoft 365) address tenders arrive in. The AI reads it and prepares a lead draft for
+            each tender.
           </p>
           <Button size="xl" className="mt-6" onClick={() => setStep("mailbox")}>
-            <Mail /> Connect Outlook mailbox
+            <Mail /> Connect Outlook email
           </Button>
           <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
             <Lock className="size-3.5" /> Read-only. The agent never sends, deletes or moves email.
@@ -144,13 +144,13 @@ export function MailboxConnect({
           {onCancel && startAt === "mailbox" ? back("cancel") : back("start")}
           <div>
             {stepLabel(1)}
-            <h2 className="mt-1 text-lg font-bold text-primary">Which mailbox do tenders arrive in?</h2>
+            <h2 className="mt-1 text-lg font-bold text-primary">Which email do tenders arrive in?</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Enter its email address. Usually a shared mailbox such as sales@; your own works too.
+              Usually a shared address such as sales@; your own works too.
             </p>
           </div>
           <label className="block space-y-1.5">
-            <span className="text-sm font-semibold">Mailbox email address</span>
+            <span className="text-sm font-semibold">Email address</span>
             <div className="relative">
               <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -170,7 +170,7 @@ export function MailboxConnect({
               <span className="block text-xs text-rose-600">{error}</span>
             ) : valid && !already ? (
               <span className="flex items-center gap-1 text-xs text-emerald-700">
-                <Check className="size-3.5" /> {kind === "Personal" ? "Your mailbox" : "Shared mailbox"} · you&apos;ll choose its folders next
+                <Check className="size-3.5" /> {kind === "Personal" ? "Your email" : "Shared email"} · you&apos;ll choose its folders next
               </span>
             ) : null}
           </label>
@@ -233,10 +233,9 @@ export function MailboxSettings() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-primary">Outlook mailboxes</h2>
+          <h2 className="text-lg font-bold text-primary">Connected emails</h2>
           <p className="mt-0.5 max-w-xl text-sm text-muted-foreground">
-            The AI reads these for tenders and creates a D365 lead for each one. Read-only. Add every mailbox tenders
-            arrive in.
+            The AI reads these for tenders and prepares a lead draft for each one. It only reads, never sends. Add every address tenders arrive in.
           </p>
         </div>
         {!adding && (
@@ -261,7 +260,7 @@ export function MailboxSettings() {
       ))}
       {demo.mailboxes.length === 0 && !adding && (
         <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No mailbox connected yet. Add the email address tenders arrive in.
+          No email connected yet. Add the address tenders arrive in.
         </p>
       )}
     </div>
@@ -279,7 +278,7 @@ function ConnectedMailbox({ m }: { m: MailboxConnection }) {
         <div className="min-w-0 flex-1">
           <div className="truncate font-semibold">{m.address}</div>
           <div className="text-xs text-muted-foreground">
-            {m.kind} mailbox · connected by {m.connectedBy} {timeAgo(m.connectedAt).toLowerCase()}
+            {m.kind} email · connected by {m.connectedBy} {timeAgo(m.connectedAt).toLowerCase()}
           </div>
         </div>
         <button
@@ -350,12 +349,12 @@ export function MailboxOnboarding({ onStart }: { onStart: () => void }) {
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mx-auto w-full max-w-lg space-y-4">
       <div>
-        <div className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Mailboxes to read</div>
+        <div className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Emails to read</div>
         <h2 className="mt-1 text-lg font-bold text-primary">
-          {boxes.length === 1 ? "1 mailbox connected" : `${boxes.length} mailboxes connected`}
+          {boxes.length === 1 ? "1 email connected" : `${boxes.length} emails connected`}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Do tenders also arrive somewhere else, such as tenders@ or your own mailbox? Add it now, or later in Settings.
+          Do tenders also arrive somewhere else, such as tenders@ or your own email? Add it now, or later in Settings.
         </p>
       </div>
       <ul className="space-y-2">
@@ -384,7 +383,7 @@ export function MailboxOnboarding({ onStart }: { onStart: () => void }) {
         <Plus className="size-4" /> Add another email address
       </button>
       <Button size="xl" className="w-full" onClick={onStart}>
-        Start reading {boxes.length === 1 ? "the mailbox" : `${boxes.length} mailboxes`}
+        Start reading {boxes.length === 1 ? "1 email" : `${boxes.length} emails`}
       </Button>
     </motion.div>
   );

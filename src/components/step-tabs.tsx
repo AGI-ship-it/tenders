@@ -21,7 +21,7 @@ const DECISION_SLA_DAYS = 3;
  */
 function FlowLine({ filled }: { filled: boolean }) {
   return (
-    <div aria-hidden className="relative mt-[27px] h-[3px] min-w-4 flex-1 overflow-hidden rounded-full bg-zinc-300/60 sm:mt-[31px] md:mt-[35px]">
+    <div aria-hidden className="relative h-[3px] min-w-4 flex-1 lg:min-w-12 overflow-hidden rounded-full bg-zinc-300/60">
       <motion.span
         className="absolute inset-0 origin-left rounded-full bg-linear-to-r from-primary/80 to-magenta/70"
         initial={false}
@@ -86,13 +86,13 @@ export function StepTabs() {
   const leads = tenders.filter(inD365);
   const found = tenders.filter((t) => t.status !== "Not a tender");
   const aiYes = leads.filter(aiPrequalified).length;
-  const awaitingList = tenders.filter((t) => t.status === "Awaiting HoD" || t.status === "BD Head review" || t.status === "Bid Head approval");
+  const awaitingList = tenders.filter(
+    (t) => t.status === "Awaiting HoD" || t.status === "BD Head review" || t.status === "Bid Head approval",
+  );
   const awaiting = awaitingList.length;
   const decided = leads.filter((t) => t.status === "Opportunity created" || t.status === "Rejected").length;
   const opportunities = tenders.filter((t) => t.status === "Opportunity created").length;
-  const overdue = awaitingList.filter(
-    (t) => t.approval && daysSince(t.approval.submittedAt) > DECISION_SLA_DAYS,
-  ).length;
+  const overdue = awaitingList.filter((t) => t.approval && daysSince(t.approval.submittedAt) > DECISION_SLA_DAYS).length;
   const ratio = (n: number, d: number) => (d ? n / d : 0);
 
   const steps = [
@@ -100,7 +100,7 @@ export function StepTabs() {
       href: "/inbox",
       title: "Tender discovery",
       action: "AI reads mailboxes · prepares drafts",
-      short: "Finds tenders · drafts leads",
+      short: "Drafts prepared by AI",
       value: alerts,
       unit: "drafts",
       progress: ratio(leads.length, found.length),
@@ -112,7 +112,7 @@ export function StepTabs() {
       href: "/lead",
       title: "D365 lead",
       action: "Review · create in D365",
-      short: "Review draft · create in D365",
+      short: "To review · create in D365",
       value: alerts,
       unit: "to review",
       progress: ratio(leads.length, found.length),
@@ -125,7 +125,7 @@ export function StepTabs() {
       href: "/pipeline",
       title: "Lead pipeline",
       action: "AI pre-qualification",
-      short: "AI pre-qualification",
+      short: "In D365 · AI pre-qualified",
       value: leads.length,
       unit: "leads",
       progress: ratio(aiYes, leads.length),
@@ -137,7 +137,7 @@ export function StepTabs() {
       href: "/approvals",
       title: "Approvals",
       action: "HoD → BD Head → Bid Head",
-      short: "HoD → BD Head → Bid Head",
+      short: "Pending · HoD → BD → Bid Head",
       value: awaiting,
       unit: "pending",
       progress: ratio(decided, leads.length),
@@ -150,10 +150,9 @@ export function StepTabs() {
   const current = steps.findIndex((x) => pathname.startsWith(x.href));
 
   return (
-    // One root, so first-time setup can hide it.
+    // One root, so first-time setup can hide it. Each step is one compact row: number circle, then title and detail.
     <div className="dot-grid shrink-0 border-b bg-zinc-50/60">
-      <div className="py-2.5">
-      <ol className="mx-auto flex max-w-4xl items-start px-1 pt-1 sm:px-2">
+      <ol className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 lg:py-5">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);
           return (
@@ -162,54 +161,44 @@ export function StepTabs() {
                 href={s.href}
                 aria-current={on ? "page" : undefined}
                 title={s.gauge}
-                className="group flex w-20 shrink-0 flex-col items-center text-center sm:w-32 md:w-44"
+                className={cn(
+                  "group relative flex min-w-0 shrink-0 items-center gap-2.5 rounded-full py-1 pr-4 pl-1 lg:gap-3 lg:py-1.5 lg:pr-5 lg:pl-1.5 transition-colors",
+                  on ? "bg-card shadow-soft ring-1 ring-primary/15" : "hover:bg-card/70",
+                )}
               >
                 <span
                   className={cn(
-                    "relative grid size-14 place-items-center rounded-full transition-all duration-300 sm:size-16 md:size-[72px]",
-                    on
-                      ? "bg-primary text-primary-foreground shadow-soft-lg ring-4 ring-primary/10 md:ring-4"
-                      : "bg-card text-foreground shadow-soft group-hover:-translate-y-0.5",
+                    "relative grid size-11 lg:size-14 shrink-0 place-items-center rounded-full transition-all duration-300",
+                    on ? "bg-primary text-primary-foreground" : "bg-card text-primary shadow-soft",
                   )}
                 >
                   {on && <Breathe />}
                   <ProgressRing progress={s.progress} selected={on} />
-                  {s.badge && <StepBadge {...s.badge} />}
-                  <span className="flex flex-col items-center leading-none">
-                    <span
-                      className={cn(
-                        "tabular text-lg font-extrabold tracking-tight sm:text-xl md:text-2xl",
-                        // Open prospects and awaiting approvals are the counts to act on, so they stand out in dark purple.
-                        !on && i > 0 && "text-primary",
-                      )}
-                    >
-                      <CountUp value={s.value} />
-                    </span>
-                    <span className={cn("mt-0.5 text-[7px] font-medium uppercase sm:text-[8px]", on ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                      {s.unit}
-                    </span>
+                  <span className="tabular text-base font-extrabold lg:text-xl tracking-tight">
+                    <CountUp value={s.value} />
                   </span>
                 </span>
-                <span className={cn("mt-1.5 text-xs font-bold sm:text-sm", on ? "text-primary" : "text-foreground")}>{s.title}</span>
-                <span className="hidden text-[11px] whitespace-nowrap text-muted-foreground md:block">{boldD365(s.short)}</span>
-                {on && (
-                  <motion.span
-                    layoutId="step-tab"
-                    className="mt-1.5 h-[3px] w-8 rounded-full bg-magenta"
-                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                  />
-                )}
+                <span className="min-w-0 leading-tight">
+                  <span
+                    className={cn(
+                      "flex items-center gap-1.5 text-xs font-bold whitespace-nowrap lg:text-base",
+                      on ? "text-primary" : "text-foreground",
+                    )}
+                  >
+                    {s.title}
+                    {s.badge && <StepBadge {...s.badge} />}
+                  </span>
+                  <span className="hidden mt-0.5 text-xs whitespace-nowrap text-muted-foreground lg:block">{boldD365(s.short)}</span>
+                </span>
               </Link>
               {i < steps.length - 1 && <FlowLine filled={i < current} />}
             </li>
           );
         })}
       </ol>
-      </div>
     </div>
   );
 }
-
 
 /**
  * A dashed track with a progress arc on top, so each circle doubles as a gauge.
@@ -283,7 +272,7 @@ function StepBadge({ text, tone }: { text: string; tone: keyof typeof BADGE_TONE
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 500, damping: 22, delay: 0.5 }}
       className={cn(
-        "absolute -top-1 -right-3 z-10 hidden rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-sm ring-1 ring-inset sm:block",
+        "hidden rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ring-1 ring-inset lg:inline-block",
         BADGE_TONE[tone],
       )}
     >

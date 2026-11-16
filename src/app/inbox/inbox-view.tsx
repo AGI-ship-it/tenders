@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 import { clearPendingScan, peekPendingScan, useDemo } from "@/lib/store";
 import { buildMailbox, mailboxFor, shortMailbox, type MailItem } from "@/lib/mailbox";
 import { aiPrequalified, fitScore } from "@/lib/scoring";
-import { formatAED, formatDate, formatTime, isToday } from "@/lib/format";
-import type { MailboxConnection, Tender } from "@/lib/types";
+import { daysUntil, formatAED, formatDate, formatTime, isToday } from "@/lib/format";
+import type { MailboxConnection, Tender, TenderAction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { PrequalBadge, boldD365 } from "@/components/shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -197,7 +197,8 @@ export function InboxView() {
     addresses,
     tenderOf,
     toConfirm: demo.tenders.filter((t) => t.status === "Draft").length,
-    toApprove: demo.tenders.filter((t) => t.status === "Awaiting HoD" || t.status === "BD Head review" || t.status === "Bid Head approval").length,
+    toApprove: demo.tenders.filter((t) => t.status === "Awaiting HoD" || t.status === "BD Head review" || t.status === "Bid Head approval")
+      .length,
   };
 
   // Nothing to read until a mailbox is connected.
@@ -237,7 +238,7 @@ export function InboxView() {
           ) : (
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="lg" nativeButton={false} render={<Link href="/settings" />}>
-                <Mail /> Mailboxes · {addresses.length} connected
+                <Mail /> Emails · {addresses.length} connected
               </Button>
               <Button size="lg" onClick={() => start()}>
                 <Sparkles /> Run again
@@ -295,7 +296,8 @@ export function InboxView() {
         <SheetContent
           // Return focus to the row only when closed from the keyboard, so a mouse close leaves no focus ring behind.
           finalFocus={(closeType) => closeType === "keyboard"}
-          className="w-full overflow-hidden p-0 sm:max-w-3xl data-[side=right]:sm:max-w-3xl">
+          className="w-full overflow-hidden p-0 sm:max-w-3xl data-[side=right]:sm:max-w-3xl"
+        >
           <SheetTitle className="sr-only">{open?.subject ?? "Email"}</SheetTitle>
           {open && <EmailView m={open} t={tenderOf(open)} className="h-full" />}
         </SheetContent>
@@ -360,12 +362,19 @@ function WorkflowPanel({
   });
 
   return (
-    <section aria-label="Workflow" className="self-start rounded-2xl bg-card p-4 ring-1 ring-border xl:sticky xl:top-0">
-      <h3 className="text-sm font-bold text-primary">Workflow</h3>
+    <section aria-label="Progress" className="self-start rounded-2xl bg-card p-4 ring-1 ring-border xl:sticky xl:top-0">
+      <h3 className="text-sm font-bold text-primary">Where things stand</h3>
       <ol className="mt-3">
         {/* While the AI runs, its steps show live; once done they fold into one line. */}
         {aiDone ? (
-          <WorkflowRow compact kind="ai" state="done" title="AI run" detail={`${tenders.length} drafts · ${yes} pre-qualified`} last={false} />
+          <WorkflowRow
+            compact
+            kind="ai"
+            state="done"
+            title="AI checked your emails"
+            detail={`Found ${tenders.length} tenders · ${yes} look like a fit`}
+            last={false}
+          />
         ) : (
           aiRows
         )}
@@ -373,8 +382,14 @@ function WorkflowPanel({
           compact
           kind="human"
           state={aiDone ? (toConfirm ? "running" : "done") : "queued"}
-          title="Review drafts"
-          detail={aiDone ? (toConfirm ? `${toConfirm} waiting for you` : "All reviewed") : "You create each lead in D365"}
+          title={aiDone && toConfirm ? "Your turn: create the leads" : "You create the leads"}
+          detail={
+            aiDone
+              ? toConfirm
+                ? `${toConfirm} ${toConfirm === 1 ? "draft" : "drafts"} to check`
+                : "All done"
+              : "Next, you check each draft"
+          }
           href={aiDone && toConfirm ? "/lead" : undefined}
           last={false}
         />
@@ -382,8 +397,12 @@ function WorkflowPanel({
           compact
           kind="human"
           state={aiDone && toApprove ? "running" : "queued"}
-          title="VP approval"
-          detail={aiDone && toApprove ? `${toApprove} waiting` : "Approve, ask the HoD or reject"}
+          title="Managers approve"
+          detail={
+            aiDone && toApprove
+              ? `${toApprove} ${toApprove === 1 ? "lead" : "leads"} with HoD, BD Head or Bid Head`
+              : "HoD, then BD Head, then Bid Head"
+          }
           last
         />
       </ol>
@@ -812,34 +831,40 @@ function Results({
     <div className="space-y-6">
       {/* Mailbox tabs on the left, the run in numbers on one line on the right. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-      {addresses.length > 1 ? (
-        <div role="tablist" aria-label="Mailbox" className="flex flex-wrap gap-1.5">
-          {[null, ...addresses].map((a) => {
-            const n = a ? allMail.filter((m) => m.mailbox === a).length : allMail.length;
-            const active = shown === a;
-            return (
-              <button
-                key={a ?? "all"}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setBox(a)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground ring-primary"
-                    : "bg-card text-muted-foreground ring-border hover:text-foreground",
-                )}
-              >
-                {a ? <span className="font-mono" title={a}>{shortMailbox(a)}</span> : "All"}
-                <span className={cn("tabular rounded-full px-1.5 text-[10px]", active ? "bg-white/20" : "bg-muted")}>{n}</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <span />
-      )}
-      <RunKpis mail={mail} tenderMail={tenderMail} dupMail={dupMail} tenderOf={tenderOf} />
+        {addresses.length > 1 ? (
+          <div role="tablist" aria-label="Mailbox" className="flex flex-wrap gap-1.5">
+            {[null, ...addresses].map((a) => {
+              const n = a ? allMail.filter((m) => m.mailbox === a).length : allMail.length;
+              const active = shown === a;
+              return (
+                <button
+                  key={a ?? "all"}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setBox(a)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground ring-primary"
+                      : "bg-card text-muted-foreground ring-border hover:text-foreground",
+                  )}
+                >
+                  {a ? (
+                    <span className="font-mono" title={a}>
+                      {shortMailbox(a)}
+                    </span>
+                  ) : (
+                    "All"
+                  )}
+                  <span className={cn("tabular rounded-full px-1.5 text-[10px]", active ? "bg-white/20" : "bg-muted")}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <span />
+        )}
+        <RunKpis mail={mail} tenderMail={tenderMail} dupMail={dupMail} tenderOf={tenderOf} />
       </div>
 
       <div className="space-y-6">
@@ -847,70 +872,61 @@ function Results({
           <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">Lead drafts · to review and push to D365</h3>
           {leads.length === 0 && <EmptyLane text="No new tenders in the mailbox." />}
           <div className="grid gap-2.5 2xl:grid-cols-2">
-          {leads.map((m, i) => {
-            const t = tenderOf(m)!;
-            const confirmed = t.status !== "Draft";
-            const dismissed = t.status === "Not a tender";
-            return (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-                <div className="group rounded-xl bg-card p-3 ring-1 ring-border transition-all hover:shadow-soft-lg hover:ring-primary/30">
-                  <button onClick={() => onOpen(m.id)} className="block w-full text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium group-hover:text-primary">{t.title}</span>
-                      {m.kind === "possible" && !confirmed && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded bg-amber-50 px-1.5 py-px text-[10px] font-semibold text-amber-800">
-                          <AlertTriangle className="size-3" /> Please check
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-0.5 flex items-center justify-between gap-2">
-                      <span className="truncate text-xs text-muted-foreground">{t.buyer}</span>
-                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+            {leads.map((m, i) => {
+              const t = tenderOf(m)!;
+              const confirmed = t.status !== "Draft";
+              const dismissed = t.status === "Not a tender";
+              return (
+                <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                  {/* Two lines: the tender and its pre-qual, then where it came from and the next action. Click opens the email. */}
+                  <div className="group flex items-center gap-4 rounded-xl bg-card px-4 py-2.5 ring-1 ring-border transition-all hover:shadow-soft-lg hover:ring-primary/30">
+                    <button onClick={() => onOpen(m.id)} title="See email & extracted details" className="min-w-0 flex-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-semibold text-foreground group-hover:text-primary">{t.title}</span>
+                        {m.kind === "possible" && !confirmed && (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded bg-amber-50 px-1.5 py-px text-[10px] font-semibold text-amber-800">
+                            <AlertTriangle className="size-3" /> Please check
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex min-w-0 items-center gap-x-1.5 text-[11px] whitespace-nowrap text-muted-foreground">
+                        <MailboxTag address={m.mailbox} />
+                        {confirmed && !dismissed ? (
+                          <span className="font-mono font-medium text-teal-700">{t.lead.leadId}</span>
+                        ) : (
+                          <span className="font-semibold text-sky-700">{dismissed ? "Not a tender" : "Draft"}</span>
+                        )}
+                        <span>·</span>
+                        <span className="truncate">{t.buyer}</span>
+                        <span>·</span>
+                        <span className="truncate">from {m.from}</span>
+                        <span>·</span>
+                        <NextDeadline t={t} />
+                      </div>
+                    </button>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                         Pre-qual <PrequalBadge yes={aiPrequalified(t)} />
                       </span>
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
-                      <MailboxTag address={m.mailbox} />
-                      {confirmed && !dismissed ? (
-                        <span className="font-mono font-medium text-teal-700">{t.lead.leadId}</span>
+                      {dismissed ? (
+                        <span className="text-xs font-medium text-muted-foreground">Dismissed · no lead</span>
+                      ) : confirmed ? (
+                        <span className="flex items-center gap-1 text-xs font-medium text-emerald-700">
+                          <Check className="size-3.5" /> Lead created in D365
+                        </span>
                       ) : (
-                        <span className="font-semibold text-sky-700">{dismissed ? "Not a tender" : "Draft"}</span>
+                        <Link
+                          href={`/lead?id=${encodeURIComponent(t.id)}`}
+                          className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                        >
+                          Review & create lead <ArrowRight className="size-3.5" />
+                        </Link>
                       )}
-                      <span>·</span>
-                      <span className="truncate">from {m.from}</span>
-                      {m.attachments.length > 0 && (
-                        <>
-                          <span>·</span>
-                          <Paperclip className="size-3" /> {m.attachments.length} files read
-                        </>
-                      )}
-                      <span>·</span>
-                      {t.actions.length} actions
                     </div>
-                  </button>
-                  <div className="mt-2.5 flex items-center justify-between gap-2 border-t pt-2.5">
-                    <button onClick={() => onOpen(m.id)} className="text-xs font-medium text-muted-foreground hover:text-primary">
-                      See email & extracted details
-                    </button>
-                    {dismissed ? (
-                      <span className="text-xs font-medium text-muted-foreground">Dismissed · no lead</span>
-                    ) : confirmed ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-emerald-700">
-                        <Check className="size-3.5" /> Lead created in D365
-                      </span>
-                    ) : (
-                      <Link
-                        href={`/lead?id=${encodeURIComponent(t.id)}`}
-                        className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                      >
-                        Review & create lead <ArrowRight className="size-3.5" />
-                      </Link>
-                    )}
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })}
           </div>
         </section>
 
@@ -962,9 +978,13 @@ function RunKpis({
         <b className="tabular text-sm font-extrabold text-primary">{tenderMail.length}</b>{" "}
         <span className="font-semibold text-primary">lead drafts</span> · {yes} pre-qualified
       </span>
-      <span aria-hidden className="text-border">|</span>
+      <span aria-hidden className="text-border">
+        |
+      </span>
       {stat(mail.length, "emails read")}
-      <span aria-hidden className="text-border">|</span>
+      <span aria-hidden className="text-border">
+        |
+      </span>
       {stat(dupMail.length, "already a lead")}
       {toReview > 0 && (
         <Link
@@ -1008,5 +1028,31 @@ function MailRow({
         </span>
       </span>
     </button>
+  );
+}
+
+const DEADLINE_VERB: Record<TenderAction["kind"], string> = {
+  "Submission deadline": "Submit",
+  "Clarification deadline": "Questions",
+  "Site visit": "Site visit",
+  "Tender fee": "Pay fee",
+  NDA: "Sign NDA",
+};
+
+/** The soonest date the AI found in the tender (fee, site visit, questions, submission), plus how many tasks there are in all. */
+function NextDeadline({ t }: { t: Tender }) {
+  const next = t.actions.filter((a) => a.due && daysUntil(a.due) >= 0).sort((a, b) => a.due!.localeCompare(b.due!))[0];
+  const tasks = `${t.actions.length} ${t.actions.length === 1 ? "task" : "tasks"}`;
+  if (!next) return <span className="shrink-0">{tasks}</span>;
+  const days = daysUntil(next.due!);
+  const date = new Date(next.due!).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return (
+    <span className="shrink-0" title={`${next.label} · ${formatDate(next.due!)}`}>
+      <span className={cn("font-semibold", days <= 7 ? "text-amber-700" : "text-foreground")}>
+        {DEADLINE_VERB[next.kind]} by {date}
+        {days <= 7 && ` · ${days === 0 ? "today" : `${days}d left`}`}
+      </span>{" "}
+      · {tasks}
+    </span>
   );
 }

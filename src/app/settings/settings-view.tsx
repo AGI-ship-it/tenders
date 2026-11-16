@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared";
 import { MailboxSettings } from "@/components/mailbox-connect";
 import { useDemo } from "@/lib/store";
 
-/** Settings for the Bid Analyst. For now: the Outlook mailboxes the AI reads for tenders. */
+/** Settings for the Bid Analyst. For now: the Outlook emails the AI reads for tenders. */
 export function SettingsView() {
   const demo = useDemo()!;
   return (
@@ -14,7 +14,7 @@ export function SettingsView() {
       <div className="grid gap-6 md:grid-cols-[200px_1fr]">
         <nav className="space-y-1 text-sm">
           <span className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 font-semibold text-primary">
-            <Mail className="size-4" /> Mailboxes
+            <Mail className="size-4" /> Emails
             <span className="ml-auto text-xs font-medium text-muted-foreground">{demo.mailboxes.length}</span>
           </span>
         </nav>

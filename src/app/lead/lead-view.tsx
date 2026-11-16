@@ -126,7 +126,7 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
       {/* Command bar */}
       <div className="flex h-11 shrink-0 items-center gap-1 border-b border-[#e1dfdd] bg-white px-3 text-[13px] text-zinc-700">
         <Link href="/inbox" className="flex items-center gap-1.5 rounded px-2.5 py-1.5 hover:bg-[#f3f2f1]">
-          <ArrowLeft className="size-4 text-[#0f6cbd]" /> Back to email
+          <ArrowLeft className="size-4 text-[#0f6cbd]" /> Back to inbox
         </Link>
         {waiting > 0 && draft && <span className="ml-auto pr-2 text-xs text-zinc-500">{waiting} more draft{waiting === 1 ? "" : "s"} to review</span>}
       </div>
