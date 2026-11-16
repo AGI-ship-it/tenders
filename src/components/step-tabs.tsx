@@ -10,7 +10,7 @@ import { daysSince } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { boldD365 } from "@/components/shared";
 
-export const STEP_ROUTES = ["/inbox", "/lead", "/pipeline", "/approvals"];
+export const STEP_ROUTES = ["/inbox", "/pipeline", "/approvals"];
 
 /** Days VP Commercial has to decide before a prospect counts as overdue. */
 const DECISION_SLA_DAYS = 3;
@@ -21,7 +21,7 @@ const DECISION_SLA_DAYS = 3;
  */
 function FlowLine({ filled }: { filled: boolean }) {
   return (
-    <div aria-hidden className="relative h-[3px] min-w-4 flex-1 lg:min-w-12 overflow-hidden rounded-full bg-zinc-300/60">
+    <div aria-hidden className="relative h-[3px] w-8 shrink-0 lg:w-16 overflow-hidden rounded-full bg-zinc-300/60">
       <motion.span
         className="absolute inset-0 origin-left rounded-full bg-linear-to-r from-primary/80 to-magenta/70"
         initial={false}
@@ -73,7 +73,7 @@ export function CountUp({ value }: { value: number }) {
 }
 
 /**
- * Tender discovery → D365 lead → Lead pipeline → Approvals. Each circle shows its key number and opens its screen below.
+ * Tender discovery (AI drafts, reviewed and created in D365) → Lead pipeline → Approvals. Each circle shows its key number and opens its screen below.
  */
 export function StepTabs() {
   const pathname = usePathname();
@@ -86,9 +86,7 @@ export function StepTabs() {
   const leads = tenders.filter(inD365);
   const found = tenders.filter((t) => t.status !== "Not a tender");
   const aiYes = leads.filter(aiPrequalified).length;
-  const awaitingList = tenders.filter(
-    (t) => t.status === "Awaiting HoD" || t.status === "BD Head review",
-  );
+  const awaitingList = tenders.filter((t) => t.status === "Awaiting HoD" || t.status === "BD Head review");
   const awaiting = awaitingList.length;
   const decided = leads.filter((t) => t.status === "Opportunity created" || t.status === "Rejected").length;
   const opportunities = tenders.filter((t) => t.status === "Opportunity created").length;
@@ -100,26 +98,13 @@ export function StepTabs() {
       href: "/inbox",
       title: "Tender discovery",
       action: "AI reads mailboxes · prepares drafts",
-      short: "Drafts prepared by AI",
+      short: "AI drafts · review, create in D365",
       value: alerts,
       unit: "drafts",
       progress: ratio(leads.length, found.length),
       gauge: `${alerts} lead drafts prepared from the connected mailboxes`,
       badge: null,
       who: "AI agent",
-    },
-    {
-      href: "/lead",
-      title: "D365 lead",
-      action: "Review · create in D365",
-      short: "To review · create in D365",
-      value: alerts,
-      unit: "to review",
-      progress: ratio(leads.length, found.length),
-      gauge: `${alerts} drafts to review and push to D365`,
-      badge: null,
-      who: "Bid Analyst",
-      verb: "creates",
     },
     {
       href: "/pipeline",
@@ -152,7 +137,7 @@ export function StepTabs() {
   return (
     // One root, so first-time setup can hide it. Each step is one compact row: number circle, then title and detail.
     <div className="dot-grid shrink-0 border-b bg-zinc-50/60">
-      <ol className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 lg:py-5">
+      <ol className="mx-auto flex max-w-7xl items-center justify-center gap-1.5 px-4 py-3 lg:gap-2 lg:py-5">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);
           return (

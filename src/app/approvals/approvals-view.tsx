@@ -442,7 +442,7 @@ function Register({
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <TableHeader title="Approval register" count={sorted.length} search={q} onSearch={setQ} tabs={tabs}>
           {notSubmitted ? (
-            <Link href="/lead" className="px-1 text-xs text-muted-foreground hover:text-primary">
+            <Link href="/inbox" className="px-1 text-xs text-muted-foreground hover:text-primary">
               {notSubmitted} draft{notSubmitted === 1 ? "" : "s"} still to review →
             </Link>
           ) : null}

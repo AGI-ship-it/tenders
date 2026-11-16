@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, ArrowLeft, Ban, CheckCircle2, Inbox, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Mail, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { motion, useReducedMotion } from "motion/react";
 import { createLead, dismissDraft, useDemo, type LeadEdits } from "@/lib/store";
 import { aiPrequalified } from "@/lib/scoring";
 import { formatAED, formatDate, formatDateTime } from "@/lib/format";
@@ -12,7 +12,8 @@ import type { Category, Emirate, Tender, TenderAction } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { channelOf, mailboxOfTender, senderOf } from "@/lib/mailbox";
 import { Button } from "@/components/ui/button";
-import { D365, boldD365 } from "@/components/shared";
+import { boldD365 } from "@/components/shared";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const CATEGORIES: Category[] = [
   "Integrated FM",
@@ -26,53 +27,33 @@ const CATEGORIES: Category[] = [
 const EMIRATES: Emirate[] = ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"];
 
 /**
- * Screen 2 · the lead draft the AI prepared from the tender email. Nothing is in D365 yet: the Bid Analyst checks the
- * details, corrects anything, and pushes it with "Create lead in D365" (the lead then goes to VP Commercial with the AI's
- * prequalification), or dismisses it as not a tender, with a reason.
+ * The lead draft the AI prepared from a tender email, shown beside the draft list in the inbox. Nothing is in D365 yet:
+ * the Bid Analyst checks the details, corrects anything, and pushes it with "Create lead in D365" (the lead then goes to
+ * the BD Head with the AI's prequalification), or dismisses it as not a tender, with a reason. Once created or
+ * dismissed, it shows read-only.
  */
-export function LeadView() {
+export function LeadForm({
+  tender: t,
+  waiting,
+  onDone,
+  onOpenEmail,
+}: {
+  tender: Tender;
+  /** Other drafts still to review. */
+  waiting: number;
+  /** Called after the draft is created or dismissed, to move on to the next one. */
+  onDone: () => void;
+  onOpenEmail?: () => void;
+}) {
   const demo = useDemo()!;
-  const params = useSearchParams();
-  const id = params.get("id");
-  const queue = demo.tenders.filter((t) => t.status === "Draft").sort((a, b) => b.discoveredAt.localeCompare(a.discoveredAt));
-  const tender = (id && demo.tenders.find((t) => t.id === id)) || queue[0];
-  const others = queue.filter((t) => t.id !== tender?.id);
-
-  if (!tender) {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-20 text-center">
-          <CheckCircle2 className="size-8 text-emerald-600" />
-          <p className="max-w-sm text-sm text-muted-foreground">
-            All drafts reviewed. The AI prepares a new one for each tender it finds in the mailboxes.
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" nativeButton={false} render={<Link href="/inbox" />}>
-              <Inbox /> Tender discovery
-            </Button>
-            <Button nativeButton={false} render={<Link href="/pipeline" />}>
-              Lead pipeline
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* Re-mount the form when switching tenders so its fields start from that tender. */}
-      <LeadForm key={tender.id} tender={tender} waiting={others.length} nextId={others[0]?.id} />
-    </div>
+  const sender = senderOf(
+    t,
+    demo.sources.find((s) => s.id === t.sourceId),
   );
-}
-
-function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: number; nextId?: string }) {
-  const router = useRouter();
-  const demo = useDemo()!;
-  const sender = senderOf(t, demo.sources.find((s) => s.id === t.sourceId));
   const draft = t.status === "Draft";
   const dismissed = t.status === "Not a tender";
   const [dismissing, setDismissing] = useState(false);
+  const reduce = useReducedMotion();
   const [f, setF] = useState({
     title: t.title,
     buyer: t.buyer,
@@ -96,47 +77,40 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
     createLead(t.id, edits);
     const yes = aiPrequalified({ ...t, ...edits });
     toast.success(boldD365(`Lead ${t.lead.leadId} created in D365`), {
-      description: `AI pre-qualification: ${yes ? "Yes" : "No"}. Sent to the BD Head.${nextId ? " Next draft opened." : ""}`,
+      description: `AI pre-qualification: ${yes ? "Yes" : "No"}. Sent to the BD Head.${waiting ? " Next draft opened." : ""}`,
       duration: 8000,
     });
-    // On to the next draft; when none are left, the screen says all drafts are reviewed.
-    router.push(nextId ? `/lead?id=${encodeURIComponent(nextId)}` : "/lead");
+    onDone();
   }
 
   function dismiss(reason: string) {
     dismissDraft(t.id, reason);
     toast(`Dismissed: not a tender`, { description: `${reason}. No lead created. The AI learns from this.` });
-    // On to the next draft, if any.
-    router.push(nextId ? `/lead?id=${encodeURIComponent(nextId)}` : "/lead");
+    onDone();
   }
 
   return (
-    <div
-      style={{ colorScheme: "light" } as React.CSSProperties}
-      className="flex min-h-0 flex-1 flex-col bg-[#f8f8f8] text-zinc-900 [font-family:'Segoe_UI',system-ui,sans-serif]"
-    >
-      {/* App bar */}
-      <div className="flex h-11 shrink-0 items-center gap-3 bg-[#002050] px-4 text-white">
-        <span className="text-[15px] font-semibold">Dynamics 365</span>
-        <span className="text-white/40">|</span>
-        <span className="text-sm text-white/85">Sales Hub · Leads{draft && " · draft"}</span>
-        <span className="ml-auto rounded bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">Simulated</span>
-      </div>
-
+    <div className="@container flex min-h-0 flex-1 flex-col bg-muted/30 text-foreground">
       {/* Command bar */}
-      <div className="flex h-11 shrink-0 items-center gap-1 border-b border-[#e1dfdd] bg-white px-3 text-[13px] text-zinc-700">
-        <Link href="/inbox" className="flex items-center gap-1.5 rounded px-2.5 py-1.5 hover:bg-[#f3f2f1]">
-          <ArrowLeft className="size-4 text-[#0f6cbd]" /> Back to inbox
-        </Link>
-        {waiting > 0 && draft && <span className="ml-auto pr-2 text-xs text-zinc-500">{waiting} more draft{waiting === 1 ? "" : "s"} to review</span>}
+      <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border bg-card px-3 text-[13px] text-foreground/90">
+        {onOpenEmail && (
+          <button onClick={onOpenEmail} className="flex items-center gap-1.5 rounded px-2.5 py-1.5 hover:bg-muted">
+            <Mail className="size-4 text-primary" /> View email
+          </button>
+        )}
+        {draft && (
+          <span className="ml-auto pr-2 text-xs text-muted-foreground">
+            {waiting ? `${waiting} more draft${waiting === 1 ? "" : "s"} to review` : "Last draft to review"}
+          </span>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Record header */}
-        <div className="border-b border-[#e1dfdd] bg-white px-6 py-4">
+        <div className="relative border-b border-border bg-card px-4 py-4 pr-14 @2xl:px-5 @2xl:pr-16">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
-              <div className="text-xs text-zinc-500">
+              <div className="text-xs text-muted-foreground">
                 {draft ? "Lead draft · not in D365 yet" : dismissed ? "Draft dismissed · not a tender" : `Lead · ${t.lead.state}`}
               </div>
               <h1 className="mt-0.5 text-xl font-semibold">{f.title || "Untitled lead"}</h1>
@@ -144,34 +118,62 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
             <dl className="flex flex-wrap gap-x-8 gap-y-2 text-[13px]">
               <HeaderField
                 label="Lead number"
-                value={draft || dismissed ? <span className="font-normal text-zinc-500">Given on create</span> : <span className="font-mono">{t.lead.leadId}</span>}
+                value={
+                  draft || dismissed ? (
+                    <span className="font-normal text-muted-foreground">Given on create</span>
+                  ) : (
+                    <span className="font-mono">{t.lead.leadId}</span>
+                  )
+                }
               />
               <HeaderField label="Date bid received" value={formatDate(t.discoveredAt)} />
-              <HeaderField label={draft || dismissed ? "Prepared by" : "Created by"} value={draft || dismissed ? "AI agent" : t.lead.createdBy} />
+              <HeaderField
+                label={draft || dismissed ? "Prepared by" : "Created by"}
+                value={draft || dismissed ? "AI agent" : t.lead.createdBy}
+              />
               <HeaderField label="Owner" value={t.lead.owner} />
             </dl>
+            {draft && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={<button aria-label="How the AI prepared this draft" />}
+                  className="group/ai absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-linear-to-br from-primary to-magenta text-white shadow-md shadow-primary/30 transition-transform hover:scale-110 @2xl:right-5"
+                >
+                  {/* Soft ripple and a twinkling sparkle, so the AI note invites a look */}
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-0 rounded-full bg-primary/40"
+                    animate={reduce ? undefined : { scale: [1, 1.7], opacity: [0.55, 0] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+                  />
+                  <motion.span
+                    className="relative"
+                    animate={reduce ? undefined : { rotate: [0, 18, -10, 0], scale: [1, 1.15, 1] }}
+                    transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 0.6, ease: "easeInOut" }}
+                  >
+                    <Sparkles className="size-4" />
+                  </motion.span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="end" className="max-w-80 flex-col items-start gap-1 text-left">
+                  <span className="block font-semibold">Draft prepared by the AI from {mailboxOfTender(t, demo.mailboxes)}</span>
+                  <span className="block opacity-80">
+                    From the email {sender.name} sent {formatDateTime(t.discoveredAt)}. Check the details it filled in, correct anything,
+                    then create the lead. Nothing is in D365 until you do.
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </div>
 
-        <div className="space-y-4 p-4 sm:p-6">
-          {draft ? (
-            <div className="flex items-start gap-3 rounded-md bg-[#f6f0fb] px-4 py-3 text-sm ring-1 ring-[#410266]/15 [font-family:var(--font-sans)]">
-              <Sparkles className="mt-0.5 size-4 shrink-0 text-[#410266]" />
-              <div className="min-w-0 flex-1">
-                <span className="font-semibold text-[#410266]">Draft prepared by the AI from {mailboxOfTender(t, demo.mailboxes)}</span>{" "}
-                <span className="text-zinc-600">
-                  from the email {sender.name} sent {formatDateTime(t.discoveredAt)}. Check the details it filled in, correct anything, then
-                  create the lead. Nothing is in D365 until you do.
-                </span>
-              </div>
-            </div>
-          ) : dismissed ? (
-            <div className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-200 [font-family:var(--font-sans)]">
+        <div className="space-y-4 p-4 @2xl:p-5">
+          {draft ? null : dismissed ? (
+            <div className="flex items-center gap-3 rounded-md bg-muted px-4 py-3 text-sm text-foreground/90 ring-1 ring-border">
               <Ban className="size-4 shrink-0" />
               <span className="flex-1">Dismissed by the Bid Analyst as not a tender. No lead was created in D365.</span>
             </div>
           ) : (
-            <div className="flex items-center gap-3 rounded-md bg-teal-50 px-4 py-3 text-sm text-teal-800 ring-1 ring-teal-200 [font-family:var(--font-sans)]">
+            <div className="flex items-center gap-3 rounded-md bg-teal-50 px-4 py-3 text-sm text-teal-800 ring-1 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-200 dark:ring-teal-900">
               <CheckCircle2 className="size-4 shrink-0" />
               <span className="flex-1">
                 Lead created in D365 by {t.lead.createdBy} · {formatDateTime(t.lead.createdAt)}.
@@ -182,7 +184,7 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
             </div>
           )}
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 @3xl:grid-cols-2">
             <Section title="Tender details">
               <Field label="Topic" ai edited={edited("title")}>
                 <TextInput value={f.title} onChange={(v) => set("title", v)} disabled={!draft} />
@@ -232,9 +234,9 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
                     disabled={!draft}
                     onChange={(e) => set("summary", e.target.value)}
                     rows={4}
-                    className="w-full resize-y rounded border border-[#8a8886] bg-white px-2.5 py-1.5 text-[13px] outline-none focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] disabled:border-transparent disabled:bg-[#f3f2f1]"
+                    className="w-full resize-y rounded border border-input bg-card px-2.5 py-1.5 text-[13px] outline-none focus:border-ring focus:ring-1 focus:ring-ring disabled:border-transparent disabled:bg-muted"
                   />
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] text-zinc-600">
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] text-muted-foreground">
                     {t.scope.map((s) => (
                       <li key={s}>{s}</li>
                     ))}
@@ -244,11 +246,8 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
             </div>
           </div>
 
-          <Section
-            title="Actions found by the AI"
-            hint={lowConfidence ? `${lowConfidence} to check` : `${t.actions.length} items`}
-          >
-            <ul className="divide-y divide-[#edebe9]">
+          <Section title="Actions found by the AI" hint={lowConfidence ? `${lowConfidence} to check` : `${t.actions.length} items`}>
+            <ul className="divide-y divide-border">
               {t.actions.map((a) => (
                 <ActionRow key={a.id} a={a} />
               ))}
@@ -260,13 +259,13 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
       {/* Push bar: create the lead in D365, or dismiss the draft */}
       {draft &&
         (dismissing ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-[#e1dfdd] bg-white px-4 py-3 sm:px-6 [font-family:var(--font-sans)]">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-border bg-card px-4 py-3 sm:px-6">
             <span className="mr-1 text-sm font-semibold">Why is it not a tender?</span>
             {["Newsletter or marketing", "Supplier offer", "Existing contract mail", "Already a lead", "Other"].map((r) => (
               <button
                 key={r}
                 onClick={() => dismiss(r)}
-                className="rounded-full bg-card px-3 py-1 text-xs ring-1 ring-border transition-colors hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-200"
+                className="rounded-full bg-card px-3 py-1 text-xs ring-1 ring-border transition-colors hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-200 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 dark:hover:ring-rose-900"
               >
                 {r}
               </button>
@@ -276,11 +275,8 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
             </Button>
           </div>
         ) : (
-          <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-[#e1dfdd] bg-white px-4 py-3 sm:px-6 [font-family:var(--font-sans)]">
-            <p className="min-w-0 flex-1 text-xs text-zinc-500">
-              Creates the lead in <D365 /> with your corrections. The AI prequalifies it and sends it to the BD Head.
-            </p>
-            <Button variant="outline" size="lg" onClick={() => setDismissing(true)}>
+          <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border bg-card px-4 py-3 sm:px-6">
+            <Button variant="outline" size="lg" className="ml-auto" onClick={() => setDismissing(true)}>
               <Ban /> Not a tender
             </Button>
             <Button size="lg" onClick={create} disabled={!valid}>
@@ -295,7 +291,7 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
 function HeaderField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs text-zinc-500">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="font-semibold">{value}</dd>
     </div>
   );
@@ -303,10 +299,10 @@ function HeaderField({ label, value }: { label: string; value: React.ReactNode }
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-md bg-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] ring-1 ring-[#edebe9]">
-      <div className="flex items-baseline justify-between border-b border-[#edebe9] px-4 py-2.5">
+    <section className="overflow-hidden rounded-md bg-card shadow-xs ring-1 ring-border">
+      <div className="flex items-baseline justify-between border-b border-border px-4 py-2.5">
         <h2 className="text-sm font-semibold">{title}</h2>
-        {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </div>
       {children}
     </section>
@@ -315,17 +311,17 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 function Field({ label, ai, edited, children }: { label: string; ai?: boolean; edited?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[130px_1fr] items-center gap-3 border-b border-[#f3f2f1] px-4 py-2 last:border-0">
-      <span className="flex items-center gap-1 text-[13px] text-zinc-600">
+    <div className="grid grid-cols-[130px_1fr] items-center gap-3 border-b border-border/60 px-4 py-2 last:border-0">
+      <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
         {label}
         {ai &&
           (edited ? (
-            <span className="text-[10px] font-semibold text-[#0f6cbd]" title="Changed by you">
+            <span className="text-[10px] font-semibold text-primary" title="Changed by you">
               edited
             </span>
           ) : (
             <span title="Pre-filled by the AI">
-              <Sparkles className="size-3 text-[#410266]/70" />
+              <Sparkles className="size-3 text-primary/70" />
             </span>
           ))}
       </span>
@@ -335,13 +331,33 @@ function Field({ label, ai, edited, children }: { label: string; ai?: boolean; e
 }
 
 const INPUT =
-  "h-8 w-full min-w-0 rounded border border-[#8a8886] bg-white px-2.5 text-[13px] outline-none focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] disabled:border-transparent disabled:bg-[#f3f2f1]";
+  "h-8 w-full min-w-0 rounded border border-input bg-card px-2.5 text-[13px] outline-none focus:border-ring focus:ring-1 focus:ring-ring disabled:border-transparent disabled:bg-muted";
 
-function TextInput({ value, onChange, type = "text", disabled }: { value: string; onChange: (v: string) => void; type?: string; disabled?: boolean }) {
+function TextInput({
+  value,
+  onChange,
+  type = "text",
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  disabled?: boolean;
+}) {
   return <input type={type} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={INPUT} />;
 }
 
-function SelectInput({ value, options, onChange, disabled }: { value: string; options: string[]; onChange: (v: string) => void; disabled?: boolean }) {
+function SelectInput({
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
   return (
     <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={INPUT}>
       {options.map((o) => (
@@ -352,7 +368,7 @@ function SelectInput({ value, options, onChange, disabled }: { value: string; op
 }
 
 function ReadOnly({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
-  return <span className={cn("truncate px-2.5 text-[13px] text-zinc-800", mono && "font-mono")}>{children}</span>;
+  return <span className={cn("truncate px-2.5 text-[13px] text-foreground", mono && "font-mono")}>{children}</span>;
 }
 
 function ActionRow({ a }: { a: TenderAction }) {
@@ -366,14 +382,16 @@ function ActionRow({ a }: { a: TenderAction }) {
       <div className="min-w-0 flex-1">
         <div className="font-medium">
           {a.label}
-          {a.amountAED !== undefined && <span className="font-normal text-zinc-600"> · {formatAED(a.amountAED, false)}</span>}
+          {a.amountAED !== undefined && <span className="font-normal text-muted-foreground"> · {formatAED(a.amountAED, false)}</span>}
         </div>
-        <div className="text-xs text-zinc-500">
+        <div className="text-xs text-muted-foreground">
           {a.kind} · found in {a.foundIn}
-          {a.confidence === "Low" && <span className="font-semibold text-amber-700"> · AI unsure, please check</span>}
+          {a.confidence === "Low" && <span className="font-semibold text-amber-700 dark:text-amber-400"> · AI unsure, please check</span>}
         </div>
       </div>
-      <span className={cn("shrink-0 text-xs", a.due ? "text-zinc-700" : "text-zinc-400")}>{a.due ? formatDate(a.due) : "No date"}</span>
+      <span className={cn("shrink-0 text-xs", a.due ? "text-foreground/90" : "text-muted-foreground/70")}>
+        {a.due ? formatDate(a.due) : "No date"}
+      </span>
     </li>
   );
 }

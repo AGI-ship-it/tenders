@@ -38,7 +38,7 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
 
       {s === "Draft" &&
         (role === "analyst" ? (
-          <Button className="w-full" size="lg" nativeButton={false} render={<Link href={`/lead?id=${encodeURIComponent(tender.id)}`} />}>
+          <Button className="w-full" size="lg" nativeButton={false} render={<Link href={`/inbox?id=${encodeURIComponent(tender.id)}`} />}>
             <FilePlus2 /> Review draft & create lead
           </Button>
         ) : (

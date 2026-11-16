@@ -8,8 +8,7 @@ import { ChevronRight, Download, Inbox } from "lucide-react";
 import Link from "next/link";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
-import { daysUntil, formatDate, hoursLeft, timeAgo } from "@/lib/format";
-import { PEOPLE } from "@/lib/mock-data";
+import { daysUntil, formatDate, hoursLeft } from "@/lib/format";
 import type { ProspectStatus, Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } from "@/components/table-filters";
@@ -102,7 +101,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <TableHeader title="All cases" count={rows.length} search={q} onSearch={setQ}>
           {toConfirm > 0 && (
-            <Link href="/lead" className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-primary">
+            <Link href="/inbox" className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-primary">
               <Inbox className="size-3.5" /> {toConfirm} draft{toConfirm === 1 ? "" : "s"} to review →
             </Link>
           )}
@@ -137,7 +136,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         </div>
         <FilterChips facets={facets} filters={filters} />
         <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full min-w-[1100px] text-sm">
+          <table className="w-full min-w-[860px] text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
                 <SortTh sortKey="lead" sort={sort} onSort={toggleSort} className="pl-5">
@@ -146,7 +145,6 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 <SortTh sortKey="priority" sort={sort} onSort={toggleSort}>
                   Tender
                 </SortTh>
-                <th className="px-3 py-3 font-bold">Scope</th>
                 <th className="px-3 py-3 font-bold">Service</th>
                 <SortTh sortKey="deadline" sort={sort} onSort={toggleSort}>
                   Closing date
@@ -172,16 +170,16 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                     onClick={() =>
                       router.push(
                         t.status === "Draft"
-                          ? `/lead?id=${encodeURIComponent(t.id)}`
+                          ? `/inbox?id=${encodeURIComponent(t.id)}`
                           : `/opportunity?id=${encodeURIComponent(t.id)}&from=pipeline`,
                       )
                     }
                     className={cn(
-                      "group cursor-pointer align-top transition-colors hover:bg-secondary/50",
+                      "group cursor-pointer align-middle transition-colors hover:bg-secondary/50",
                       highlight === t.id && "bg-sky-50/60",
                     )}
                   >
-                    <td className="py-3 pr-3 pl-5 whitespace-nowrap">
+                    <td className="py-2.5 pr-3 pl-5 whitespace-nowrap">
                       {inD365(t) ? (
                         <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
                       ) : (
@@ -192,39 +190,34 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                           New
                         </span>
                       )}
-                      <div className="text-xs text-muted-foreground">{timeAgo(inD365(t) ? t.lead.createdAt : t.discoveredAt)}</div>
                     </td>
-                    <td className="max-w-[300px] px-3 py-3">
+                    <td className="max-w-[360px] px-3 py-2.5" title={t.summary}>
                       <div className="truncate font-medium group-hover:text-primary">{t.title}</div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {t.buyer} · <span className="font-mono">{t.sourceRef}</span>
-                      </div>
+                      <div className="truncate text-xs text-muted-foreground">{t.buyer}</div>
                     </td>
-                    <td className="max-w-[280px] px-3 py-3">
-                      <p className="line-clamp-2 text-xs text-muted-foreground">{t.summary}</p>
+                    <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+                      {t.category} <span className="text-muted-foreground">· {t.emirate}</span>
                     </td>
-                    <td className="px-3 py-3 text-xs whitespace-nowrap">
-                      {t.category}
-                      <div className="text-muted-foreground">{t.emirate}</div>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      {formatDate(t.deadline)}
+                      {days <= 14 && (
+                        <span className={cn("ml-1.5 text-xs", days > 0 ? "font-medium text-orange-700" : "text-muted-foreground")}>
+                          {days > 0 ? `${days}d left` : "Closed"}
+                        </span>
+                      )}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <div>{formatDate(t.deadline)}</div>
-                      <div className={cn("text-xs", days <= 14 && days > 0 ? "text-orange-700" : "text-muted-foreground")}>
-                        {days > 0 ? `${days} days left` : "Closed"}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       {t.status === "Not a tender" ? (
                         <span className="text-xs text-muted-foreground">n/a</span>
                       ) : (
                         <PrequalBadge yes={aiPrequalified(t)} />
                       )}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-3 py-2.5 whitespace-nowrap">
                       <StatusBadge status={t.status} />
-                      <div className={cn("mt-1 text-xs", next.tone)}>{boldD365(next.text)}</div>
+                      {next.text && <div className={cn("mt-0.5 text-xs", next.tone)}>{boldD365(next.text)}</div>}
                     </td>
-                    <td className="py-3 pr-4 text-right">
+                    <td className="py-2.5 pr-4 text-right">
                       <Link
                         href={`/opportunity?id=${encodeURIComponent(t.id)}&from=pipeline`}
                         aria-label={`Show details for ${t.title}`}
@@ -240,7 +233,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground">
                     No leads match these filters.
                   </td>
                 </tr>
@@ -256,28 +249,27 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
 
 /** One line under the status: who holds the lead now, or what it became. */
 function nextStep(t: Tender): { text: string; tone: string } {
-  const vp = PEOPLE.vp.name;
   switch (t.status) {
     case "Draft":
-      return { text: "To review · Bid Analyst", tone: "text-sky-700" };
+      return { text: "", tone: "" };
     case "Not a tender":
-      return { text: "Dismissed by Bid Analyst · no lead", tone: "text-muted-foreground" };
+      return { text: "", tone: "" };
     case "BD Head review":
-      return { text: t.opsInput?.reply ? `HoD ${t.opsInput.reply.toLowerCase()} · with ${vp}` : `With ${vp}`, tone: "text-amber-700" };
+      return { text: t.opsInput?.reply ? `HoD ${t.opsInput.reply.toLowerCase()}` : "", tone: "text-amber-700" };
     case "Awaiting HoD":
       return {
         text:
           t.opsInput && hoursLeft(t.opsInput.dueAt) <= 0
-            ? `${t.opsInput.person} overdue · reminded`
-            : `${vp.split(" ")[0]} asked ${t.opsInput?.person ?? "HoD"} · 24 h`,
+            ? `${t.opsInput.person.split(" ")[0]} overdue`
+            : `${t.opsInput?.person.split(" ")[0] ?? "HoD"} · 24 h`,
         tone: "text-orange-700",
       };
     case "Opportunity created":
-      return { text: `${t.opportunity?.oppId ?? "Opportunity"} · with bidding agent`, tone: "text-emerald-700" };
+      return { text: t.opportunity?.oppId ?? "", tone: "text-emerald-700" };
     case "Rejected":
       return {
-        text: t.approval?.decidedAt ? `By ${t.approval.decidedBy} · ${formatDate(t.approval.decidedAt)}` : "Rejected",
-        tone: "text-muted-foreground",
+        text: "",
+        tone: "",
       };
     default:
       return { text: "", tone: "" };
