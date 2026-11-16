@@ -21,12 +21,11 @@ import { aiPrequalified } from "./scoring";
 // ---------------------------------------------------------------------------
 
 export const PEOPLE = {
-  analyst: { name: "Cassandra Haddad", title: "Bid Analyst, Commercial", initials: "CH" },
+  analyst: { name: "Cassandra Panot", title: "Bid Analyst, Commercial", initials: "CP" },
   vp: { name: "Romulo Panes", title: "BD Head · VP Commercial", initials: "RP" },
-  bid: { name: "Samir Aziz", title: "Bid Head", initials: "SA" },
 } as const;
 
-/** Service lines and their heads (HoD). Every new lead goes to its line's HoD: interested to bid or not, within 24 hours. */
+/** Service lines and their heads (HoD). The BD Head can ask a line's HoD whether they are interested: a reply within 24 hours. */
 export const SERVICE_LINES: { id: string; name: string; opsHead: string; initials: string; categories: Category[] }[] = [
   { id: "ifm", name: "Integrated FM", opsHead: "Omar Rahman", initials: "OR", categories: ["Integrated FM"] },
   { id: "hard", name: "Hard FM & MEP", opsHead: "Layla Mansour", initials: "LM", categories: ["Hard FM / MEP"] },
@@ -48,15 +47,12 @@ export function serviceLineFor(category: Category) {
 export function actingPerson(role: Role, opsLine?: string): { name: string; title: string; initials: string } {
   if (role === "analyst") return PEOPLE.analyst;
   if (role === "vp") return PEOPLE.vp;
-  if (role === "bid") return PEOPLE.bid;
   const l = SERVICE_LINES.find((x) => x.id === opsLine) ?? SERVICE_LINES[0];
   return { name: l.opsHead, title: `HoD, ${l.name}`, initials: l.initials };
 }
 
-/** The BD Head reviews every lead after the HoD, whatever the service line. */
+/** The BD Head decides on every lead, whatever the service line; an HoD is asked only when the BD Head wants their view. */
 export const VP_LABEL = `${PEOPLE.vp.name} (BD Head)`;
-/** The Bid Head gives the final approval, which creates the D365 opportunity. */
-export const BID_LABEL = `${PEOPLE.bid.name} (Bid Head)`;
 
 export function opsHeadLabel(category: Category) {
   const l = serviceLineFor(category);
@@ -197,10 +193,7 @@ function genericEligibility(statuses: CheckStatus[]): EligibilityItem[] {
   }));
 }
 
-type Base = Omit<
-  Tender,
-  "risks" | "assumptions" | "evidence" | "comments" | "isoRequired" | "intake" | "actions" | "lead" | "opsInput"
-> &
+type Base = Omit<Tender, "risks" | "assumptions" | "evidence" | "comments" | "isoRequired" | "intake" | "actions" | "lead" | "opsInput"> &
   Partial<Pick<Tender, "risks" | "assumptions" | "evidence" | "isoRequired" | "intake" | "actions" | "lead" | "opsInput">>;
 
 /**
@@ -214,8 +207,7 @@ export function intakeFor(sourceId: string): Intake {
 }
 
 const tenderNo = (id: string) => Number(id.replace(/\D/g, "").slice(-4)) || 0;
-const shiftDays = (isoDate: string, d: number) =>
-  new Date(new Date(isoDate).getTime() + d * 86_400_000).toISOString().slice(0, 10);
+const shiftDays = (isoDate: string, d: number) => new Date(new Date(isoDate).getTime() + d * 86_400_000).toISOString().slice(0, 10);
 
 /**
  * Dates, fees and NDAs the AI reads from the tender and logs as actions on the D365 lead. Varied per tender so the
@@ -225,7 +217,13 @@ export function extractActions(b: Pick<Tender, "id" | "deadline" | "buyerType" |
   const n = tenderNo(b.id);
   const confirmed = b.status !== "Draft";
   const out: Omit<TenderAction, "id" | "confirmed">[] = [
-    { kind: "Submission deadline", label: "Submit bid on the portal", due: b.deadline.slice(0, 10), confidence: "High", foundIn: "Tender notice" },
+    {
+      kind: "Submission deadline",
+      label: "Submit bid on the portal",
+      due: b.deadline.slice(0, 10),
+      confidence: "High",
+      foundIn: "Tender notice",
+    },
     {
       kind: "Clarification deadline",
       label: "Send clarification questions",
@@ -262,8 +260,8 @@ export function extractActions(b: Pick<Tender, "id" | "deadline" | "buyerType" |
 }
 
 /**
- * The HoD's 24-hour prequalification, asked automatically when the lead was created: a believable mix of replies,
- * requests still open, and ones the BD Head bypassed after the 24 hours ran out.
+ * The HoD's view, asked only when the BD Head forwarded the lead: a believable mix of leads the BD Head decided
+ * directly, requests still open (one overdue), and replies that sent the lead back to the BD Head.
  */
 function opsInputFor(b: Pick<Tender, "id" | "category" | "status" | "approval">): OpsInput | undefined {
   if (!b.approval) return undefined;
@@ -273,27 +271,27 @@ function opsInputFor(b: Pick<Tender, "id" | "category" | "status" | "approval">)
     const at = (h: number) => new Date(askedMs + h * 3_600_000).toISOString();
     return { person: line.opsHead, line: line.name, askedAt: at(0), dueAt: at(24), at };
   };
-  const asked = new Date(b.approval.submittedAt).getTime();
-  const bypass = { remindersSent: 2, bypassed: true, bypassReason: "No reply after 24 h; closing date close." };
+  // The BD Head forwarded it a few hours after the lead was created.
+  const asked = new Date(b.approval.submittedAt).getTime() + 3 * 3_600_000;
+  const note = "Are we interested in bidding for this one?";
   switch (b.status) {
     case "Awaiting HoD": {
-      // Asked a few hours ago; one still in time, one overdue (escalated to the BD Head).
+      // Asked a few hours ago; one still in time, one overdue.
       const { at, ...o } = base(Date.now() - (n % 2 ? 7 : 27) * 3_600_000);
       void at;
-      return { ...o, remindersSent: n % 2 ? 0 : 2 };
+      return { ...o, note, remindersSent: n % 2 ? 0 : 2 };
     }
     case "BD Head review": {
+      // Most are fresh from the Bid Analyst; some came back with the HoD's reply.
+      if (n % 3 !== 0) return undefined;
       const { at, ...o } = base(asked);
-      if (n % 4 === 0) return { ...o, ...bypass };
-      return { ...o, reply: n % 5 === 0 ? "Not interested" : "Interested", repliedAt: at(6), remindersSent: 0 };
-    }
-    case "Rejected": {
-      const { at, ...o } = base(asked);
-      return { ...o, reply: n % 2 ? "Interested" : "Not interested", repliedAt: at(8), remindersSent: 0 };
+      return { ...o, note, reply: n % 5 === 0 ? "Not interested" : "Interested", repliedAt: at(6), remindersSent: 0 };
     }
     default: {
+      // Decided: about half after asking the HoD, the rest directly.
+      if (n % 2 === 0) return undefined;
       const { at, ...o } = base(asked);
-      return n % 3 === 0 ? { ...o, ...bypass } : { ...o, reply: "Interested", repliedAt: at(6), remindersSent: 0 };
+      return { ...o, note, reply: b.status === "Rejected" ? "Not interested" : "Interested", repliedAt: at(6), remindersSent: 0 };
     }
   }
 }
@@ -349,7 +347,7 @@ function tender(b: Base): Tender {
     ...(b.status === "Opportunity created" && {
       opportunity: {
         oppId: autoOppId(b.id),
-        createdBy: b.approval?.decidedBy ?? PEOPLE.bid.name,
+        createdBy: b.approval?.decidedBy ?? PEOPLE.vp.name,
         createdAt: b.approval?.decidedAt ?? b.discoveredAt,
         handedTo: BIDDING_AGENT,
       },
@@ -386,13 +384,29 @@ export function scanTenders(nowISO: string): Tender[] {
       eligibility: [
         { requirement: "Valid UAE trade licence covering integrated FM", status: "met", note: "Licence on file (demo register)." },
         { requirement: "ISO 9001, 14001, 45001 and ISO 41001", status: "met", note: "All four certificates current (demo)." },
-        { requirement: "Two comparable healthcare FM references", status: "partial", note: "One qualifying reference; the second is smaller in scope. Confirm if acceptable." },
-        { requirement: "Infection-control trained supervisors (min. 6)", status: "met", note: "8 certified supervisors in HR records (demo)." },
+        {
+          requirement: "Two comparable healthcare FM references",
+          status: "partial",
+          note: "One qualifying reference; the second is smaller in scope. Confirm if acceptable.",
+        },
+        {
+          requirement: "Infection-control trained supervisors (min. 6)",
+          status: "met",
+          note: "8 certified supervisors in HR records (demo).",
+        },
         { requirement: "Bid bond submitted with the offer", status: "met", note: "Within Treasury pre-approved limits." },
       ],
       risks: [
-        { title: "Healthcare reference threshold", severity: "Medium", mitigation: "Raise a clarification on aggregation of references before 18 Nov." },
-        { title: "Mobilisation of 45 new hires in 30 days", severity: "Medium", mitigation: "Pre-engage recruitment agency; phase site takeover over 6 weeks." },
+        {
+          title: "Healthcare reference threshold",
+          severity: "Medium",
+          mitigation: "Raise a clarification on aggregation of references before 18 Nov.",
+        },
+        {
+          title: "Mobilisation of 45 new hires in 30 days",
+          severity: "Medium",
+          mitigation: "Pre-engage recruitment agency; phase site takeover over 6 weeks.",
+        },
         { title: "Liquidated damages capped by contract", severity: "Low", mitigation: "Within AGFS standard risk appetite." },
       ],
       assumptions: [
@@ -402,9 +416,22 @@ export function scanTenders(nowISO: string): Tender[] {
         "Consumables priced on pass-through basis with 5% handling fee.",
       ],
       evidence: [
-        { label: "Scope", location: "RFP Section 3.1, p. 12", excerpt: "The Contractor shall provide integrated facilities management services across fourteen (14) primary healthcare centres…" },
-        { label: "Evaluation weighting", location: "RFP Section 6.2, p. 31", excerpt: "Technical 60%, Commercial 40%. Minimum technical pass mark 70%." },
-        { label: "Reference requirement", location: "RFP Annex B, p. 44", excerpt: "Minimum two (2) healthcare FM contracts of comparable scope." },
+        {
+          label: "Scope",
+          location: "RFP Section 3.1, p. 12",
+          excerpt:
+            "The Contractor shall provide integrated facilities management services across fourteen (14) primary healthcare centres…",
+        },
+        {
+          label: "Evaluation weighting",
+          location: "RFP Section 6.2, p. 31",
+          excerpt: "Technical 60%, Commercial 40%. Minimum technical pass mark 70%.",
+        },
+        {
+          label: "Reference requirement",
+          location: "RFP Annex B, p. 44",
+          excerpt: "Minimum two (2) healthcare FM contracts of comparable scope.",
+        },
         { label: "Submission deadline", location: "Tender notice", excerpt: "Closing date: 10 December 2026, 14:00 GST, via e-portal." },
       ],
       aiNarrative:
@@ -439,13 +466,21 @@ export function scanTenders(nowISO: string): Tender[] {
       ],
       eligibility: [
         { requirement: "Valid UAE trade licence covering MEP maintenance", status: "met", note: "Licence on file (demo register)." },
-        { requirement: "ICV certificate score of at least 40", status: "unmet", note: "Current AGFS ICV score 32 (demo). Mandatory for award." },
+        {
+          requirement: "ICV certificate score of at least 40",
+          status: "unmet",
+          note: "Current AGFS ICV score 32 (demo). Mandatory for award.",
+        },
         { requirement: "Civil-defence approved fire contractor", status: "met", note: "Approved (demo)." },
         { requirement: "Three high-rise MEP references", status: "met", note: "Four qualifying references (demo)." },
         { requirement: "Performance bond 10%", status: "partial", note: "Above standard limit; Treasury approval needed." },
       ],
       risks: [
-        { title: "ICV certificate below threshold", severity: "High", mitigation: "Explore JV with higher-ICV partner or ICV improvement plan; otherwise no-bid." },
+        {
+          title: "ICV certificate below threshold",
+          severity: "High",
+          mitigation: "Explore JV with higher-ICV partner or ICV improvement plan; otherwise no-bid.",
+        },
         { title: "10% performance bond", severity: "Medium", mitigation: "Seek Treasury exception before bid decision." },
         { title: "Energy savings guarantee with penalties", severity: "Medium", mitigation: "Cap exposure in commercial qualifications." },
       ],
@@ -455,9 +490,21 @@ export function scanTenders(nowISO: string): Tender[] {
         "No capital replacement included.",
       ],
       evidence: [
-        { label: "ICV requirement", location: "RFP Section 2.6, p. 9", excerpt: "Bidders must hold a valid ICV certificate with a minimum score of 40%." },
-        { label: "Scope", location: "RFP Section 4, p. 15", excerpt: "Operation and maintenance of central chilled-water plants serving six towers…" },
-        { label: "Bond", location: "Conditions of Contract, Cl. 4.2", excerpt: "Performance security of ten percent (10%) of the contract price." },
+        {
+          label: "ICV requirement",
+          location: "RFP Section 2.6, p. 9",
+          excerpt: "Bidders must hold a valid ICV certificate with a minimum score of 40%.",
+        },
+        {
+          label: "Scope",
+          location: "RFP Section 4, p. 15",
+          excerpt: "Operation and maintenance of central chilled-water plants serving six towers…",
+        },
+        {
+          label: "Bond",
+          location: "Conditions of Contract, Cl. 4.2",
+          excerpt: "Performance security of ten percent (10%) of the contract price.",
+        },
       ],
       aiNarrative:
         "Good service and geography fit with a strategic government buyer. However, the ICV threshold is a hard eligibility gate that AGFS does not currently meet. Pre-qualifies only if a JV partner or ICV route is confirmed within 10 days.",
@@ -480,8 +527,7 @@ export function scanTenders(nowISO: string): Tender[] {
       durationMonths: 24,
       publishedAt: "2026-10-28",
       deadline: "2026-11-20",
-      summary:
-        "Two-year landscaping, irrigation and pool-area maintenance for a 420-villa gated community. Lowest-price evaluation.",
+      summary: "Two-year landscaping, irrigation and pool-area maintenance for a 420-villa gated community. Lowest-price evaluation.",
       scope: [
         "Soft and hard landscaping maintenance across 38,000 m².",
         "Irrigation network maintenance and water-use reporting.",
@@ -490,7 +536,11 @@ export function scanTenders(nowISO: string): Tender[] {
       eligibility: [
         { requirement: "Valid trade licence including landscaping", status: "met", note: "Licence on file (demo)." },
         { requirement: "Registered on Meridian supplier portal", status: "met", note: "Active since 2024 (demo)." },
-        { requirement: "Two residential landscaping references", status: "partial", note: "References are IFM bundles, not standalone landscaping." },
+        {
+          requirement: "Two residential landscaping references",
+          status: "partial",
+          note: "References are IFM bundles, not standalone landscaping.",
+        },
         { requirement: "Ras Al Khaimah municipality landscaping permit", status: "unmet", note: "Not held by AGFS." },
       ],
       risks: [
@@ -511,8 +561,20 @@ export function scanTenders(nowISO: string): Tender[] {
 
 type Brief = Pick<
   Tender,
-  | "id" | "title" | "buyer" | "buyerType" | "sourceId" | "sourceRef" | "category" | "emirate" | "location"
-  | "valueAED" | "durationMonths" | "deadline" | "summary" | "aiNarrative"
+  | "id"
+  | "title"
+  | "buyer"
+  | "buyerType"
+  | "sourceId"
+  | "sourceRef"
+  | "category"
+  | "emirate"
+  | "location"
+  | "valueAED"
+  | "durationMonths"
+  | "deadline"
+  | "summary"
+  | "aiNarrative"
 > & { scope: string[]; checks: CheckStatus[]; isoRequired?: string[] };
 
 /** Shorter fictional tenders used for re-runs of the scan. */
@@ -551,7 +613,11 @@ export function scanBatches(nowISO: string): Tender[][] {
           durationMonths: 48,
           deadline: "2026-12-14",
           summary: "Four-year integrated FM for a 31-building campus including student housing, labs and sports facilities.",
-          scope: ["Hard and soft services across academic and residential buildings.", "Lab and cleanroom environment maintenance.", "Events and term-break deep cleaning."],
+          scope: [
+            "Hard and soft services across academic and residential buildings.",
+            "Lab and cleanroom environment maintenance.",
+            "Events and term-break deep cleaning.",
+          ],
           checks: ["met", "met", "met", "met", "partial"],
           aiNarrative: "Strong IFM fit in an active market. Education references are strong; vendor registration needs renewal.",
         },
@@ -641,7 +707,8 @@ export function scanBatches(nowISO: string): Tender[][] {
           summary: "Integrated pest management across seven hotels.",
           scope: ["Monthly integrated pest management.", "Emergency call-outs within 4 hours."],
           checks: ["met", "met", "partial", "met", "met"],
-          aiNarrative: "Outside the operating footprint, and the hotel kitchens require ISO 22000, which AGFS does not hold. Does not pre-qualify; pest control could be offered as part of a wider FM bundle.",
+          aiNarrative:
+            "Outside the operating footprint, and the hotel kitchens require ISO 22000, which AGFS does not hold. Does not pre-qualify; pest control could be offered as part of a wider FM bundle.",
         },
         nowISO,
       ),
@@ -692,8 +759,7 @@ export function seedTenders(): Tender[] {
       durationMonths: 36,
       publishedAt: "2026-10-14",
       deadline: "2026-11-24",
-      summary:
-        "Daily cleaning, washroom hygiene and deep-clean cycles across 22 schools during term and holiday periods.",
+      summary: "Daily cleaning, washroom hygiene and deep-clean cycles across 22 schools during term and holiday periods.",
       scope: [
         "Daily cleaning of classrooms, corridors and washrooms across 22 campuses.",
         "Holiday deep-clean programme and floor restoration.",
@@ -719,8 +785,7 @@ export function seedTenders(): Tender[] {
       durationMonths: 60,
       publishedAt: "2026-10-02",
       deadline: "2026-11-16",
-      summary:
-        "Five-year IFM for transit stations and depots, including 24/7 operations support and passenger-area cleaning.",
+      summary: "Five-year IFM for transit stations and depots, including 24/7 operations support and passenger-area cleaning.",
       scope: [
         "24/7 station cleaning and passenger-area hygiene.",
         "MEP maintenance for station buildings and depots.",
@@ -732,7 +797,7 @@ export function seedTenders(): Tender[] {
       status: "BD Head review",
       discoveredAt: hoursAgo(24 * 26),
       approval: {
-        submittedBy: "Cassandra Haddad",
+        submittedBy: PEOPLE.analyst.name,
         submittedAt: hoursAgo(20),
         reviewer: VP_LABEL,
         note: "Recommend bidding with a transit-specialist subcontractor for station systems. Mobilisation plan attached in bid folder.",
@@ -763,16 +828,12 @@ export function seedTenders(): Tender[] {
       status: "Opportunity created",
       discoveredAt: hoursAgo(24 * 37),
       approval: {
-        submittedBy: "Cassandra Haddad",
+        submittedBy: PEOPLE.analyst.name,
         submittedAt: hoursAgo(24 * 30),
         reviewer: VP_LABEL,
         note: "Strong fit, existing client.",
-        bdDecision: "Approved",
-        bdBy: PEOPLE.vp.name,
-        bdAt: hoursAgo(24 * 29 + 4),
-        bdComment: "Go. Existing client.",
         decision: "Approved",
-        decidedBy: PEOPLE.bid.name,
+        decidedBy: PEOPLE.vp.name,
         decidedAt: hoursAgo(24 * 29),
         decisionComment: "Approved. Relevant for Soft Services.",
       },
@@ -799,13 +860,10 @@ export function seedTenders(): Tender[] {
       status: "Rejected",
       discoveredAt: hoursAgo(24 * 29),
       approval: {
-        submittedBy: "Cassandra Haddad",
+        submittedBy: PEOPLE.analyst.name,
         submittedAt: hoursAgo(24 * 27),
         reviewer: VP_LABEL,
         note: "Outside footprint; ISO 22000 not held. Sharing for your call.",
-        bdDecision: "Rejected",
-        bdBy: PEOPLE.vp.name,
-        bdAt: hoursAgo(24 * 27 - 3),
         decision: "Rejected",
         decidedBy: PEOPLE.vp.name,
         decidedAt: hoursAgo(24 * 27 - 3),
@@ -834,7 +892,7 @@ export function seedTenders(): Tender[] {
       status: "BD Head review",
       discoveredAt: hoursAgo(24 * 24),
       approval: {
-        submittedBy: "Cassandra Haddad",
+        submittedBy: PEOPLE.analyst.name,
         submittedAt: hoursAgo(24 * 6),
         reviewer: VP_LABEL,
         note: "Propose bidding with a licensed security partner.",
@@ -912,7 +970,7 @@ export function seedTenders(): Tender[] {
 // Confirmed leads across every service line, in each state: pending VP Commercial's approval, waiting on the HoD,
 // converted to an opportunity and rejected. Ages are in days before now.
 
-type RoutedStatus = "BD Head review" | "Awaiting HoD" | "Bid Head approval" | "Opportunity created" | "Rejected";
+type RoutedStatus = "BD Head review" | "Awaiting HoD" | "Opportunity created" | "Rejected";
 
 interface RoutedCase {
   id: string;
@@ -948,9 +1006,6 @@ const daysAgo = (d: number) => hoursAgo(d * 24);
 function routedTender(c: RoutedCase): Tender {
   const decision: ApprovalRecord["decision"] =
     c.status === "Opportunity created" ? "Approved" : c.status === "Rejected" ? "Rejected" : undefined;
-  // The BD Head approved anything that reached the Bid Head; a rejection here was the BD Head's.
-  const bd: ApprovalRecord["bdDecision"] =
-    c.status === "Bid Head approval" || c.status === "Opportunity created" ? "Approved" : c.status === "Rejected" ? "Rejected" : undefined;
   return tender({
     id: c.id,
     title: c.title,
@@ -976,15 +1031,9 @@ function routedTender(c: RoutedCase): Tender {
       submittedAt: daysAgo(c.submitted),
       reviewer: VP_LABEL,
       note: c.note,
-      ...(bd && {
-        bdDecision: bd,
-        bdBy: PEOPLE.vp.name,
-        bdAt: bd === "Rejected" ? daysAgo(c.decided ?? 0) : hoursAgo((c.decided ?? 0) * 24 + 20),
-        bdComment: bd === "Rejected" ? (c.comment ?? "") : "HoD on board; fits our priorities.",
-      }),
       ...(decision && {
         decision,
-        decidedBy: decision === "Approved" ? PEOPLE.bid.name : PEOPLE.vp.name,
+        decidedBy: PEOPLE.vp.name,
         decidedAt: daysAgo(c.decided ?? 0),
         decisionComment: c.comment ?? "",
       }),
@@ -1119,7 +1168,7 @@ const ROUTED_CASES: RoutedCase[] = [
     scope: ["24/7 HVAC maintenance for clinical areas.", "BMS monitoring and upgrades.", "Medical gas maintenance."],
     eligibility: ["met", "met", "partial", "met", "met"],
     aiNarrative: "Strong hard FM fit in an active market. Medical gas competence certificate needs checking.",
-    status: "Bid Head approval",
+    status: "BD Head review",
     note: "Clinical HVAC references attached; medical gas via approved specialist.",
     submitted: 1,
   },
@@ -1307,7 +1356,7 @@ const ROUTED_CASES: RoutedCase[] = [
     scope: ["24/7 manned guarding.", "Access control and visitor management.", "CCTV monitoring."],
     eligibility: ["partial", "met", "met", "met", "met"],
     aiNarrative: "Not a self-delivered AGFS service; viable only with a licensed security partner.",
-    status: "Bid Head approval",
+    status: "BD Head review",
     note: "Existing FM client; propose bidding with our licensed partner.",
     submitted: 1,
   },
@@ -1386,7 +1435,7 @@ const ROUTED_CASES: RoutedCase[] = [
   },
 ];
 
-export const DEMO_VERSION = 27;
+export const DEMO_VERSION = 28;
 
 export function autoLeadId(tenderId: string) {
   return `LEAD-${48000 + ((tenderNo(tenderId) * 37) % 1000)}`;
@@ -1404,30 +1453,55 @@ export function tenderHistory(t: Tender): AuditEvent[] {
     detail,
   });
   const out = [
-    ev("alert", t.discoveredAt, AGENT_NAME, "agent", `Spotted a tender in the mailbox; prepared a lead draft`, `${t.actions.length} actions found: ${t.actions.map((a) => a.kind).join(", ")}`),
+    ev(
+      "alert",
+      t.discoveredAt,
+      AGENT_NAME,
+      "agent",
+      `Spotted a tender in the mailbox; prepared a lead draft`,
+      `${t.actions.length} actions found: ${t.actions.map((a) => a.kind).join(", ")}`,
+    ),
   ];
   if (t.status === "Draft" || t.status === "Not a tender") return out;
   const a = t.approval;
   out.push(
-    ev("lead", t.lead.confirmedAt ?? t.lead.createdAt, t.lead.confirmedBy ?? PEOPLE.analyst.name, "analyst", `Checked the draft and created lead ${t.lead.leadId} in D365`),
-    ev("prequal", t.lead.confirmedAt ?? t.lead.createdAt, AGENT_NAME, "agent", `AI prequalified: ${aiPrequalified(t) ? "Yes" : "No"}; sent to the HoD`),
+    ev(
+      "lead",
+      t.lead.confirmedAt ?? t.lead.createdAt,
+      t.lead.confirmedBy ?? PEOPLE.analyst.name,
+      "analyst",
+      `Checked the draft and created lead ${t.lead.leadId} in D365`,
+    ),
+    ev(
+      "prequal",
+      t.lead.confirmedAt ?? t.lead.createdAt,
+      AGENT_NAME,
+      "agent",
+      `AI prequalified: ${aiPrequalified(t) ? "Yes" : "No"}; sent to the BD Head`,
+    ),
   );
   const o = t.opsInput;
   if (o) {
-    out.push(ev("hod-ask", o.askedAt, AGENT_NAME, "agent", `Asked ${o.person} (HoD) to prequalify within 24 h`, "Logged in D365"));
-    if (o.reply && o.repliedAt) out.push(ev("hod-reply", o.repliedAt, o.person, "ops", `HoD: ${o.reply.toLowerCase()} to bid`, "Logged in D365"));
-    if (o.bypassed && a?.bdAt) out.push(ev("hod-bypass", a.bdAt, PEOPLE.vp.name, "vp", "BD Head bypassed the HoD", o.bypassReason));
-  }
-  if (a?.bdDecision && a.bdAt) {
-    out.push(ev("bd", a.bdAt, a.bdBy ?? PEOPLE.vp.name, "vp", a.bdDecision === "Approved" ? "BD Head approved; sent to the Bid Head" : "BD Head rejected; lead disqualified", a.bdComment || undefined));
+    out.push(ev("hod-ask", o.askedAt, PEOPLE.vp.name, "vp", `Asked ${o.person} (HoD, ${o.line}) if interested; reply within 24 h`, o.note));
+    if (o.reply && o.repliedAt)
+      out.push(ev("hod-reply", o.repliedAt, o.person, "ops", `HoD: ${o.reply.toLowerCase()} to bid`, "Logged in D365"));
   }
   if (a?.decision === "Approved" && a.decidedAt) {
     out.push(
-      ev("decide", a.decidedAt, a.decidedBy ?? PEOPLE.bid.name, "bid", `Bid Head approved; opportunity ${t.opportunity?.oppId ?? ""} created in D365`, a.decisionComment || undefined),
+      ev(
+        "decide",
+        a.decidedAt,
+        a.decidedBy ?? PEOPLE.vp.name,
+        "vp",
+        `BD Head approved; opportunity ${t.opportunity?.oppId ?? ""} created in D365`,
+        a.decisionComment || undefined,
+      ),
       ev("handoff", a.decidedAt, AGENT_NAME, "agent", `Handed to the ${BIDDING_AGENT}`),
     );
-  } else if (a?.decision === "Rejected" && a.decidedAt && a.decidedBy === PEOPLE.bid.name) {
-    out.push(ev("decide", a.decidedAt, a.decidedBy, "bid", "Bid Head rejected; lead disqualified", a.decisionComment || undefined));
+  } else if (a?.decision === "Rejected" && a.decidedAt) {
+    out.push(
+      ev("decide", a.decidedAt, a.decidedBy ?? PEOPLE.vp.name, "vp", "BD Head rejected; lead disqualified", a.decisionComment || undefined),
+    );
   }
   return out;
 }

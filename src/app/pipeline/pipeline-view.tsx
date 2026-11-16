@@ -124,7 +124,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 onClick={() => setTab(st)}
                 className={cn(
                   "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
-                  on ? "bg-primary text-primary-foreground ring-primary" : "bg-card text-muted-foreground ring-border hover:text-foreground",
+                  on
+                    ? "bg-primary text-primary-foreground ring-primary"
+                    : "bg-card text-muted-foreground ring-border hover:text-foreground",
                 )}
               >
                 {st === "All" ? "All" : st}
@@ -155,7 +157,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 <SortTh sortKey="status" sort={sort} onSort={toggleSort}>
                   Status
                 </SortTh>
-                <th className="w-12 py-3 pr-4"><span className="sr-only">Details</span></th>
+                <th className="w-12 py-3 pr-4">
+                  <span className="sr-only">Details</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -165,7 +169,13 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 return (
                   <tr
                     key={t.id}
-                    onClick={() => router.push(t.status === "Draft" ? `/lead?id=${encodeURIComponent(t.id)}` : `/opportunity?id=${encodeURIComponent(t.id)}&from=pipeline`)}
+                    onClick={() =>
+                      router.push(
+                        t.status === "Draft"
+                          ? `/lead?id=${encodeURIComponent(t.id)}`
+                          : `/opportunity?id=${encodeURIComponent(t.id)}&from=pipeline`,
+                      )
+                    }
                     className={cn(
                       "group cursor-pointer align-top transition-colors hover:bg-secondary/50",
                       highlight === t.id && "bg-sky-50/60",
@@ -178,7 +188,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                         <span className="text-xs font-medium text-muted-foreground">No lead yet</span>
                       )}
                       {highlight === t.id && (
-                        <span className="ml-2 rounded bg-sky-100 px-1.5 py-px text-[10px] font-semibold tracking-wide text-sky-700 uppercase">New</span>
+                        <span className="ml-2 rounded bg-sky-100 px-1.5 py-px text-[10px] font-semibold tracking-wide text-sky-700 uppercase">
+                          New
+                        </span>
                       )}
                       <div className="text-xs text-muted-foreground">{timeAgo(inD365(t) ? t.lead.createdAt : t.discoveredAt)}</div>
                     </td>
@@ -202,7 +214,11 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      {t.status === "Not a tender" ? <span className="text-xs text-muted-foreground">n/a</span> : <PrequalBadge yes={aiPrequalified(t)} />}
+                      {t.status === "Not a tender" ? (
+                        <span className="text-xs text-muted-foreground">n/a</span>
+                      ) : (
+                        <PrequalBadge yes={aiPrequalified(t)} />
+                      )}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <StatusBadge status={t.status} />
@@ -247,28 +263,53 @@ function nextStep(t: Tender): { text: string; tone: string } {
     case "Not a tender":
       return { text: "Dismissed by Bid Analyst · no lead", tone: "text-muted-foreground" };
     case "BD Head review":
-      return { text: t.opsInput?.reply ? `HoD ${t.opsInput.reply.toLowerCase()} · with ${vp}` : `HoD bypassed · with ${vp}`, tone: "text-amber-700" };
+      return { text: t.opsInput?.reply ? `HoD ${t.opsInput.reply.toLowerCase()} · with ${vp}` : `With ${vp}`, tone: "text-amber-700" };
     case "Awaiting HoD":
       return {
-        text: t.opsInput && hoursLeft(t.opsInput.dueAt) <= 0 ? `${t.opsInput.person} overdue · escalated` : `With ${t.opsInput?.person ?? "HoD"} · 24 h`,
+        text:
+          t.opsInput && hoursLeft(t.opsInput.dueAt) <= 0
+            ? `${t.opsInput.person} overdue · reminded`
+            : `${vp.split(" ")[0]} asked ${t.opsInput?.person ?? "HoD"} · 24 h`,
         tone: "text-orange-700",
       };
-    case "Bid Head approval":
-      return { text: `BD Head approved · with ${PEOPLE.bid.name}`, tone: "text-violet-700" };
     case "Opportunity created":
       return { text: `${t.opportunity?.oppId ?? "Opportunity"} · with bidding agent`, tone: "text-emerald-700" };
     case "Rejected":
-      return { text: t.approval?.decidedAt ? `By ${t.approval.decidedBy} · ${formatDate(t.approval.decidedAt)}` : "Rejected", tone: "text-muted-foreground" };
+      return {
+        text: t.approval?.decidedAt ? `By ${t.approval.decidedBy} · ${formatDate(t.approval.decidedAt)}` : "Rejected",
+        tone: "text-muted-foreground",
+      };
     default:
       return { text: "", tone: "" };
   }
 }
 
 function exportCsv(tenders: Tender[]) {
-  const header = ["Lead ID", "Tender no.", "Title", "Client", "Service", "Emirate", "Closing date", "AI pre-qualification", "Status", "Next step", "Opportunity"];
+  const header = [
+    "Lead ID",
+    "Tender no.",
+    "Title",
+    "Client",
+    "Service",
+    "Emirate",
+    "Closing date",
+    "AI pre-qualification",
+    "Status",
+    "Next step",
+    "Opportunity",
+  ];
   const rows = tenders.map((t) => [
-    t.lead.leadId, t.sourceRef, t.title, t.buyer, t.category, t.emirate,
-    t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No", prospectStatus(t.status), nextStep(t).text, t.opportunity?.oppId ?? "",
+    t.lead.leadId,
+    t.sourceRef,
+    t.title,
+    t.buyer,
+    t.category,
+    t.emirate,
+    t.deadline.slice(0, 10),
+    aiPrequalified(t) ? "Yes" : "No",
+    prospectStatus(t.status),
+    nextStep(t).text,
+    t.opportunity?.oppId ?? "",
   ]);
   downloadCsv("agfs-lead-pipeline.csv", header, rows, "Lead pipeline exported");
 }

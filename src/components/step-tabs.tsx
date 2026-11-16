@@ -87,7 +87,7 @@ export function StepTabs() {
   const found = tenders.filter((t) => t.status !== "Not a tender");
   const aiYes = leads.filter(aiPrequalified).length;
   const awaitingList = tenders.filter(
-    (t) => t.status === "Awaiting HoD" || t.status === "BD Head review" || t.status === "Bid Head approval",
+    (t) => t.status === "Awaiting HoD" || t.status === "BD Head review",
   );
   const awaiting = awaitingList.length;
   const decided = leads.filter((t) => t.status === "Opportunity created" || t.status === "Rejected").length;
@@ -136,14 +136,14 @@ export function StepTabs() {
     {
       href: "/approvals",
       title: "Approvals",
-      action: "HoD → BD Head → Bid Head",
-      short: "Pending · HoD → BD → Bid Head",
+      action: "BD Head decides · HoD if asked",
+      short: "Pending · BD Head, HoD if asked",
       value: awaiting,
       unit: "pending",
       progress: ratio(decided, leads.length),
       gauge: `${decided} of ${leads.length} leads decided · ${opportunities} opportunities`,
       badge: overdue ? { text: `${overdue} overdue`, tone: "coral" as const } : null,
-      who: "HoD · BD · Bid Head",
+      who: "BD Head · HoD",
       verb: "decide",
     },
   ];

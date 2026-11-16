@@ -11,7 +11,6 @@ const STATUS_STYLE: Record<ProspectStatus, string> = {
   "Not a tender": "bg-zinc-100 text-zinc-600 ring-zinc-200",
   "BD Head review": "bg-amber-50 text-amber-800 ring-amber-200",
   "Awaiting HoD": "bg-orange-50 text-orange-800 ring-orange-200",
-  "Bid Head approval": "bg-violet-50 text-violet-800 ring-violet-200",
   "Opportunity created": "bg-emerald-50 text-emerald-700 ring-emerald-200",
   Rejected: "bg-rose-50 text-rose-700 ring-rose-200",
 };

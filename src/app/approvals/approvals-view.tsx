@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Clock, Download, Inbox, Mail, X } from "lucide-react";
-import { useDemo } from "@/lib/store";
+import { currentUser, useDemo } from "@/lib/store";
 import { APPROVAL_STATUSES, IN_APPROVAL, aiPrequalified, prospectStatus } from "@/lib/scoring";
 import { downloadCsv } from "@/lib/csv";
 import { daysUntil, formatDate, formatDateTime, hoursLeft, timeAgo } from "@/lib/format";
@@ -26,7 +26,7 @@ const PENDING: readonly Tender["status"][] = IN_APPROVAL;
 /** "order" is the default: pending first by due date, then the latest decisions. */
 type RegisterSort = "order" | "id" | "deadline" | "ai" | "ops" | "status" | "lead";
 
-const STATUS_RANK: Tender["status"][] = ["Awaiting HoD", "BD Head review", "Bid Head approval", "Opportunity created", "Rejected"];
+const STATUS_RANK: Tender["status"][] = ["BD Head review", "Awaiting HoD", "Opportunity created", "Rejected"];
 
 /** The HoD's prequalification in a few words. */
 function opsSummary(t: Tender): { text: string; tone: string } {
@@ -34,10 +34,10 @@ function opsSummary(t: Tender): { text: string; tone: string } {
   if (!o) return { text: "Not asked", tone: "text-muted-foreground" };
   if (o.reply === "Interested") return { text: "Interested", tone: "text-emerald-700" };
   if (o.reply === "Not interested") return { text: "Not interested", tone: "text-rose-700" };
-  if (o.bypassed) return { text: "Bypassed by BD Head", tone: "text-muted-foreground" };
+  if (t.status !== "Awaiting HoD") return { text: "No reply · BD Head decided", tone: "text-muted-foreground" };
   return new Date(o.dueAt).getTime() > Date.now()
     ? { text: `Awaiting · ${hoursLeft(o.dueAt)} h left`, tone: "text-amber-700" }
-    : { text: "Overdue · escalated", tone: "text-orange-700" };
+    : { text: "Overdue", tone: "text-orange-700" };
 }
 
 function registerValue(t: Tender, key: Exclude<RegisterSort, "order">): number | string {
@@ -82,51 +82,52 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
     if (params.get("focus")) setFocusId(params.get("focus"));
   }
 
-  // The approvers: the BD Head (VP Commercial) and the Bid Head. Everyone else sees the register.
-  const isHod = demo.role === "vp" || demo.role === "bid";
-  const vp = demo.role === "bid" ? PEOPLE.bid : PEOPLE.vp;
-  const routed = demo.tenders.filter((t) => t.approval);
-  // Each approver's own step: the BD Head reviews after the HoD (and can bypass it); the Bid Head gives the final go.
-  const myStatuses: Tender["status"][] = demo.role === "bid" ? ["Bid Head approval"] : ["Awaiting HoD", "BD Head review"];
+  // The people who act here: the BD Head (VP Commercial) decides; an HoD answers the requests sent to them.
+  const isHod = demo.role === "vp" || demo.role === "ops";
+  const vp = currentUser(demo);
+  const asHod = demo.role === "ops";
+  // An HoD sees only the leads the BD Head asked them about; everyone else sees every lead in D365.
+  const routed = demo.tenders.filter((t) => t.approval && (!asHod || t.opsInput?.person === vp.name));
+  const myStatuses: Tender["status"][] = asHod ? ["Awaiting HoD"] : ["BD Head review"];
   const mine = routed;
   const notSubmitted = demo.tenders.filter((t) => t.status === "Draft").length;
-  const myAwaiting = mine.filter((t) => myStatuses.includes(t.status) && (t.status !== "Awaiting HoD" || hodOverdue(t))).length;
+  const myAwaiting = mine.filter((t) => myStatuses.includes(t.status)).length;
   const selected = demo.tenders.find((t) => t.id === selectedId);
   const focused = demo.tenders.find((t) => t.id === focusId);
   // This approver's queue, soonest due first, for "Review next".
-  const myQueue = mine
-    .filter((t) => (demo.role === "bid" ? t.status === "Bid Head approval" : t.status === "BD Head review"))
-    .sort((a, b) => a.deadline.localeCompare(b.deadline));
+  const myQueue = mine.filter((t) => myStatuses.includes(t.status)).sort((a, b) => a.deadline.localeCompare(b.deadline));
   const [view, setView] = useState<"register" | "tracker">("register");
   const hodRequests = routed.filter((t) => t.opsInput);
   const hodOpen = hodRequests.filter((t) => t.status === "Awaiting HoD").length;
   // Switch between the register of every lead in the chain and the tracker of HoD requests, in the table header.
   const tabs = (
     <div role="tablist" aria-label="View" className="flex flex-wrap gap-1.5">
-        {(
-          [
-            ["register", "Approval register", routed.length],
-            ["tracker", "HoD tracker", hodOpen],
-          ] as const
-        ).map(([k, label, n]) => (
-          <button
-            key={k}
-            role="tab"
-            aria-selected={view === k}
-            onClick={() => setView(k)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
-              view === k ? "bg-primary text-primary-foreground ring-primary" : "bg-card text-muted-foreground ring-border hover:text-foreground",
-            )}
-          >
-            {label}
-            <span className={cn("tabular rounded-full px-1.5 text-[10px]", view === k ? "bg-white/20" : "bg-muted")}>
-              {n}
-              {k === "tracker" && " open"}
-            </span>
-          </button>
-        ))}
-      </div>
+      {(
+        [
+          ["register", "Approval register", routed.length],
+          ["tracker", "HoD tracker", hodOpen],
+        ] as const
+      ).map(([k, label, n]) => (
+        <button
+          key={k}
+          role="tab"
+          aria-selected={view === k}
+          onClick={() => setView(k)}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
+            view === k
+              ? "bg-primary text-primary-foreground ring-primary"
+              : "bg-card text-muted-foreground ring-border hover:text-foreground",
+          )}
+        >
+          {label}
+          <span className={cn("tabular rounded-full px-1.5 text-[10px]", view === k ? "bg-white/20" : "bg-muted")}>
+            {n}
+            {k === "tracker" && " open"}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 
   function open(id: string) {
@@ -139,7 +140,12 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
       {!embedded && (
         <PageHeader
           title="Approval for Bidding"
-          description={<>Each lead goes to the HoD (interested or not, 24 h), then the BD Head, then the Bid Head, whose approval creates the <D365 /> opportunity.</>}
+          description={
+            <>
+              Each lead goes to the BD Head, who can ask the service line&apos;s HoD first (interested or not, 24 h). The BD Head&apos;s
+              approval creates the <D365 /> opportunity.
+            </>
+          }
         />
       )}
 
@@ -155,9 +161,7 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
               <div className="text-xs text-muted-foreground">{vp.title}</div>
             </div>
             {myAwaiting > 0 && (
-              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                {myAwaiting} for you
-              </span>
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{myAwaiting} for you</span>
             )}
           </div>
           {fromEmail && (
@@ -184,7 +188,11 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
                   Review now <ArrowRight />
                 </Button>
               )}
-              <button onClick={() => setFromEmail(false)} aria-label="Dismiss" className="rounded-md p-1 hover:bg-muted hover:text-foreground">
+              <button
+                onClick={() => setFromEmail(false)}
+                aria-label="Dismiss"
+                className="rounded-md p-1 hover:bg-muted hover:text-foreground"
+              >
                 <X className="size-4" />
               </button>
             </motion.div>
@@ -276,9 +284,7 @@ function ReviewPanel({
                 </>
               )}
             </div>
-            <div className="text-emerald-900/80">
-              {remaining ? `${remaining} more waiting for you` : "You're all caught up."}
-            </div>
+            <div className="text-emerald-900/80">{remaining ? `${remaining} more waiting for you` : "You're all caught up."}</div>
           </div>
           {next && (
             <Button variant="success" size="lg" onClick={() => onOpen(next.id)}>
@@ -305,12 +311,16 @@ function ReviewPanel({
         <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
       </div>
 
-      <Button variant="link" nativeButton={false} render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}>
+      <Button
+        variant="link"
+        nativeButton={false}
+        render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}
+      >
         Open full lead and AI reasoning <ArrowUpRight />
       </Button>
 
       <div className="rounded-xl bg-muted/30 p-5">
-        <h3 className="mb-4 text-sm font-bold text-primary">Approval · HoD → BD Head → Bid Head</h3>
+        <h3 className="mb-4 text-sm font-bold text-primary">Approval · BD Head, HoD if asked</h3>
         <DecisionPanel tender={tender} />
         {!isHod && PENDING.includes(tender.status) && (
           <Button variant="secondary" size="lg" className="mt-3 w-full" onClick={() => openHodEmail(tender.id)}>
@@ -318,7 +328,6 @@ function ReviewPanel({
           </Button>
         )}
       </div>
-
     </div>
   );
 }
@@ -330,15 +339,40 @@ function agreesWithAi(t: Tender): boolean {
 
 function exportCsv(tenders: Tender[]) {
   const header = [
-    "Tender ID", "Title", "Buyer", "Due date", "AI pre-qualification", "HoD", "HoD input", "BD Head", "BD Head decision",
-    "Status", "Decided by", "Decided at", "Rationale", "D365 lead", "Lead state", "D365 opportunity", "Lead created by", "Note",
+    "Tender ID",
+    "Title",
+    "Buyer",
+    "Due date",
+    "AI pre-qualification",
+    "HoD",
+    "HoD input",
+    "Status",
+    "Decided by",
+    "Decided at",
+    "Rationale",
+    "D365 lead",
+    "Lead state",
+    "D365 opportunity",
+    "Lead created by",
+    "Note",
   ];
   const rows = tenders.map((t) => [
-    t.id, t.title, t.buyer, t.deadline.slice(0, 10), aiPrequalified(t) ? "Yes" : "No",
-    serviceLineFor(t.category).opsHead, opsSummary(t).text, t.approval?.bdBy ?? "", t.approval?.bdDecision ?? "",
-    prospectStatus(t.status), t.approval?.decidedBy ?? "",
-    t.approval?.decidedAt ?? "", t.approval?.decisionComment ?? "", t.lead.leadId, t.lead.state, t.opportunity?.oppId ?? "",
-    t.approval?.submittedBy ?? "", t.approval?.note ?? "",
+    t.id,
+    t.title,
+    t.buyer,
+    t.deadline.slice(0, 10),
+    aiPrequalified(t) ? "Yes" : "No",
+    serviceLineFor(t.category).opsHead,
+    opsSummary(t).text,
+    prospectStatus(t.status),
+    t.approval?.decidedBy ?? "",
+    t.approval?.decidedAt ?? "",
+    t.approval?.decisionComment ?? "",
+    t.lead.leadId,
+    t.lead.state,
+    t.opportunity?.oppId ?? "",
+    t.approval?.submittedBy ?? "",
+    t.approval?.note ?? "",
   ]);
   downloadCsv("agfs-approval-register.csv", header, rows, "Register exported");
 }
@@ -404,7 +438,6 @@ function Register({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <TableHeader title="Approval register" count={sorted.length} search={q} onSearch={setQ} tabs={tabs}>
@@ -461,10 +494,11 @@ function Register({
                       "cursor-pointer align-top transition-colors hover:bg-muted/30",
                       PENDING.includes(t.status) && "bg-amber-50/40",
                       selectedId === t.id && "bg-primary/5",
-                      highlightId === t.id && "bg-primary/[0.035] shadow-[inset_2px_0_0_color-mix(in_oklab,var(--primary)_55%,transparent)]",
+                      highlightId === t.id &&
+                        "bg-primary/[0.035] shadow-[inset_2px_0_0_color-mix(in_oklab,var(--primary)_55%,transparent)]",
                     )}
                   >
-<td className="py-3 pr-3 pl-5 whitespace-nowrap">
+                    <td className="py-3 pr-3 pl-5 whitespace-nowrap">
                       <span className="font-mono text-xs text-muted-foreground">{t.id}</span>
                     </td>
                     <td className="max-w-[320px] px-3 py-3">
@@ -489,14 +523,16 @@ function Register({
                     <td className="px-3 py-3 whitespace-nowrap">
                       <StatusBadge status={t.status} />
                       <div className="mt-1.5 text-[11px] text-muted-foreground">
-                        {mine?.includes(t.status) && (t.status !== "Awaiting HoD" || hodOverdue(t)) ? (
-                          <span className="font-semibold text-primary">{t.status === "Awaiting HoD" ? "Escalated to you" : "Your step"}</span>
+                        {mine?.includes(t.status) ? (
+                          <span className="font-semibold text-primary">Your step</span>
                         ) : pending ? (
                           t.approval && `Lead created ${timeAgo(t.approval.submittedAt).toLowerCase()}`
                         ) : (
                           <span className={cn("font-medium", !agrees && "text-magenta")}>
                             {agrees ? "Matches AI" : "Overrides AI"}
-                            {t.approval?.decidedAt && <span className="font-normal text-muted-foreground"> · {formatDate(t.approval.decidedAt)}</span>}
+                            {t.approval?.decidedAt && (
+                              <span className="font-normal text-muted-foreground"> · {formatDate(t.approval.decidedAt)}</span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -533,11 +569,6 @@ function Register({
   );
 }
 
-/** An HoD request past its 24 hours, still unanswered: escalated to the BD Head. */
-function hodOverdue(t: Tender) {
-  return !!t.opsInput && !t.opsInput.reply && !t.opsInput.bypassed && hoursLeft(t.opsInput.dueAt) <= 0;
-}
-
 /**
  * Tracker of HoD requests (workshop: "Tracker / Status / Response of HoDs"): who was asked, when it is due against the
  * 24-hour SLA, the reply, reminders, and where the lead is now. Open requests first, soonest due first.
@@ -553,7 +584,9 @@ function HodTracker({ tenders, onOpen, tabs }: { tenders: Tender[]; onOpen: (id:
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
       <div className="flex min-h-[65px] shrink-0 flex-wrap items-center gap-2 border-b px-4 py-3 sm:px-5">
         {tabs}
-        <span className="text-xs text-muted-foreground sm:ml-auto">Interested or not within 24 h · overdue requests escalate to the BD Head</span>
+        <span className="text-xs text-muted-foreground sm:ml-auto">
+          Interested or not within 24 h · overdue requests escalate to the BD Head
+        </span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[960px] text-sm">
@@ -575,7 +608,11 @@ function HodTracker({ tenders, onOpen, tabs }: { tenders: Tender[]; onOpen: (id:
               const left = hoursLeft(o.dueAt);
               const ops = opsSummary(t);
               return (
-                <tr key={t.id} onClick={() => onOpen(t.id)} className={cn("cursor-pointer align-top transition-colors hover:bg-muted/30", open && "bg-amber-50/40")}>
+                <tr
+                  key={t.id}
+                  onClick={() => onOpen(t.id)}
+                  className={cn("cursor-pointer align-top transition-colors hover:bg-muted/30", open && "bg-amber-50/40")}
+                >
                   <td className="py-3 pr-3 pl-5 whitespace-nowrap">
                     <div className="font-medium">{o.person}</div>
                     <div className="text-xs text-muted-foreground">{o.line}</div>
@@ -594,7 +631,7 @@ function HodTracker({ tenders, onOpen, tabs }: { tenders: Tender[]; onOpen: (id:
                           <Clock className="size-3.5" /> {left} h left
                         </span>
                       ) : (
-                        <span className="text-xs font-semibold text-orange-700">Overdue · escalated to BD Head</span>
+                        <span className="text-xs font-semibold text-orange-700">Overdue · reminded</span>
                       )
                     ) : o.repliedAt ? (
                       <span className={cn("text-xs", new Date(o.repliedAt) <= new Date(o.dueAt) ? "text-emerald-700" : "text-orange-700")}>
@@ -606,7 +643,7 @@ function HodTracker({ tenders, onOpen, tabs }: { tenders: Tender[]; onOpen: (id:
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className={cn("text-sm", ops.tone)}>{ops.text}</span>
-                    <div className="text-xs text-muted-foreground">{o.reply ? "Logged in D365" : o.bypassReason ?? ""}</div>
+                    <div className="text-xs text-muted-foreground">{o.reply ? "Logged in D365" : ""}</div>
                   </td>
                   <td className="tabular px-3 py-3 text-xs">{o.remindersSent}</td>
                   <td className="px-3 py-3 pr-5 whitespace-nowrap">

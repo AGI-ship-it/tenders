@@ -1,45 +1,24 @@
 /**
- * Bid Analyst (creates leads), BD Head (VP Commercial: reviews after the HoD, can bypass the HoD), Bid Head (final
- * approval, creates the opportunity), HoD of a service line (interested or not, 24 h).
+ * Bid Analyst (creates leads), BD Head (VP Commercial: approves or rejects each lead, and can first ask a service line's
+ * HoD whether they are interested), HoD of a service line (replies interested or not, 24 h, when asked).
  */
-export type Role = "analyst" | "vp" | "bid" | "ops";
+export type Role = "analyst" | "vp" | "ops";
 
-export type Emirate =
-  | "Dubai"
-  | "Abu Dhabi"
-  | "Sharjah"
-  | "Ajman"
-  | "Ras Al Khaimah"
-  | "Fujairah"
-  | "Umm Al Quwain";
+export type Emirate = "Dubai" | "Abu Dhabi" | "Sharjah" | "Ajman" | "Ras Al Khaimah" | "Fujairah" | "Umm Al Quwain";
 
 export type Category =
-  | "Integrated FM"
-  | "Hard FM / MEP"
-  | "Cleaning & Hygiene"
-  | "Landscaping"
-  | "Security Services"
-  | "Pest Control"
-  | "Waste Management";
+  "Integrated FM" | "Hard FM / MEP" | "Cleaning & Hygiene" | "Landscaping" | "Security Services" | "Pest Control" | "Waste Management";
 
 export type Recommendation = "Bid" | "Bid with conditions" | "Review" | "No-bid";
 
 /**
- * Lead-to-opportunity journey (workshop: manual push, then HoD → BD Head → Bid Head):
- * Draft (the AI prepared a lead draft; nothing in D365 yet) → Awaiting HoD (the Bid Analyst created the D365 lead; it
- * goes to the service line's HoD automatically, interested or not within 24 h) → BD Head review (after the HoD's reply,
- * or the BD Head bypassed the HoD) → Bid Head approval (BD Head approved) → Opportunity created (Bid Head approved;
- * handed to the bidding agent) or Rejected (by the BD Head or the Bid Head). A dismissed draft is "Not a tender".
- * Every response is logged on the D365 lead.
+ * Lead-to-opportunity journey: Draft (the AI prepared a lead draft; nothing in D365 yet) → BD Head review (the Bid
+ * Analyst created the D365 lead; it goes to the BD Head) → optionally Awaiting HoD (the BD Head asked the service line's
+ * HoD whether they are interested, 24 h; their reply sends it back to BD Head review) → Opportunity created (the BD Head
+ * approved; handed to the bidding agent) or Rejected. A dismissed draft is "Not a tender". Every response is logged on
+ * the D365 lead.
  */
-export type TenderStatus =
-  | "Draft"
-  | "Not a tender"
-  | "BD Head review"
-  | "Awaiting HoD"
-  | "Bid Head approval"
-  | "Opportunity created"
-  | "Rejected";
+export type TenderStatus = "Draft" | "Not a tender" | "BD Head review" | "Awaiting HoD" | "Opportunity created" | "Rejected";
 
 /** The statuses shown to users are the workflow statuses themselves. */
 export type ProspectStatus = TenderStatus;
@@ -64,7 +43,7 @@ export interface TenderAction {
   confirmed: boolean;
 }
 
-/** The service-line HoD's prequalification, asked automatically when the lead is created: interested or not, 24 h. */
+/** The service-line HoD's interest, asked by the BD Head when needed: interested or not, within 24 h. */
 export interface OpsInput {
   person: string;
   line: string;
@@ -73,9 +52,8 @@ export interface OpsInput {
   reply?: "Interested" | "Not interested";
   repliedAt?: string;
   remindersSent: number;
-  /** The BD Head moved the lead on without the HoD's reply. */
-  bypassed?: boolean;
-  bypassReason?: string;
+  /** The BD Head's question or context for the HoD. */
+  note?: string;
 }
 
 export type CheckStatus = "met" | "partial" | "unmet" | "unknown";
@@ -107,17 +85,11 @@ export interface Comment {
 }
 
 export interface ApprovalRecord {
-  /** Routing: HoD → BD Head (reviewer) → Bid Head (final decision in decision / decidedBy). */
   submittedBy: string;
   submittedAt: string;
   reviewer: string;
   note: string;
-  /** The BD Head's step. */
-  bdDecision?: "Approved" | "Rejected";
-  bdBy?: string;
-  bdAt?: string;
-  bdComment?: string;
-  /** The final outcome: the Bid Head's decision, or the BD Head's rejection. */
+  /** The BD Head's decision. */
   decision?: "Approved" | "Rejected";
   decidedBy?: string;
   decidedAt?: string;
@@ -140,7 +112,7 @@ export interface D365Lead {
   state: "Open" | "Qualified" | "Disqualified";
 }
 
-/** Simulated D365 opportunity, created when the Bid Head gives the final approval. */
+/** Simulated D365 opportunity, created when the BD Head approves the lead. */
 export interface D365Opportunity {
   oppId: string;
   createdBy: string;

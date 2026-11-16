@@ -233,7 +233,7 @@ export function HodEmailHost() {
                   <div className="space-y-5 p-6">
                     <p className="text-sm">Dear {vp.name.split(" ")[0]},</p>
                     <p className="text-sm text-[#605e5c]">
-                      {tender.approval?.submittedBy ?? "The Bid Analyst"} has created lead {tender.lead.leadId} in D365 and it needs your review as BD Head. Approving sends it to the Bid Head for the final go.
+                      {tender.approval?.submittedBy ?? "The Bid Analyst"} has created lead {tender.lead.leadId} in D365 and it needs your decision as BD Head. Approve it, reject it, or ask the HoD first.
                     </p>
 
                     <div className="rounded-lg border border-[#e1dfdd] p-4">

@@ -121,10 +121,10 @@ export function aiPriority(t: Tender, now = Date.now()): Priority {
 }
 
 /** Still being worked: not yet an opportunity and not rejected. */
-export const ACTIVE_STATUSES: readonly TenderStatus[] = ["Draft", "Awaiting HoD", "BD Head review", "Bid Head approval"];
+export const ACTIVE_STATUSES: readonly TenderStatus[] = ["Draft", "BD Head review", "Awaiting HoD"];
 
-/** In the approval chain, not yet decided: HoD → BD Head → Bid Head. */
-export const IN_APPROVAL: readonly TenderStatus[] = ["Awaiting HoD", "BD Head review", "Bid Head approval"];
+/** With the BD Head, or with an HoD the BD Head asked: not yet decided. */
+export const IN_APPROVAL: readonly TenderStatus[] = ["BD Head review", "Awaiting HoD"];
 
 export function isActive(t: Tender) {
   return ACTIVE_STATUSES.includes(t.status);
@@ -133,9 +133,8 @@ export function isActive(t: Tender) {
 /** Every status, in journey order, as listed in the Lead Pipeline: drafts, the approval chain and its outcomes. */
 export const PROSPECT_STATUSES: ProspectStatus[] = [
   "Draft",
-  "Awaiting HoD",
   "BD Head review",
-  "Bid Head approval",
+  "Awaiting HoD",
   "Opportunity created",
   "Rejected",
   "Not a tender",

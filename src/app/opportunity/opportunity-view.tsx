@@ -243,7 +243,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
               </TooltipTrigger>
               <TooltipContent className="max-w-64">
                 The AI checks the lead against the AGFS criteria and recommends Yes or No. It does not decide.
-                The HoD, BD Head and Bid Head approve; the Bid Head&apos;s approval creates the <D365 /> opportunity.
+                The BD Head decides, asking the HoD first if needed; the BD Head&apos;s approval creates the <D365 /> opportunity.
               </TooltipContent>
             </Tooltip>
           </div>

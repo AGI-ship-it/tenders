@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bot, Check, Circle, Clock, CloudUpload, ExternalLink, FastForward, FilePlus2, ThumbsDown, ThumbsUp, Trophy, X } from "lucide-react";
+import { Bot, Check, Circle, Clock, CloudUpload, ExternalLink, FilePlus2, Send, ThumbsDown, ThumbsUp, Trophy, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { bypassHod, decide, recordHodReply, useDemo } from "@/lib/store";
-import { PEOPLE } from "@/lib/mock-data";
+import { askHod, currentUser, decide, recordHodReply, useDemo } from "@/lib/store";
+import { PEOPLE, serviceLineFor } from "@/lib/mock-data";
 import { formatDateTime, hoursLeft, timeAgo } from "@/lib/format";
 import type { ApprovalRecord, OpsInput, Tender } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,19 @@ import { Label } from "@/components/ui/label";
 import { D365, StatusBadge, boldD365 } from "@/components/shared";
 
 /**
- * The single "what happens next" panel for a lead, adapted to role and status. The chain is HoD (interested or not,
- * 24 h) → BD Head (approve, reject, or bypass the HoD) → Bid Head (final approval creates the D365 opportunity).
+ * The single "what happens next" panel for a lead, adapted to role and status. The BD Head approves (creates the D365
+ * opportunity) or rejects; when they want a service line's view first, they ask its HoD, who replies interested or not
+ * (24 h), and the lead comes back to the BD Head.
  */
 export function DecisionPanel({ tender }: { tender: Tender }) {
   const demo = useDemo()!;
   const role = demo.role;
+  const me = currentUser(demo);
   const a = tender.approval;
   const s = tender.status;
   const bd = PEOPLE.vp;
-  const bid = PEOPLE.bid;
+  const ops = tender.opsInput;
+  const iAmTheHod = role === "ops" && ops?.person === me.name;
 
   return (
     <div className="space-y-5">
@@ -42,30 +45,38 @@ export function DecisionPanel({ tender }: { tender: Tender }) {
           <RoleHint text="The AI prepared a lead draft. Waiting for the Bid Analyst to review it and create the lead in D365." />
         ))}
 
-      {a && <ApprovalChain tender={tender} approval={a} ops={tender.opsInput} />}
+      {a && <ApprovalChain tender={tender} approval={a} ops={ops} />}
 
-      {s === "Awaiting HoD" && tender.opsInput && (
-        <HodWait tender={tender} ops={tender.opsInput} canSimulate={role === "vp" || role === "bid"} />
+      {s === "Awaiting HoD" && ops && (iAmTheHod ? <HodReply tender={tender} ops={ops} /> : <HodWait ops={ops} />)}
+      {s === "Awaiting HoD" && role === "vp" && (
+        <details className="group rounded-xl border bg-card px-4 py-3 text-sm">
+          <summary className="cursor-pointer font-medium text-muted-foreground group-open:mb-3 hover:text-foreground">
+            Decide now without waiting for {ops?.person.split(" ")[0] ?? "the HoD"}
+          </summary>
+          <DecisionActions tender={tender} />
+        </details>
       )}
-      {s === "Awaiting HoD" &&
-        (role === "vp" ? (
-          <BypassHod tender={tender} />
-        ) : (
-          <RoleHint text={`Waiting for the HoD. After the reply, ${bd.name} (BD Head) reviews it; ${bd.name.split(" ")[0]} can also bypass the HoD.`} />
-        ))}
+      {s === "Awaiting HoD" && role === "analyst" && <RoleHint text={`Waiting for the HoD's reply. Then ${bd.name} (BD Head) decides.`} />}
 
       {s === "BD Head review" &&
         (role === "vp" ? (
-          <DecisionActions tender={tender} step="bd" />
+          <>
+            {ops?.reply && (
+              <div
+                className={cn(
+                  "rounded-xl px-4 py-3 text-sm ring-1 ring-inset",
+                  ops.reply === "Interested" ? "bg-emerald-50 text-emerald-900 ring-emerald-200" : "bg-rose-50 text-rose-900 ring-rose-200",
+                )}
+              >
+                <span className="font-semibold">{ops.person}</span> replied <span className="font-semibold">{ops.reply.toLowerCase()}</span>
+                . It&apos;s yours to decide.
+              </div>
+            )}
+            <DecisionActions tender={tender} />
+            {!ops && <AskHod tender={tender} />}
+          </>
         ) : (
-          <RoleHint text={`Waiting for ${bd.name}, BD Head, to approve it for the Bid Head or reject it.`} />
-        ))}
-
-      {s === "Bid Head approval" &&
-        (role === "bid" ? (
-          <DecisionActions tender={tender} step="bid" />
-        ) : (
-          <RoleHint text={`Approved by the BD Head. Waiting for ${bid.name}, Bid Head, to give the final go.`} />
+          <RoleHint text={`Waiting for ${bd.name}, BD Head, to approve or reject it${ops ? "" : ", or ask the HoD first"}.`} />
         ))}
 
       {tender.opportunity && (
@@ -98,13 +109,23 @@ function LeadCard({ tender }: { tender: Tender }) {
       <div className="flex items-center justify-between gap-2 font-semibold">
         <span className="flex items-center gap-1.5">
           <CloudUpload className="size-4" />
-          <span>{unconfirmed ? "Lead draft · not in D365 yet" : <>Lead {lead.leadId} in <D365 /></>}</span>
+          <span>
+            {unconfirmed ? (
+              "Lead draft · not in D365 yet"
+            ) : (
+              <>
+                Lead {lead.leadId} in <D365 />
+              </>
+            )}
+          </span>
         </span>
         <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold">{lead.state}</span>
       </div>
       <div className="text-xs leading-relaxed">
         {unconfirmed ? (
-          <>Prepared by the AI from the mailbox · {formatDateTime(tender.discoveredAt)} · {tender.actions.length} actions found · to review</>
+          <>
+            Prepared by the AI from the mailbox · {formatDateTime(tender.discoveredAt)} · {tender.actions.length} actions found · to review
+          </>
         ) : (
           <>
             Created by {lead.createdBy} from the AI draft · {formatDateTime(lead.createdAt)} · {tender.actions.length} actions logged
@@ -121,7 +142,10 @@ function LeadCard({ tender }: { tender: Tender }) {
           })
         }
       >
-        <span>Open in <D365 /></span> <ExternalLink />
+        <span>
+          Open in <D365 />
+        </span>{" "}
+        <ExternalLink />
       </Button>
     </div>
   );
@@ -133,55 +157,41 @@ function RoleHint({ text }: { text: string }) {
 
 export function hodText(o: OpsInput): string {
   if (o.reply) return o.repliedAt ? `${o.reply} · ${timeAgo(o.repliedAt).toLowerCase()}` : o.reply;
-  if (o.bypassed) return "Bypassed by the BD Head";
   return hoursLeft(o.dueAt) > 0
     ? `Awaiting reply · ${hoursLeft(o.dueAt)} h left`
-    : `Overdue · escalated to the BD Head · ${o.remindersSent} reminder${o.remindersSent === 1 ? "" : "s"}`;
+    : `Overdue · ${o.remindersSent} reminder${o.remindersSent === 1 ? "" : "s"} sent`;
 }
 
 type StepState = "done" | "rejected" | "current" | "next";
 
-/** The approval chain, one row per step, each response logged on the D365 lead. */
+/** Who has the lead: the HoD row appears only when the BD Head asked them. Each response is logged on the D365 lead. */
 function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval: ApprovalRecord; ops?: OpsInput }) {
   const s = tender.status;
-  const hodState: StepState = ops?.reply || ops?.bypassed ? "done" : s === "Awaiting HoD" ? "current" : "next";
   const bdState: StepState =
-    a.bdDecision === "Approved" ? "done" : a.bdDecision === "Rejected" ? "rejected" : s === "BD Head review" ? "current" : "next";
-  const bidState: StepState =
-    a.decision === "Approved" ? "done" : a.decision === "Rejected" && a.decidedBy === PEOPLE.bid.name ? "rejected" : s === "Bid Head approval" ? "current" : "next";
-  const rows: { who: string; role: string; state: StepState; text: string; tone?: string; note?: string }[] = [
-    {
-      who: ops?.person ?? "HoD",
-      role: `HoD${ops ? `, ${ops.line}` : ""}`,
-      state: hodState,
-      text: ops ? hodText(ops) : "Not asked",
-      tone: ops?.reply === "Interested" ? "text-emerald-700" : ops?.reply === "Not interested" ? "text-rose-700" : undefined,
-      note: ops?.bypassReason,
-    },
-    {
-      who: a.bdBy ?? PEOPLE.vp.name,
-      role: "BD Head",
-      state: bdState,
-      text: a.bdDecision ? `${a.bdDecision} · ${a.bdAt ? formatDateTime(a.bdAt) : ""}` : bdState === "current" ? "Reviewing" : "Next",
-      tone: a.bdDecision === "Approved" ? "text-emerald-700" : a.bdDecision === "Rejected" ? "text-rose-700" : undefined,
-      note: a.bdComment,
-    },
-    {
-      who: PEOPLE.bid.name,
-      role: "Bid Head",
-      state: a.bdDecision === "Rejected" ? "next" : bidState,
-      text:
-        a.bdDecision === "Rejected"
-          ? "Not needed"
-          : bidState === "done" || bidState === "rejected"
-            ? `${a.decision} · ${a.decidedAt ? formatDateTime(a.decidedAt) : ""}`
-            : bidState === "current"
-              ? "Final approval"
-              : "Next",
-      tone: bidState === "done" ? "text-emerald-700" : bidState === "rejected" ? "text-rose-700" : undefined,
-      note: bidState === "done" || bidState === "rejected" ? a.decisionComment : undefined,
-    },
-  ];
+    a.decision === "Approved" ? "done" : a.decision === "Rejected" ? "rejected" : s === "BD Head review" ? "current" : "next";
+  const rows: { who: string; role: string; state: StepState; text: string; tone?: string; note?: string }[] = [];
+  if (ops) {
+    rows.push({
+      who: ops.person,
+      role: `HoD, ${ops.line}`,
+      state: ops.reply ? "done" : s === "Awaiting HoD" ? "current" : "next",
+      text: ops.reply || s === "Awaiting HoD" ? hodText(ops) : "Not needed",
+      tone: ops.reply === "Interested" ? "text-emerald-700" : ops.reply === "Not interested" ? "text-rose-700" : undefined,
+      note: ops.note ? `${PEOPLE.vp.name.split(" ")[0]}: ${ops.note}` : undefined,
+    });
+  }
+  rows.push({
+    who: a.decidedBy ?? PEOPLE.vp.name,
+    role: "BD Head",
+    state: bdState,
+    text: a.decision
+      ? `${a.decision} · ${a.decidedAt ? formatDateTime(a.decidedAt) : ""}`
+      : bdState === "current"
+        ? "Deciding"
+        : "Decides next",
+    tone: a.decision === "Approved" ? "text-emerald-700" : a.decision === "Rejected" ? "text-rose-700" : undefined,
+    note: a.decisionComment || undefined,
+  });
   return (
     <div className="rounded-xl border bg-card px-4 py-3.5 text-sm">
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
@@ -203,7 +213,13 @@ function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval:
                   r.state === "next" && "bg-muted text-muted-foreground",
                 )}
               >
-                {r.state === "done" ? <Check className="size-3.5" /> : r.state === "rejected" ? <X className="size-3.5" /> : <Circle className="size-2.5 fill-current" />}
+                {r.state === "done" ? (
+                  <Check className="size-3.5" />
+                ) : r.state === "rejected" ? (
+                  <X className="size-3.5" />
+                ) : (
+                  <Circle className="size-2.5 fill-current" />
+                )}
               </span>
               {i < rows.length - 1 && <span className="my-1 w-px flex-1 bg-border" />}
             </span>
@@ -223,16 +239,10 @@ function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval:
   );
 }
 
-/** The HoD's 24-hour window, with demo buttons standing in for the HoD's emailed reply. */
-function HodWait({ tender, ops, canSimulate }: { tender: Tender; ops: OpsInput; canSimulate: boolean }) {
+/** The HoD's 24-hour window, as the BD Head and the Bid Analyst see it. */
+function HodWait({ ops }: { ops: OpsInput }) {
   const left = hoursLeft(ops.dueAt);
   const pct = Math.min(100, Math.max(0, ((24 - left) / 24) * 100));
-  function reply(r: NonNullable<OpsInput["reply"]>) {
-    recordHodReply(tender.id, r);
-    toast.success(`${ops.person} replied: ${r.toLowerCase()}`, {
-      description: "Logged in D365. On to the BD Head.",
-    });
-  }
   return (
     <div className="space-y-3 rounded-xl bg-orange-50 p-4 text-sm text-orange-900 ring-1 ring-orange-200 ring-inset">
       <div className="flex items-center gap-1.5 font-semibold">
@@ -244,75 +254,79 @@ function HodWait({ tender, ops, canSimulate }: { tender: Tender; ops: OpsInput; 
       <div className="text-xs text-orange-900/80">
         {left > 0
           ? `${left} h left of 24 h to say interested or not`
-          : `24 h passed · ${ops.remindersSent} reminder${ops.remindersSent === 1 ? "" : "s"} sent · escalated to the BD Head`}
+          : `24 h passed · ${ops.remindersSent} reminder${ops.remindersSent === 1 ? "" : "s"} sent`}
       </div>
-      {canSimulate && (
-        <div className="border-t border-orange-200 pt-3">
-          <div className="mb-2 text-[11px] font-semibold tracking-wide text-orange-900/70 uppercase">Demo · simulate the HoD&apos;s reply</div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" className="bg-white" onClick={() => reply("Not interested")}>
-              <ThumbsDown /> Not interested
-            </Button>
-            <Button variant="outline" size="sm" className="bg-white" onClick={() => reply("Interested")}>
-              <ThumbsUp /> Interested
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-/** The BD Head moves the lead on without the HoD's reply. A reason is required; it is logged on the D365 lead. */
-function BypassHod({ tender }: { tender: Tender }) {
+/** The HoD's own answer, signed in as the HoD: interested or not. It goes back to the BD Head. */
+function HodReply({ tender, ops }: { tender: Tender; ops: OpsInput }) {
+  const left = hoursLeft(ops.dueAt);
+  function reply(r: NonNullable<OpsInput["reply"]>) {
+    recordHodReply(tender.id, r);
+    toast.success(`You replied: ${r.toLowerCase()}`, { description: `Logged in D365. Back to ${PEOPLE.vp.name} to decide.` });
+  }
+  return (
+    <div className="space-y-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-950 ring-1 ring-amber-200 ring-inset">
+      <div className="font-semibold">{PEOPLE.vp.name} asked whether you&apos;re interested in bidding</div>
+      {ops.note && <p className="text-xs italic">“{ops.note}”</p>}
+      <div className="text-xs text-amber-900/80">{left > 0 ? `Reply within ${left} h` : "Your reply is overdue"}</div>
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" size="lg" className="bg-white" onClick={() => reply("Not interested")}>
+          <ThumbsDown /> Not interested
+        </Button>
+        <Button variant="success" size="lg" onClick={() => reply("Interested")}>
+          <ThumbsUp /> Interested
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** The BD Head forwards the lead to the service line's HoD for their interest before deciding. */
+function AskHod({ tender }: { tender: Tender }) {
+  const line = serviceLineFor(tender.category);
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const overdue = tender.opsInput ? hoursLeft(tender.opsInput.dueAt) <= 0 : false;
+  const [note, setNote] = useState("Are we interested in bidding for this one?");
   if (!open) {
     return (
-      <div className="space-y-2">
-        <Button variant={overdue ? "default" : "secondary"} size="lg" className="w-full" onClick={() => setOpen(true)}>
-          <FastForward /> Bypass HoD and decide
+      <div className="space-y-1.5">
+        <Button variant="secondary" size="lg" className="w-full" onClick={() => setOpen(true)}>
+          <Send /> Ask {line.opsHead} (HoD) first
         </Button>
-        <p className="text-center text-[11px] text-muted-foreground">
-          {overdue ? "The 24 hours have passed; it's escalated to you." : "Or wait for the HoD's reply."}
-        </p>
+        <p className="text-center text-[11px] text-muted-foreground">Optional · if you want {line.name}&apos;s view before deciding</p>
       </div>
     );
   }
   return (
-    <div className="space-y-2">
-      <Label htmlFor={`b-${tender.id}`} className="text-xs text-muted-foreground">
-        Why go ahead without the HoD? (logged in D365)
+    <div className="space-y-2 rounded-xl border bg-card p-4">
+      <Label htmlFor={`h-${tender.id}`} className="text-xs text-muted-foreground">
+        Message to {line.opsHead} (HoD, {line.name}) · reply within 24 h
       </Label>
-      <Textarea id={`b-${tender.id}`} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Closing date is close; I know this client." />
+      <Textarea id={`h-${tender.id}`} rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       <div className="grid grid-cols-2 gap-2">
         <Button variant="ghost" size="lg" onClick={() => setOpen(false)}>
           Cancel
         </Button>
         <Button
           size="lg"
-          disabled={!reason.trim()}
           onClick={() => {
-            bypassHod(tender.id, reason.trim());
-            toast.success("HoD bypassed", { description: "Logged in D365. It's yours to approve or reject." });
+            askHod(tender.id, note.trim());
+            toast.success(`Sent to ${line.opsHead}`, { description: "Logged in D365. It comes back to you with their reply." });
           }}
         >
-          <FastForward /> Bypass
+          <Send /> Send to HoD
         </Button>
       </div>
     </div>
   );
 }
 
-/**
- * The approver's choices at their step. BD Head: approve (on to the Bid Head) or reject. Bid Head: approve (creates
- * the D365 opportunity and hands it to the bidding agent) or reject.
- */
-export function DecisionActions({ tender, step }: { tender: Tender; step: "bd" | "bid" }) {
+/** The BD Head's decision: approve (creates the D365 opportunity and hands it to the bidding agent) or reject. */
+export function DecisionActions({ tender }: { tender: Tender }) {
   const [comment, setComment] = useState("");
   const [needComment, setNeedComment] = useState(false);
-  const bid = PEOPLE.bid;
 
   function act(d: NonNullable<ApprovalRecord["decision"]>) {
     if (d === "Rejected" && !comment.trim()) {
@@ -324,8 +338,6 @@ export function DecisionActions({ tender, step }: { tender: Tender; step: "bd" |
     setNeedComment(false);
     if (d === "Rejected") {
       toast.success("Rejected", { description: boldD365(`Lead ${tender.lead.leadId} disqualified in D365.`) });
-    } else if (step === "bd") {
-      toast.success(`Sent to ${bid.name}, Bid Head`, { description: boldD365("Your approval is logged in D365. The Bid Head gives the final go.") });
     } else {
       toast.success("Opportunity created", {
         description: boldD365(`Lead ${tender.lead.leadId} converted to an opportunity in D365 and handed to the bidding agent.`),
@@ -343,7 +355,7 @@ export function DecisionActions({ tender, step }: { tender: Tender; step: "bd" |
         <Textarea
           id={`c-${tender.id}`}
           rows={3}
-          placeholder={step === "bd" ? "Add context for the Bid Head…" : "Add context for the bid team…"}
+          placeholder="Add context for the bid team…"
           value={comment}
           aria-invalid={needComment && !comment.trim()}
           onChange={(e) => setComment(e.target.value)}
@@ -355,17 +367,11 @@ export function DecisionActions({ tender, step }: { tender: Tender; step: "bd" |
           <X /> Reject
         </Button>
         <Button variant="success" size="lg" onClick={() => act("Approved")}>
-          <Check /> {step === "bd" ? "Approve" : "Final approve"}
+          <Check /> Approve
         </Button>
       </div>
       <p className="-mt-2 text-center text-[11px] text-muted-foreground">
-        {step === "bd" ? (
-          <>Approving sends it to {bid.name}, Bid Head, for the final go.</>
-        ) : (
-          <>
-            Approving creates the <D365 /> opportunity and hands it to the bidding agent.
-          </>
-        )}
+        Approving creates the <D365 /> opportunity and hands it to the bidding agent.
       </p>
     </div>
   );

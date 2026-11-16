@@ -197,7 +197,7 @@ export function InboxView() {
     addresses,
     tenderOf,
     toConfirm: demo.tenders.filter((t) => t.status === "Draft").length,
-    toApprove: demo.tenders.filter((t) => t.status === "Awaiting HoD" || t.status === "BD Head review" || t.status === "Bid Head approval")
+    toApprove: demo.tenders.filter((t) => t.status === "Awaiting HoD" || t.status === "BD Head review")
       .length,
   };
 
@@ -400,8 +400,8 @@ function WorkflowPanel({
           title="Managers approve"
           detail={
             aiDone && toApprove
-              ? `${toApprove} ${toApprove === 1 ? "lead" : "leads"} with HoD, BD Head or Bid Head`
-              : "HoD, then BD Head, then Bid Head"
+              ? `${toApprove} ${toApprove === 1 ? "lead" : "leads"} with Romulo or an HoD`
+              : "BD Head decides, asks an HoD if needed"
           }
           last
         />

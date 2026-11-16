@@ -3,14 +3,15 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, KeyRound, Loader2, Mail, Radar, ShieldCheck, Trophy, UserRound } from "lucide-react";
+import { ArrowRight, KeyRound, Loader2, Mail, Radar, ShieldCheck, Users, UserRound } from "lucide-react";
 import { ensureReturningMailboxes, requestScan, resetDemo, setRole, useDemo } from "@/lib/store";
-import { PEOPLE } from "@/lib/mock-data";
+import { PEOPLE, SERVICE_LINES } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 /**
- * Two sign-ins, one per persona. The Bid Analyst lands on the tender alert inbox; VP Commercial lands on the leads
- * waiting for approval.
+ * One sign-in per persona. The Bid Analyst lands on the inbox; the BD Head (VP Commercial) on the leads to decide; an
+ * HoD on the requests the BD Head sent them.
  */
 export function WelcomeView() {
   const demo = useDemo()!;
@@ -40,8 +41,14 @@ export function WelcomeView() {
     router.push("/approvals");
   }
 
-  function signInBid() {
-    setRole("bid");
+  // HoDs with a request from the BD Head waiting for them; the busiest one is preselected.
+  const openFor = (name: string) => demo.tenders.filter((t) => t.status === "Awaiting HoD" && t.opsInput?.person === name).length;
+  const busiest = [...SERVICE_LINES].sort((a, b) => openFor(b.opsHead) - openFor(a.opsHead))[0];
+  const [hodLine, setHodLine] = useState(busiest.id);
+  const hod = SERVICE_LINES.find((l) => l.id === hodLine) ?? busiest;
+
+  function signInHod() {
+    setRole("ops", hod.id);
     router.push("/approvals");
   }
 
@@ -100,20 +107,50 @@ export function WelcomeView() {
             icon={<ShieldCheck className="size-5" />}
             tone="bg-pink-100 text-pink-800"
             title="BD Head"
-            description="Review each lead after the HoD's reply, or bypass the HoD, then approve it for the Bid Head or reject it."
+            description="Approve or reject each lead. Approving creates the D365 opportunity. Ask the service line's HoD first if needed."
             footer={<p className="text-xs text-muted-foreground">Signs in as {vp.name} · VP Commercial</p>}
             onSignIn={signInVp}
           />
           <LoginCard
-            icon={<Trophy className="size-5" />}
-            tone="bg-violet-100 text-violet-800"
-            title="Bid Head"
-            description="Give the final approval, which creates the D365 opportunity and hands it to the bidding agent."
-            footer={<p className="text-xs text-muted-foreground">Signs in as {PEOPLE.bid.name}</p>}
-            onSignIn={signInBid}
+            icon={<Users className="size-5" />}
+            tone="bg-amber-100 text-amber-800"
+            title="Head of Department"
+            description={`When ${vp.name.split(" ")[0]} asks, say whether your service line is interested in bidding.`}
+            footer={
+              <div className="flex flex-wrap gap-1.5">
+                {SERVICE_LINES.map((l) => {
+                  const n = openFor(l.opsHead);
+                  return (
+                    <button
+                      key={l.id}
+                      onClick={() => setHodLine(l.id)}
+                      title={`HoD, ${l.name}`}
+                      className={cn(
+                        "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 transition-colors",
+                        hodLine === l.id
+                          ? "bg-primary text-primary-foreground ring-primary"
+                          : "bg-card text-muted-foreground ring-border hover:text-foreground",
+                      )}
+                    >
+                      {l.opsHead.split(" ")[0]}
+                      {n > 0 && (
+                        <span
+                          className={cn(
+                            "tabular rounded-full px-1.5 text-[10px]",
+                            hodLine === l.id ? "bg-white/20" : "bg-amber-100 text-amber-800",
+                          )}
+                        >
+                          {n}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            }
+            onSignIn={signInHod}
           />
         </div>
-        <p className="mt-4 text-xs text-muted-foreground">Demo sign-in · no password needed</p>
       </motion.div>
     </div>
   );

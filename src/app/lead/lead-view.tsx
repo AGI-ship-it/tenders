@@ -96,7 +96,7 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
     createLead(t.id, edits);
     const yes = aiPrequalified({ ...t, ...edits });
     toast.success(boldD365(`Lead ${t.lead.leadId} created in D365`), {
-      description: `AI pre-qualification: ${yes ? "Yes" : "No"}. Sent to the HoD (24 h), then the BD Head and Bid Head.${nextId ? " Next draft opened." : ""}`,
+      description: `AI pre-qualification: ${yes ? "Yes" : "No"}. Sent to the BD Head.${nextId ? " Next draft opened." : ""}`,
       duration: 8000,
     });
     // On to the next draft; when none are left, the screen says all drafts are reviewed.
@@ -278,7 +278,7 @@ function LeadForm({ tender: t, waiting, nextId }: { tender: Tender; waiting: num
         ) : (
           <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-[#e1dfdd] bg-white px-4 py-3 sm:px-6 [font-family:var(--font-sans)]">
             <p className="min-w-0 flex-1 text-xs text-zinc-500">
-              Creates the lead in <D365 /> with your corrections. The AI prequalifies it and sends it to the HoD (24 h), then the BD Head and Bid Head.
+              Creates the lead in <D365 /> with your corrections. The AI prequalifies it and sends it to the BD Head.
             </p>
             <Button variant="outline" size="lg" onClick={() => setDismissing(true)}>
               <Ban /> Not a tender
