@@ -177,7 +177,7 @@ function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval:
     state: "done",
     text: "Clear",
     tone: "text-emerald-700",
-    detail: `No ties found between ${tender.buyer} and AGFS staff, current clients or partners`,
+    detail: "No ties to AGFS staff, clients or partners",
   });
   if (ops) {
     rows.push({
@@ -202,14 +202,14 @@ function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval:
     note: a.decisionComment || undefined,
   });
   return (
-    <div className="rounded-xl border bg-card px-4 py-3.5 text-sm">
-      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>Lead created by {a.submittedBy}</span>
-        <span className="flex items-center gap-1">
-          <CloudUpload className="size-3.5" /> Each response logged in <D365 />
+    <div className="overflow-hidden rounded-xl border bg-card text-sm">
+      <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-4 py-2 text-[11px] text-muted-foreground">
+        <span className="truncate">Lead created by {a.submittedBy}</span>
+        <span className="flex shrink-0 items-center gap-1">
+          <CloudUpload className="size-3.5" /> Logged in <D365 />
         </span>
       </div>
-      <ol>
+      <ol className="px-4 pt-3.5 pb-1">
         {rows.map((r, i) => (
           <li key={r.role} className="flex gap-3">
             <span className="flex flex-col items-center">
@@ -218,7 +218,7 @@ function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval:
                   "grid size-6 shrink-0 place-items-center rounded-full",
                   r.state === "done" && "bg-emerald-100 text-emerald-700",
                   r.state === "rejected" && "bg-rose-100 text-rose-700",
-                  r.state === "current" && "bg-amber-100 text-amber-800 ring-2 ring-amber-300",
+                  r.state === "current" && "bg-amber-100 text-amber-800 ring-2 ring-amber-200",
                   r.state === "next" && "bg-muted text-muted-foreground",
                 )}
               >
@@ -227,19 +227,29 @@ function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval:
                 ) : r.state === "rejected" ? (
                   <X className="size-3.5" />
                 ) : (
-                  <Circle className="size-2.5 fill-current" />
+                  <Circle className="size-2 fill-current" />
                 )}
               </span>
               {i < rows.length - 1 && <span className="my-1 w-px flex-1 bg-border" />}
             </span>
-            <div className="min-w-0 flex-1 pb-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-medium">
+            <div className="min-w-0 flex-1 pb-3.5">
+              <div className="flex min-h-6 items-center justify-between gap-2">
+                <span className="truncate font-medium">
                   {r.who} <span className="text-xs font-normal text-muted-foreground">· {r.role}</span>
                 </span>
-                <span className={cn("shrink-0 text-xs", r.tone ?? "text-muted-foreground")}>{r.text}</span>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    r.state === "done" && (r.tone === "text-rose-700" ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"),
+                    r.state === "rejected" && "bg-rose-50 text-rose-700",
+                    r.state === "current" && "bg-amber-50 text-amber-800",
+                    r.state === "next" && "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {r.text}
+                </span>
               </div>
-              {r.detail && <div className="mt-0.5 text-xs text-muted-foreground">{r.detail}</div>}
+              {r.detail && <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{r.detail}</div>}
               {r.note && <div className="mt-0.5 text-xs text-muted-foreground italic">“{r.note}”</div>}
             </div>
           </li>

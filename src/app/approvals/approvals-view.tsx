@@ -306,12 +306,15 @@ function ReviewPanel({
             {tender.category}
           </div>
         </div>
-        <AiSpark label="AI pre-qualification">
-          <span className="flex items-center gap-2 font-semibold">
-            AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
-          </span>
-          <span className="block opacity-80">{tender.aiNarrative}</span>
-        </AiSpark>
+        <div className="flex shrink-0 items-center gap-2">
+          <PrequalBadge yes={aiPrequalified(tender)} />
+          <AiSpark label="AI pre-qualification">
+            <span className="flex items-center gap-2 font-semibold">
+              AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
+            </span>
+            <span className="block opacity-80">{tender.aiNarrative}</span>
+          </AiSpark>
+        </div>
       </div>
 
       <Button
