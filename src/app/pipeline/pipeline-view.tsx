@@ -136,7 +136,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
         </div>
         <FilterChips facets={facets} filters={filters} />
         <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="w-full min-w-[1040px] text-sm">
             <thead className="sticky top-0 z-10 border-b bg-zinc-50 text-left text-xs text-muted-foreground">
               <tr>
                 <SortTh sortKey="lead" sort={sort} onSort={toggleSort} className="pl-5">
@@ -145,6 +145,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                 <SortTh sortKey="priority" sort={sort} onSort={toggleSort}>
                   Tender
                 </SortTh>
+                <th className="px-3 py-3 font-bold">Buyer</th>
                 <th className="px-3 py-3 font-bold">Service</th>
                 <SortTh sortKey="deadline" sort={sort} onSort={toggleSort}>
                   Closing date
@@ -191,9 +192,11 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                         </span>
                       )}
                     </td>
-                    <td className="max-w-[360px] px-3 py-2.5" title={t.summary}>
+                    <td className="max-w-[380px] px-3 py-2.5" title={`${t.title}\n\n${t.summary}`}>
                       <div className="truncate font-medium group-hover:text-primary">{t.title}</div>
-                      <div className="truncate text-xs text-muted-foreground">{t.buyer}</div>
+                    </td>
+                    <td className="max-w-[200px] px-3 py-2.5" title={t.buyer}>
+                      <div className="truncate text-muted-foreground">{t.buyer}</div>
                     </td>
                     <td className="px-3 py-2.5 text-xs whitespace-nowrap">
                       {t.category} <span className="text-muted-foreground">· {t.emirate}</span>
@@ -233,7 +236,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="px-5 py-14 text-center text-sm text-muted-foreground">
                     No leads match these filters.
                   </td>
                 </tr>
