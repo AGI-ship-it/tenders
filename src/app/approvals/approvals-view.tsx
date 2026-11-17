@@ -306,15 +306,12 @@ function ReviewPanel({
             {tender.category}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <PrequalBadge yes={aiPrequalified(tender)} />
-          <AiSpark label="AI pre-qualification">
-            <span className="flex items-center gap-2 font-semibold">
-              AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
-            </span>
-            <span className="block opacity-80">{tender.aiNarrative}</span>
-          </AiSpark>
-        </div>
+        <AiSpark label="AI pre-qualification">
+          <span className="flex items-center gap-2 font-semibold">
+            AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
+          </span>
+          <span className="block opacity-80">{tender.aiNarrative}</span>
+        </AiSpark>
       </div>
 
       <Button
@@ -329,7 +326,7 @@ function ReviewPanel({
         <h3 className="mb-4 text-sm font-bold text-primary">Conflict check, then approval</h3>
         <DecisionPanel tender={tender} />
         {!isHod && PENDING.includes(tender.status) && (
-          <Button variant="secondary" size="lg" className="mt-3 w-full" onClick={() => openHodEmail(tender.id)}>
+          <Button size="lg" className="mt-4 w-full" onClick={() => openHodEmail(tender.id)}>
             <Mail /> Preview email to {PEOPLE.vp.name}
           </Button>
         )}

@@ -319,7 +319,7 @@
   }
   /* Main content canvas: plain light grey. */
   .app-canvas {
-    background: var(--background);
+    background: #fafafa;
   }
   /* Faint dot grid around the stepper KPIs. */
   .dot-grid {
