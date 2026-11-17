@@ -263,74 +263,79 @@ function ReviewPanel({
 }) {
   const done = isHod ? DONE_LABEL[tender.status] : undefined;
   return (
-    <div className="space-y-7 p-7">
-      {/* After VP Commercial decides: keep going through the queue without returning to the inbox. */}
-      {done && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200 ring-inset"
-        >
-          <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
-          <div className="min-w-0 flex-1 text-sm">
-            <div className="font-bold text-emerald-900">{boldD365(done)}</div>
-            <div className="text-emerald-900/80">
-              {tender.opportunity ? (
-                <>
-                  Opportunity <span className="font-mono font-semibold">{tender.opportunity.oppId}</span> handed to the bidding agent.
-                </>
-              ) : (
-                <>
-                  Lead <span className="font-mono font-semibold">{tender.lead.leadId}</span> {tender.lead.state.toLowerCase()} in <D365 />.
-                </>
-              )}
+    <div className="flex min-h-full flex-col">
+      <div className="flex-1 space-y-7 p-7">
+        {/* After VP Commercial decides: keep going through the queue without returning to the inbox. */}
+        {done && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200 ring-inset"
+          >
+            <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
+            <div className="min-w-0 flex-1 text-sm">
+              <div className="font-bold text-emerald-900">{boldD365(done)}</div>
+              <div className="text-emerald-900/80">
+                {tender.opportunity ? (
+                  <>
+                    Opportunity <span className="font-mono font-semibold">{tender.opportunity.oppId}</span> handed to the bidding agent.
+                  </>
+                ) : (
+                  <>
+                    Lead <span className="font-mono font-semibold">{tender.lead.leadId}</span> {tender.lead.state.toLowerCase()} in <D365 />
+                    .
+                  </>
+                )}
+              </div>
+              <div className="text-emerald-900/80">{remaining ? `${remaining} more waiting for you` : "You're all caught up."}</div>
             </div>
-            <div className="text-emerald-900/80">{remaining ? `${remaining} more waiting for you` : "You're all caught up."}</div>
-          </div>
-          {next && (
-            <Button variant="success" size="lg" onClick={() => onOpen(next.id)}>
-              Review next <ArrowRight />
-            </Button>
-          )}
-        </motion.div>
-      )}
+            {next && (
+              <Button variant="success" size="lg" onClick={() => onOpen(next.id)}>
+                Review next <ArrowRight />
+              </Button>
+            )}
+          </motion.div>
+        )}
 
-      <div className="flex items-start gap-3 pr-8">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-lg leading-tight font-bold tracking-tight text-primary">{tender.title}</h2>
-          <div className="mt-1.5 text-sm text-muted-foreground">
-            {tender.buyer} · {tender.emirate}
+        <div className="flex items-start gap-3 pr-8">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg leading-tight font-bold tracking-tight text-primary">{tender.title}</h2>
+            <div className="mt-1.5 text-sm text-muted-foreground">
+              {tender.buyer} · {tender.emirate}
+            </div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              <span className="font-mono">{tender.id}</span> · lead <span className="font-mono">{tender.lead.leadId}</span> ·{" "}
+              {tender.category}
+            </div>
           </div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            <span className="font-mono">{tender.id}</span> · lead <span className="font-mono">{tender.lead.leadId}</span> ·{" "}
-            {tender.category}
-          </div>
+          <AiSpark label="AI pre-qualification">
+            <span className="flex items-center gap-2 font-semibold">
+              AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
+            </span>
+            <span className="block opacity-80">{tender.aiNarrative}</span>
+          </AiSpark>
         </div>
-        <AiSpark label="AI pre-qualification">
-          <span className="flex items-center gap-2 font-semibold">
-            AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
-          </span>
-          <span className="block opacity-80">{tender.aiNarrative}</span>
-        </AiSpark>
+
+        <Button
+          variant="link"
+          nativeButton={false}
+          render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}
+        >
+          Open full lead and AI reasoning <ArrowUpRight />
+        </Button>
+
+        <div className="rounded-xl bg-muted/30 p-5">
+          <h3 className="mb-4 text-sm font-bold text-primary">Conflict check, then approval</h3>
+          <DecisionPanel tender={tender} />
+        </div>
       </div>
-
-      <Button
-        variant="link"
-        nativeButton={false}
-        render={<Link href={`/opportunity?id=${encodeURIComponent(tender.id)}&from=approvals`} />}
-      >
-        Open full lead and AI reasoning <ArrowUpRight />
-      </Button>
-
-      <div className="rounded-xl bg-muted/30 p-5">
-        <h3 className="mb-4 text-sm font-bold text-primary">Conflict check, then approval</h3>
-        <DecisionPanel tender={tender} />
-        {!isHod && PENDING.includes(tender.status) && (
-          <Button size="lg" className="mt-4 w-full" onClick={() => openHodEmail(tender.id)}>
+      {!isHod && PENDING.includes(tender.status) && (
+        <div className="sticky bottom-0 border-t bg-background/90 px-7 py-4 backdrop-blur">
+          <Button size="lg" className="w-full" onClick={() => openHodEmail(tender.id)}>
             <Mail /> Preview email to {PEOPLE.vp.name}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
