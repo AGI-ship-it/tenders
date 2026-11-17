@@ -22,7 +22,7 @@ export function MailboxTag({ address, className }: { address: string; className?
     <span
       title={`Arrived in ${address}`}
       className={cn(
-        "inline-flex shrink-0 items-center rounded px-1.5 py-px font-mono text-[10px] font-medium ring-1 ring-inset",
+        "inline-flex shrink-0 items-center rounded px-1.5 py-px tabular-nums text-[10px] font-medium ring-1 ring-inset",
         tone,
         className,
       )}
@@ -149,7 +149,7 @@ function PortalNotice({ t, from }: { t: Tender; from: string }) {
             {[
               [
                 "Tender no.",
-                <span key="r" className="font-mono">
+                <span key="r" className="tabular-nums">
                   {t.sourceRef}
                 </span>,
               ],

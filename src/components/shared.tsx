@@ -20,7 +20,7 @@ export function StatusBadge({ status: workflow, className }: { status: TenderSta
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium",
         STATUS_STYLE[status],
         className,
       )}
@@ -36,7 +36,7 @@ export function PrequalBadge({ yes, className }: { yes: boolean; className?: str
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold",
         // Muted sage and soft coral rather than the stock green and red.
         yes
           ? "bg-[#EAF4EE] text-[#2E6B4F] ring-[#C9E2D3] dark:bg-[#1F3329] dark:text-[#9FD3B5] dark:ring-[#2F4D3D]"

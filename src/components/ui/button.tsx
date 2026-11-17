@@ -7,7 +7,7 @@ import { cn } from "cn"
  * heights, radii or colours in className so buttons stay aligned with the future design system.
  *
  * Variants (emphasis, high to low):
- *   default      Primary action on a surface. One per area (Export CSV, Prequalify, Open on portal).
+ *   default      Primary action on a surface. One per area (Export, Prequalify, Open on portal).
  *   success      Positive decision that completes a workflow step (VP Commercial approves for bidding).
  *   secondary    White with a purple border and purple label: supporting actions such as Filter.
  *   outline      Neutral bordered: Cancel, Sources.
@@ -15,15 +15,14 @@ import { cn } from "cn"
  *   destructive  Soft red: reject or remove.
  *   link         Inline text action.
  *
- * Sizes (one scale, shared radius): xs 28 · sm 32 · default 36 · lg 40 · xl 48 px tall;
+ * Sizes (one scale, fully rounded): xs 28 · sm 32 · default 36 · lg 40 · xl 48 px tall;
  * Page and toolbar actions use lg (40) so buttons side by side line up; default is for dialogs and compact panels.
  * icon-sm 32 · icon 36 · icon-lg 40 px square.
  *
- * Icons: leading for the action itself (Sparkles Run AI Scan, Plus Add source);
- * trailing when the icon says where it goes (external link, download, filter menu).
+ * Icons: always shown after the label (the button puts any direct icon child last).
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-semibold whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-semibold whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&>svg]:order-last [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -44,7 +43,7 @@ const buttonVariants = cva(
         sm: "h-8 gap-1.5 px-3 text-[13px] [&_svg:not([class*='size-'])]:size-3.5",
         default: "h-9 gap-2 px-3.5",
         lg: "h-10 gap-2 px-4",
-        xl: "h-12 gap-2 rounded-xl px-6 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        xl: "h-12 gap-2 px-6 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
         "icon-sm": "size-8",
         icon: "size-9",
         "icon-lg": "size-10",

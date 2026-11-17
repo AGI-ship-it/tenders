@@ -4,7 +4,20 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { AlertTriangle, ArrowRight, BadgeCheck, Check, Copy, FileText, Inbox, Layers, Mail, Search, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  Copy,
+  FileText,
+  Inbox,
+  Layers,
+  Mail,
+  RotateCw,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { clearPendingScan, peekPendingScan, useDemo } from "@/lib/store";
@@ -13,7 +26,8 @@ import { aiPrequalified, fitScore } from "@/lib/scoring";
 import { daysUntil, formatDate, formatTime, isToday } from "@/lib/format";
 import type { MailboxConnection, Tender, TenderAction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PrequalBadge, boldD365 } from "@/components/shared";
+import { boldD365 } from "@/components/shared";
+import { AiStar, FitPill } from "@/components/fit-pill";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { EmailView } from "@/components/email-view";
 import { MailboxOnboarding } from "@/components/mailbox-connect";
@@ -76,7 +90,7 @@ const isTenderMail = (m: MailItem) => m.kind === "tender" || m.kind === "possibl
 /**
  * Screen 1 · the agent reads the shared sales mailbox. Emails fly from the incoming stack into lanes: tenders (which
  * become D365 leads), tenders that are already leads, and everyday mail it leaves alone. On each tender it pulls out the
- * details, stamps the new lead number and the AI pre-qualification. Runs on sign-in; "Run again" replays it.
+ * details, stamps the new lead number and the AI pre-qualification. Runs on sign-in; "Scan again" replays it.
  */
 export function InboxView() {
   const demo = useDemo()!;
@@ -220,23 +234,24 @@ export function InboxView() {
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
-      <header className="shrink-0 border-b px-4 py-3.5 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-              <Mail className="size-4" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-base font-bold text-primary">Tenders found in your emails</h2>
-              <RunSummary mail={mail} tenderOf={tenderOf} />
+      <header className="shrink-0 border-b px-4 py-3 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+              <h2 className="text-lg leading-snug font-bold tracking-tight text-primary">Tenders found in your emails</h2>
+              <span className="flex items-center gap-1.5 text-xs text-foreground/70">
+                <AiStar className="size-3 text-primary" />
+                Scanned at sign-in{demo.lastScanAt ? ` · ${formatTime(demo.lastScanAt)}` : ""}
+              </span>
             </div>
+            <RunSummary mail={mail} tenderOf={tenderOf} />
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="lg" nativeButton={false} render={<Link href="/settings" />}>
-              <Mail /> Emails · {addresses.length} connected
+              <Mail /> {addresses.length} inbox{addresses.length === 1 ? "" : "es"} connected
             </Button>
             <Button size="lg" onClick={() => start()}>
-              <Sparkles /> Run again
+              <RotateCw /> Scan again
             </Button>
           </div>
         </div>
@@ -623,18 +638,20 @@ function Results({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#fafafa] lg:flex-row dark:bg-transparent">
       {/* Left: the drafts the AI prepared, one selected. */}
-      <aside className="flex shrink-0 flex-col border-b lg:min-h-0 lg:w-[380px] lg:border-r lg:border-b-0 xl:w-[420px]">
+      <aside className="flex shrink-0 flex-col lg:min-h-0 lg:w-[380px] xl:w-[420px]">
         <div className="shrink-0 space-y-3 px-4 pt-4 pb-2">
-          <h3 className="text-xs font-bold tracking-wide text-primary uppercase">
-            Lead drafts{" "}
-            <span className="text-[11px] font-semibold tracking-normal text-muted-foreground normal-case">
-              ({toReview ? `${toReview} to review` : "all reviewed"})
-            </span>
-          </h3>
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-xs font-medium text-primary">Lead drafts</h3>
+            <span className="text-xs text-muted-foreground">{toReview ? `${toReview} to review` : "All reviewed"}</span>
+          </div>
           {addresses.length > 1 && (
-            <div role="tablist" aria-label="Mailbox" className="flex flex-wrap gap-1.5">
+            <div
+              role="tablist"
+              aria-label="Mailbox"
+              className="grid auto-cols-fr grid-flow-col gap-1 rounded-full bg-card p-1 ring-1 ring-black/[0.05] shadow-[0_1px_2px_rgb(16_24_40/0.04),0_4px_12px_-4px_rgb(16_24_40/0.06)] dark:ring-white/10"
+            >
               {[null, ...addresses].map((a) => {
                 const n = a ? allMail.filter((m) => m.mailbox === a).length : allMail.length;
                 const active = shown === a;
@@ -645,20 +662,18 @@ function Results({
                     aria-selected={active}
                     onClick={() => setBox(a)}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
-                      active
-                        ? "bg-primary text-primary-foreground ring-primary"
-                        : "bg-card text-muted-foreground ring-border hover:text-foreground",
+                      "flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors",
+                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-primary/[0.07] hover:text-primary",
                     )}
                   >
                     {a ? (
-                      <span className="font-mono" title={a}>
+                      <span className="tabular-nums" title={a}>
                         {shortMailbox(a)}
                       </span>
                     ) : (
                       "All"
                     )}
-                    <span className={cn("tabular rounded-full px-1.5 text-[10px]", active ? "bg-white/20" : "bg-muted")}>{n}</span>
+                    <span className={cn("tabular text-[11px]", active ? "text-white/70" : "text-muted-foreground/70")}>{n}</span>
                   </button>
                 );
               })}
@@ -691,7 +706,7 @@ function Results({
       </aside>
 
       {/* Right: the selected draft, to check and create in D365. */}
-      <div className="flex min-h-[640px] min-w-0 flex-1 flex-col lg:min-h-0">
+      <div className="m-4 flex min-h-[640px] min-w-0 flex-1 flex-col overflow-hidden rounded-3xl bg-card ring-1 ring-black/[0.035] shadow-[0_1px_2px_rgb(16_24_40/0.03),0_8px_24px_-8px_rgb(16_24_40/0.06)] lg:min-h-0 lg:ml-0 dark:ring-white/10">
         {selected ? (
           <LeadForm
             key={selected.id}
@@ -699,6 +714,19 @@ function Results({
             waiting={waiting}
             onDone={next}
             onOpenEmail={mailOf(selected.id) ? () => onOpen(mailOf(selected.id)!.id) : undefined}
+            emailSubject={mailOf(selected.id)?.subject}
+            position={{
+              index: Math.max(
+                0,
+                leads.findIndex((x) => x.t.id === selected.id),
+              ),
+              total: leads.length,
+              go: (d: number) => {
+                const i = leads.findIndex((x) => x.t.id === selected.id);
+                const to = leads[(i + d + leads.length) % leads.length];
+                if (to) select(to.t.id);
+              },
+            }}
           />
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 p-10 text-center text-sm text-muted-foreground">
@@ -772,7 +800,7 @@ function AllDone({ created, dismissed, linked, onRun }: { created: number; dismi
             Open Lead pipeline <ArrowRight />
           </Button>
           <Button variant="outline" size="lg" onClick={onRun}>
-            <Sparkles /> Run again
+            <RotateCw /> Scan again
           </Button>
         </div>
       </div>
@@ -791,33 +819,37 @@ function DraftItem({ m, t, on, onSelect }: { m: MailItem; t: Tender; on: boolean
       <TooltipTrigger
         render={<button onClick={onSelect} aria-current={on || undefined} />}
         className={cn(
-          "relative w-full rounded-xl px-4 py-3.5 text-left ring-1 transition-all",
-          on ? "bg-primary/[0.06] shadow-soft ring-primary/40" : "bg-card ring-border hover:shadow-soft hover:ring-primary/25",
+          "relative w-full rounded-2xl px-4 py-3 text-left ring-1 transition-all",
+          on ? "bg-card ring-2 ring-primary/70 shadow-[0_1px_2px_rgb(16_24_40/0.04),0_4px_12px_-4px_rgb(16_24_40/0.06)]" : "bg-card ring-black/[0.05] shadow-[0_1px_2px_rgb(16_24_40/0.04),0_4px_12px_-4px_rgb(16_24_40/0.06)] hover:ring-primary/25 dark:ring-white/10",
           (created || dismissed) && !on && "opacity-60",
         )}
       >
-        {on && <span aria-hidden className="absolute inset-y-3 left-0 w-[3px] rounded-r-full bg-magenta" />}
         <span className="flex items-center gap-2">
           {m.kind === "possible" && !created && !dismissed && <AlertTriangle className="size-3.5 shrink-0 text-amber-600" />}
-          <span className={cn("min-w-0 flex-1 truncate text-[13px] font-semibold", on ? "text-primary" : "text-foreground")}>
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate text-sm leading-snug font-medium",
+              on ? "text-primary" : "text-foreground",
+            )}
+          >
             {t.title}
           </span>
-          <PrequalBadge yes={aiPrequalified(t)} className="shrink-0" />
         </span>
-        <span className="mt-1.5 flex min-w-0 items-center gap-3 text-xs text-muted-foreground">
-          <span className="min-w-0 flex-1 truncate">{t.buyer}</span>
+        <span className="mt-0.5 block truncate text-[13px] text-muted-foreground/80">{t.buyer}</span>
+        <span className="mt-2.5 flex items-center justify-between gap-3 text-xs font-normal">
+          <FitPill t={t} />
           {created ? (
             <span className="flex shrink-0 items-center gap-0.5 font-medium text-emerald-700">
               <Check className="size-3" /> {t.lead.leadId}
             </span>
           ) : dismissed ? (
-            <span className="shrink-0">Not a tender</span>
+            <span className="shrink-0 text-muted-foreground">Not a tender</span>
           ) : next ? (
-            <span className={cn("shrink-0", soon && "font-medium text-amber-700")}>
+            <span className={cn("shrink-0", soon ? "text-red-700 dark:text-red-400" : "text-foreground/70")}>
               {DEADLINE_VERB[next.kind]} {new Date(next.due!).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
             </span>
           ) : (
-            <span className="shrink-0">No dates</span>
+            <span className="shrink-0 text-muted-foreground">No dates</span>
           )}
         </span>
       </TooltipTrigger>
@@ -844,7 +876,7 @@ function RunSummary({ mail, tenderOf }: { mail: MailItem[]; tenderOf: (m: MailIt
   const yes = tenders.filter(aiPrequalified).length;
   const dups = mail.filter((m) => m.kind === "duplicate").length;
   return (
-    <p className="truncate text-xs text-muted-foreground">
+    <p className="mt-0.5 truncate text-[13px] text-foreground/70">
       {mail.length} emails read · <b className="font-semibold text-foreground">{tenders.length} lead drafts</b> · {yes} pre-qualified ·{" "}
       {dups} already a lead
     </p>

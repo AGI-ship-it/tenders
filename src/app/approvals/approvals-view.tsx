@@ -91,7 +91,6 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
   const routed = demo.tenders.filter((t) => t.approval && (!asHod || t.opsInput?.person === vp.name));
   const myStatuses: Tender["status"][] = asHod ? ["Awaiting HoD"] : ["BD Head review"];
   const mine = routed;
-  const notSubmitted = demo.tenders.filter((t) => t.status === "Draft").length;
   const myAwaiting = mine.filter((t) => myStatuses.includes(t.status)).length;
   const selected = demo.tenders.find((t) => t.id === selectedId);
   const focused = demo.tenders.find((t) => t.id === focusId);
@@ -212,7 +211,6 @@ export function ApprovalsView({ embedded = false }: { embedded?: boolean }) {
           showHod
           mine={isHod ? myStatuses : undefined}
           tabs={tabs}
-          notSubmitted={isHod ? undefined : notSubmitted}
         />
       ) : (
         <EmptyState text="No leads have been created in D365 yet." />
@@ -278,11 +276,11 @@ function ReviewPanel({
               <div className="text-emerald-900/80">
                 {tender.opportunity ? (
                   <>
-                    Opportunity <span className="font-mono font-semibold">{tender.opportunity.oppId}</span> handed to the bidding agent.
+                    Opportunity <span className="tabular-nums font-semibold">{tender.opportunity.oppId}</span> handed to the bidding agent.
                   </>
                 ) : (
                   <>
-                    Lead <span className="font-mono font-semibold">{tender.lead.leadId}</span> {tender.lead.state.toLowerCase()} in <D365 />
+                    Lead <span className="tabular-nums font-semibold">{tender.lead.leadId}</span> {tender.lead.state.toLowerCase()} in <D365 />
                     .
                   </>
                 )}
@@ -304,7 +302,7 @@ function ReviewPanel({
               {tender.buyer} · {tender.emirate}
             </div>
             <div className="mt-0.5 text-xs text-muted-foreground">
-              <span className="font-mono">{tender.id}</span> · lead <span className="font-mono">{tender.lead.leadId}</span> ·{" "}
+              <span className="tabular-nums">{tender.id}</span> · lead <span className="tabular-nums">{tender.lead.leadId}</span> ·{" "}
               {tender.category}
             </div>
           </div>
@@ -401,7 +399,6 @@ function Register({
   selectedId,
   highlightId,
   mine,
-  notSubmitted,
   tabs,
 }: {
   tenders: Tender[];
@@ -413,8 +410,6 @@ function Register({
   /** The signed-in approver's own step(s): those rows are marked "Your step". */
   mine?: Tender["status"][];
   tabs?: React.ReactNode;
-  /** Drafts not yet created as leads; linked in the toolbar. */
-  notSubmitted?: number;
 }) {
   const [q, setQ] = useState("");
   const filters = useTableFilters();
@@ -449,14 +444,9 @@ function Register({
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <TableHeader title="Approval register" count={sorted.length} search={q} onSearch={setQ} tabs={tabs}>
-          {notSubmitted ? (
-            <Link href="/inbox" className="px-1 text-xs text-muted-foreground hover:text-primary">
-              {notSubmitted} draft{notSubmitted === 1 ? "" : "s"} still to review →
-            </Link>
-          ) : null}
           <FilterMenu facets={facets} filters={filters} />
           <Button size="lg" onClick={() => exportCsv(sorted)} disabled={!sorted.length}>
-            Export CSV <Download />
+            Export <Download />
           </Button>
         </TableHeader>
         <FilterChips facets={facets} filters={filters} />
@@ -507,11 +497,11 @@ function Register({
                     )}
                   >
                     <td className="py-3 pr-3 pl-5 whitespace-nowrap">
-                      <span className="font-mono text-xs text-muted-foreground">{t.id}</span>
+                      <span className="tabular-nums text-xs text-muted-foreground">{t.id}</span>
                     </td>
                     <td className="max-w-[320px] px-3 py-3">
                       <div className="truncate font-medium">{t.title}</div>
-                      <div className="truncate text-xs text-muted-foreground">{t.buyer}</div>
+                      <div className="mt-1 truncate text-xs text-muted-foreground">{t.buyer}</div>
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {formatDate(t.deadline)}
@@ -547,9 +537,9 @@ function Register({
                       title={t.opportunity ? `Opportunity · from ${t.lead.leadId}` : `Lead · ${t.lead.state}`}
                     >
                       {t.opportunity ? (
-                        <span className="font-mono text-xs font-medium text-emerald-700">{t.opportunity.oppId}</span>
+                        <span className="tabular-nums text-xs font-medium text-emerald-700">{t.opportunity.oppId}</span>
                       ) : (
-                        <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
+                        <span className="tabular-nums text-xs font-medium text-teal-700">{t.lead.leadId}</span>
                       )}
                     </td>
                   </tr>
@@ -621,8 +611,8 @@ function HodTracker({ tenders, onOpen, tabs }: { tenders: Tender[]; onOpen: (id:
                   </td>
                   <td className="max-w-[300px] px-3 py-3">
                     <div className="truncate font-medium">{t.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-mono">{t.lead.leadId}</span> · {t.buyer}
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      <span className="tabular-nums">{t.lead.leadId}</span> · {t.buyer}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-xs whitespace-nowrap text-muted-foreground">{formatDateTime(o.askedAt)}</td>

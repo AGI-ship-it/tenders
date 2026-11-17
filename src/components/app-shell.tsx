@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, FlaskConical, LogOut, Menu, Monitor, Moon, Radar, RotateCcw, Settings, Sun } from "lucide-react";
+import { ChevronDown, FlaskConical, LogOut, Menu, Monitor, Moon, RotateCcw, Settings, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useDemo, resetDemo } from "@/lib/store";
 import { actingPerson } from "@/lib/mock-data";
+import { AiStar } from "@/components/fit-pill";
 import { STEP_ROUTES, StepTabs } from "@/components/step-tabs";
 import { HodEmailHost } from "@/components/hod-email";
 import type { Role } from "@/lib/types";
@@ -22,15 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /** Screens only the Bid Analyst uses; VP Commercial signed in is sent to Approvals instead. */
 const ANALYST_ONLY = ["/sources", "/onboarding", "/pipeline", "/portals", "/inbox", "/lead", "/settings"];
@@ -73,12 +66,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
         <div className="mx-auto flex h-13 w-full max-w-[1320px] items-center gap-2 px-4 sm:gap-4 sm:px-6 lg:px-10">
           <Link href={isHod ? "/approvals" : "/inbox"} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-            <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <Radar className="size-5" />
+            <div className="grid size-9 place-items-center rounded-[10px] bg-primary text-primary-foreground">
+              <AiStar className="size-4" />
             </div>
             <div className="leading-tight">
-              <div className="text-[13px] font-semibold tracking-tight">AGFS Tender</div>
-              <div className="text-[13px] font-semibold tracking-tight text-primary">Intelligence</div>
+              <div className="text-sm font-bold tracking-tight">AGFS Tender</div>
+              <div className="text-sm font-medium tracking-tight text-muted-foreground">Intelligence</div>
             </div>
           </Link>
           <nav data-main-nav className="ml-6 hidden items-center gap-1 md:flex">
@@ -114,7 +107,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className={cn("app-canvas flex-1 px-3 py-4 sm:px-6 sm:py-8 lg:px-10", fill && "lg:flex lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:pb-6")}>
+      <main
+        className={cn(
+          "app-canvas flex-1 px-3 py-4 sm:px-6 sm:py-8 lg:px-10",
+          fill && "lg:flex lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:pb-6",
+        )}
+      >
         <div className={cn("mx-auto w-full max-w-[1320px]", fill && "flex flex-col lg:min-h-[520px] lg:flex-1")}>
           {demo && !blocked ? (
             <>
@@ -231,9 +229,7 @@ function ProfileMenu({ role, opsLine }: { role: Role; opsLine?: string }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={
-            <button className="flex items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 text-left transition-colors hover:bg-muted" />
-          }
+          render={<button className="flex items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 text-left transition-colors hover:bg-muted" />}
         >
           <span
             className={cn(
@@ -273,7 +269,9 @@ function ProfileMenu({ role, opsLine }: { role: Role; opsLine?: string }) {
             className={MENU_ITEM}
             onClick={() => {
               router.push("/");
-              toast("Logged out", { description: "Sign in as the Bid Analyst or VP Commercial. Your demo progress is saved in this browser." });
+              toast("Logged out", {
+                description: "Sign in as the Bid Analyst or VP Commercial. Your demo progress is saved in this browser.",
+              });
             }}
           >
             <LogOut /> Log out

@@ -109,7 +109,7 @@ export function TenderDetail() {
 
       {/* Key facts, as listed on the portal */}
       <dl className="grid shrink-0 grid-cols-2 gap-px border-y bg-border md:grid-cols-4">
-        <Fact label="Tender ID" value={<span className="font-mono">{tender.sourceRef}</span>} sub={`AGFS ref ${tender.id}`} />
+        <Fact label="Tender ID" value={<span className="tabular-nums">{tender.sourceRef}</span>} sub={`AGFS ref ${tender.id}`} />
         <Fact label="Bidding opens" value={formatDate(tender.publishedAt)} sub={source?.name} />
         <Fact
           label="Due date"

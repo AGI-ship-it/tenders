@@ -591,7 +591,7 @@ function briefTender(b: Brief, nowISO: string): Tender {
 }
 
 /**
- * What each successive discovering scan finds. The first batch is the original three; "Run again" works through
+ * What each successive discovering scan finds. The first batch is the original three; "Scan again" works through
  * the later batches, after which scans find nothing new.
  */
 export function scanBatches(nowISO: string): Tender[][] {

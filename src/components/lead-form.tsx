@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Ban, CheckCircle2, ChevronDown, Mail, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Mail, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { createLead, dismissDraft, useDemo, type LeadEdits } from "@/lib/store";
 import { aiPrequalified } from "@/lib/scoring";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { channelOf, mailboxOfTender, senderOf } from "@/lib/mailbox";
 import { Button } from "@/components/ui/button";
 import { boldD365 } from "@/components/shared";
-import { AiSpark } from "@/components/ai-spark";
+import { AiStar, FitPill } from "@/components/fit-pill";
 
 const CATEGORIES: Category[] = [
   "Integrated FM",
@@ -36,6 +36,8 @@ export function LeadForm({
   waiting,
   onDone,
   onOpenEmail,
+  emailSubject,
+  position,
 }: {
   tender: Tender;
   /** Other drafts still to review. */
@@ -43,6 +45,9 @@ export function LeadForm({
   /** Called after the draft is created or dismissed, to move on to the next one. */
   onDone: () => void;
   onOpenEmail?: () => void;
+  emailSubject?: string;
+  /** Where this draft sits in the list, with previous / next. */
+  position?: { index: number; total: number; go: (delta: number) => void };
 }) {
   const demo = useDemo()!;
   const sender = senderOf(
@@ -89,61 +94,82 @@ export function LeadForm({
 
   return (
     <div className="@container flex min-h-0 flex-1 flex-col bg-card text-foreground">
-      {/* Command bar */}
-      <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border bg-card px-3 text-[13px] text-foreground/90">
-        {onOpenEmail && (
-          <button onClick={onOpenEmail} className="flex items-center gap-1.5 rounded px-2.5 py-1.5 hover:bg-muted">
-            <Mail className="size-4 text-primary" /> View email
+      {/* The email it came from, and previous / next through the drafts */}
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-black/[0.04] dark:border-white/[0.06] px-4 text-[13px] @2xl:px-6">
+        {onOpenEmail ? (
+          <button
+            onClick={onOpenEmail}
+            title="View email"
+            className="flex min-w-0 items-center gap-2 text-[13px] text-muted-foreground transition-colors hover:text-primary"
+          >
+            <Mail className="size-4 shrink-0" />
+            <span className="truncate">{emailSubject ?? "View email"}</span>
           </button>
+        ) : (
+          <span />
         )}
-        {draft && (
-          <span className="ml-auto pr-2 text-xs text-muted-foreground">
-            {waiting ? `${waiting} more draft${waiting === 1 ? "" : "s"} to review` : "Last draft to review"}
+        {position && position.total > 1 && (
+          <span className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
+            <button
+              onClick={() => position.go(-1)}
+              aria-label="Previous draft"
+              className="rounded p-1 hover:bg-muted hover:text-foreground"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="tabular-nums">
+              {position.index + 1} of {position.total}
+            </span>
+            <button onClick={() => position.go(1)} aria-label="Next draft" className="rounded p-1 hover:bg-muted hover:text-foreground">
+              <ChevronRight className="size-4" />
+            </button>
           </span>
         )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Record header */}
-        <div className="relative border-b border-border bg-card px-4 py-4 pr-14 @2xl:px-5 @2xl:pr-16">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold text-primary">{f.title || "Untitled lead"}</h1>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                {draft ? "Lead draft · not in D365 yet" : dismissed ? "Draft dismissed · not a tender" : `Lead · ${t.lead.state}`}
-              </div>
-            </div>
-            <dl className="flex flex-wrap gap-x-8 gap-y-2 text-[13px]">
-              <HeaderField
-                label="Lead number"
-                value={
-                  draft || dismissed ? (
-                    <span className="font-normal text-muted-foreground">Given on create</span>
-                  ) : (
-                    <span className="font-mono">{t.lead.leadId}</span>
-                  )
-                }
-              />
-              <HeaderField label="Date bid received" value={formatDate(t.discoveredAt)} />
-              <HeaderField
-                label={draft || dismissed ? "Prepared by" : "Created by"}
-                value={draft || dismissed ? "AI agent" : t.lead.createdBy}
-              />
-              <HeaderField label="Owner" value={t.lead.owner} />
-            </dl>
-            {draft && (
-              <AiSpark label="How the AI prepared this draft" className="absolute top-4 right-4 @2xl:right-5">
-                <span className="block font-semibold">Draft prepared by the AI from {mailboxOfTender(t, demo.mailboxes)}</span>
-                <span className="block opacity-80">
-                  From the email {sender.name} sent {formatDateTime(t.discoveredAt)}. Check the details it filled in, correct anything, then
-                  create the lead. Nothing is in D365 until you do.
-                </span>
-              </AiSpark>
-            )}
+        <div className="px-4 pt-6 pb-2 @2xl:px-6">
+          <div className="flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground">
+            <FitPill t={t} />
+            {draft ? "Lead draft · not in D365 yet" : dismissed ? "Draft dismissed · not a tender" : `Lead · ${t.lead.state}`}
           </div>
+          <h1 className="mt-3 text-xl leading-tight font-bold tracking-tight text-primary">
+            {f.title || "Untitled lead"}
+          </h1>
+          <div className="mt-1 text-[15px] text-muted-foreground">{f.buyer}</div>
+          <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm @2xl:grid-cols-4">
+            <HeaderField
+              label="Lead number"
+              value={
+                draft || dismissed ? (
+                  <span className="font-normal text-muted-foreground">Given on create</span>
+                ) : (
+                  <span className="tabular-nums">{t.lead.leadId}</span>
+                )
+              }
+            />
+            <HeaderField label="Bid received" value={formatDate(t.discoveredAt)} />
+            <HeaderField
+              label={draft || dismissed ? "Prepared by" : "Created by"}
+              value={
+                draft || dismissed ? (
+                  <span
+                    className="flex items-center gap-1.5"
+                    title={`From the email ${sender.name} sent to ${mailboxOfTender(t, demo.mailboxes)}`}
+                  >
+                    <AiStar className="size-3.5 text-primary" /> AI agent
+                  </span>
+                ) : (
+                  t.lead.createdBy
+                )
+              }
+            />
+            <HeaderField label="Owner" value={t.lead.owner} />
+          </dl>
         </div>
 
-        <div className="space-y-4 p-4 @2xl:p-5">
+        <div className="space-y-8 px-4 pt-6 pb-6 @2xl:px-6">
           {draft ? null : dismissed ? (
             <div className="flex items-center gap-3 rounded-md bg-muted px-4 py-3 text-sm text-foreground/90 ring-1 ring-border">
               <Ban className="size-4 shrink-0" />
@@ -161,7 +187,7 @@ export function LeadForm({
             </div>
           )}
 
-          <div className="grid gap-4 @3xl:grid-cols-2">
+          <div className="grid gap-8 @3xl:grid-cols-2 @3xl:gap-x-10">
             <Section title="Tender details">
               <Field label="Topic" ai edited={edited("title")}>
                 <TextInput value={f.title} onChange={(v) => set("title", v)} disabled={!draft} />
@@ -191,31 +217,31 @@ export function LeadForm({
               </Field>
             </Section>
 
-            <div className="space-y-4">
+            <div className="space-y-8">
               <Section title="Dates">
-                <Field label="Date bid received">
+                <Field label="Bid received">
                   <ReadOnly>{formatDate(t.discoveredAt)}</ReadOnly>
                 </Field>
-                <Field label="Opening date" ai edited={edited("publishedAt")}>
+                <Field label="Opening" ai edited={edited("publishedAt")}>
                   <TextInput type="date" value={f.publishedAt} onChange={(v) => set("publishedAt", v)} disabled={!draft} />
                 </Field>
-                <Field label="Closing date" ai edited={edited("deadline")}>
+                <Field label="Closing" ai edited={edited("deadline")}>
                   <TextInput type="date" value={f.deadline} onChange={(v) => set("deadline", v)} disabled={!draft} />
                 </Field>
               </Section>
 
-              <Section title="Scope">
-                <div className="px-4 py-3">
+              <Section title="Scope" ai hint="summarised by AI">
+                <div className="py-1">
                   <textarea
                     value={f.summary}
                     disabled={!draft}
                     onChange={(e) => set("summary", e.target.value)}
                     rows={4}
-                    className="w-full resize-y rounded border border-input bg-card px-2.5 py-1.5 text-[13px] outline-none focus:border-ring focus:ring-1 focus:ring-ring disabled:border-transparent disabled:bg-muted"
+                    className="w-full resize-y rounded-md bg-transparent px-0 py-1 text-[13px] leading-relaxed outline-none focus:ring-1 focus:ring-ring"
                   />
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] text-muted-foreground">
-                    {t.scope.map((s) => (
-                      <li key={s}>{s}</li>
+                  <ul className="mt-2 list-disc space-y-1 pr-1 pl-6 text-[13px] text-muted-foreground">
+                    {t.scope.map((x) => (
+                      <li key={x}>{x}</li>
                     ))}
                   </ul>
                 </div>
@@ -224,7 +250,7 @@ export function LeadForm({
           </div>
 
           <Section title="Actions found by the AI" hint={lowConfidence ? `${lowConfidence} to check` : `${t.actions.length} items`}>
-            <ul className="divide-y divide-border">
+            <ul className="space-y-1">
               {t.actions.map((a) => (
                 <ActionRow key={a.id} a={a} />
               ))}
@@ -236,7 +262,7 @@ export function LeadForm({
       {/* Push bar: create the lead in D365, or dismiss the draft */}
       {draft &&
         (dismissing ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-border bg-card px-4 py-3 sm:px-6">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-black/[0.04] dark:border-white/[0.06] bg-card px-4 py-3 sm:px-6">
             <span className="mr-1 text-sm font-semibold">Why is it not a tender?</span>
             {["Newsletter or marketing", "Supplier offer", "Existing contract mail", "Already a lead", "Other"].map((r) => (
               <button
@@ -252,7 +278,7 @@ export function LeadForm({
             </Button>
           </div>
         ) : (
-          <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border bg-card px-4 py-3 sm:px-6">
+          <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-black/[0.04] dark:border-white/[0.06] bg-card px-4 py-3 sm:px-6">
             <Button variant="outline" size="lg" className="ml-auto" onClick={() => setDismissing(true)}>
               <Ban /> Not a tender
             </Button>
@@ -269,27 +295,28 @@ function HeaderField({ label, value }: { label: string; value: React.ReactNode }
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-semibold">{value}</dd>
+      <dd className="mt-1 font-medium">{value}</dd>
     </div>
   );
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({ title, hint, ai, children }: { title: string; hint?: string; ai?: boolean; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-lg bg-zinc-50 ring-1 ring-border/70 dark:bg-white/[0.03]">
-      <div className="flex items-baseline justify-between border-b border-border px-4 py-2.5">
+    <section>
+      <div className="mb-2 flex items-center gap-1.5">
         <h2 className="text-sm font-bold text-primary">{title}</h2>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+        {ai && <AiStar className="size-3 text-primary" />}
+        {hint && <span className="ml-1 text-xs text-muted-foreground">{hint}</span>}
       </div>
-      {children}
+      <div className="space-y-0.5">{children}</div>
     </section>
   );
 }
 
 function Field({ label, ai, edited, children }: { label: string; ai?: boolean; edited?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[130px_1fr] items-center gap-3 border-b border-border/60 px-4 py-2 last:border-0">
-      <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
+    <div className="grid min-h-9 grid-cols-[112px_1fr] items-center gap-3">
+      <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
         {label}
         {ai &&
           (edited ? (
@@ -298,7 +325,7 @@ function Field({ label, ai, edited, children }: { label: string; ai?: boolean; e
             </span>
           ) : (
             <span title="Pre-filled by the AI">
-              <Sparkles className="size-3 text-primary/70" />
+              <AiStar className="size-2.5 text-primary" />
             </span>
           ))}
       </span>
@@ -308,7 +335,7 @@ function Field({ label, ai, edited, children }: { label: string; ai?: boolean; e
 }
 
 const INPUT =
-  "h-8 w-full min-w-0 rounded border border-input bg-card px-2.5 text-[13px] outline-none focus:border-ring focus:ring-1 focus:ring-ring disabled:border-transparent disabled:bg-muted";
+  "h-8 w-full min-w-0 rounded-lg border border-transparent bg-muted/70 px-3 text-[13px] outline-none transition-colors hover:bg-muted focus:border-ring focus:bg-card focus:ring-1 focus:ring-ring disabled:bg-transparent disabled:px-0";
 
 function TextInput({
   value,
@@ -355,12 +382,12 @@ function SelectInput({
 }
 
 function ReadOnly({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
-  return <span className={cn("truncate px-2.5 text-[13px] text-foreground", mono && "font-mono")}>{children}</span>;
+  return <span className={cn("truncate px-3 text-[13px] text-foreground", mono && "tabular-nums")}>{children}</span>;
 }
 
 function ActionRow({ a }: { a: TenderAction }) {
   return (
-    <li className="flex items-start gap-3 px-4 py-2.5 text-[13px]">
+    <li className="flex items-start gap-3 rounded-lg px-0 py-2 text-[13px]">
       {a.confidence === "Low" ? (
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
       ) : (

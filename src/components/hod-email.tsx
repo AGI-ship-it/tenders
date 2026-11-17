@@ -105,7 +105,7 @@ export function HodEmailHost() {
         showCloseButton={false}
         // Mail always renders in its own light theme, whatever the app's appearance.
         style={{ "--border": "#e1dfdd", colorScheme: "light" } as React.CSSProperties}
-        className="flex bg-white text-zinc-900 h-[85vh] max-h-[760px] flex-col gap-0 overflow-hidden rounded-xl p-0 [font-family:'Segoe_UI',system-ui,sans-serif] sm:max-w-6xl"
+        className="flex bg-white text-zinc-900 h-[85vh] max-h-[760px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-6xl"
       >
         <DialogTitle className="sr-only">Email to {vp.name}</DialogTitle>
 

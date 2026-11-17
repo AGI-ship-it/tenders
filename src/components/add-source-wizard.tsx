@@ -184,7 +184,7 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
                   </div>
                   <div className="grid gap-1.5">
                     <Label htmlFor="w-url">Portal URL</Label>
-                    <Input id="w-url" className="font-mono text-xs" value={url} onChange={(e) => setUrl(e.target.value)} />
+                    <Input id="w-url" className="tabular-nums text-xs" value={url} onChange={(e) => setUrl(e.target.value)} />
                   </div>
                   <div className="grid gap-1.5">
                     <Label>Type</Label>
@@ -273,7 +273,7 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
                           The agent does not solve CAPTCHAs. Subscribe this portal’s tender alerts to the mailbox below and
                           the agent reads them instead.
                         </p>
-                        <div className="rounded-lg bg-card px-3 py-2 font-mono text-xs">tenders@agfs.demo.example</div>
+                        <div className="rounded-lg bg-card px-3 py-2 tabular-nums text-xs">tenders@agfs.demo.example</div>
                         <label className="flex items-center gap-2.5">
                           <Checkbox checked={alertsOk} onCheckedChange={(c) => setAlertsOk(Boolean(c))} />
                           <span>Email alerts are set up for this portal</span>
@@ -305,7 +305,7 @@ export function AddSourceWizard({ open, onOpenChange }: { open: boolean; onOpenC
                 <div className="space-y-4">
                   <div className="rounded-xl bg-muted/40 p-4 text-sm">
                     <div className="font-medium">{name}</div>
-                    <div className="truncate font-mono text-xs text-muted-foreground">{url}</div>
+                    <div className="truncate tabular-nums text-xs text-muted-foreground">{url}</div>
                     <div className="mt-2 text-xs text-muted-foreground">
                       {kind} · {ACCESS_INFO[access].label} · {schedule} · {cats.length} service lines · {emirates.length} emirates
                     </div>

@@ -298,7 +298,7 @@ export function ScanPanel({
             </ol>
             <div
               ref={logRef}
-              className="h-52 overflow-y-auto rounded-xl bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground"
+              className="h-52 overflow-y-auto rounded-xl bg-muted/50 p-3 tabular-nums text-[11px] leading-relaxed text-muted-foreground"
             >
               <AnimatePresence initial={false}>
                 {logs.map((l, i) => (
@@ -404,7 +404,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
                     </span>
                   </div>
                   <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <span className="font-mono font-medium text-teal-700">{t.lead.leadId}</span>
+                    <span className="tabular-nums font-medium text-teal-700">{t.lead.leadId}</span>
                     <span>·</span>
                     {t.intake === "Email alert" ? <Mail className="size-3" /> : <Radar className="size-3" />}
                     {t.intake === "Email alert" ? "from email alert" : "from portal scan"}
@@ -423,7 +423,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
                 <Repeat2 className="size-3.5 shrink-0" />
                 <span className="min-w-0 flex-1 truncate">{t.title}</span>
                 <span className="shrink-0">
-                  also on portal · <span className="font-mono font-medium text-teal-700">{t.lead.leadId}</span>, no second lead
+                  also on portal · <span className="tabular-nums font-medium text-teal-700">{t.lead.leadId}</span>, no second lead
                 </span>
               </div>
             ))}

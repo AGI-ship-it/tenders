@@ -57,7 +57,7 @@ export function PortalLinkButton({ tender, source }: { tender: Tender; source: S
             <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2.5">
               <div className="min-w-0">
                 <div className="text-[11px] text-muted-foreground">Portal tender ID</div>
-                <div className="font-mono text-sm font-medium">{tender.sourceRef}</div>
+                <div className="tabular-nums text-sm font-medium">{tender.sourceRef}</div>
               </div>
               <Button variant="ghost" size="sm" onClick={copyRef}>
                 {copied ? <Check className="text-emerald-600" /> : <Copy />}
@@ -68,7 +68,7 @@ export function PortalLinkButton({ tender, source }: { tender: Tender; source: S
             {link ? (
               <div className="min-w-0 rounded-lg border px-3 py-2.5">
                 <div className="text-[11px] text-muted-foreground">Link</div>
-                <div className="font-mono text-xs break-all">{link}</div>
+                <div className="tabular-nums text-xs break-all">{link}</div>
               </div>
             ) : (
               <div className="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground">

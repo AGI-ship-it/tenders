@@ -88,7 +88,7 @@ export function PortalsView() {
                       <span className="font-medium">{s.name}</span>
                       <AiSourceTag source={s} />
                     </div>
-                    <div className="max-w-64 truncate font-mono text-[11px] text-muted-foreground">{s.url}</div>
+                    <div className="max-w-64 truncate tabular-nums text-[11px] text-muted-foreground">{s.url}</div>
                   </td>
                   <td className="px-3 py-3.5">
                     <div className="flex items-center gap-2">

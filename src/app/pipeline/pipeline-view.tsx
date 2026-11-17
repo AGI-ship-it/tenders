@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDemo } from "@/lib/store";
 import { PROSPECT_STATUSES, aiPrequalified, fitScore, inD365, isActive, priorityScore, prospectStatus } from "@/lib/scoring";
-import { ChevronRight, Download, Inbox } from "lucide-react";
+import { ChevronRight, Download } from "lucide-react";
 import Link from "next/link";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,6 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
   const [sort, setSort] = useState<SortState<SortKey>>({ key: "priority", dir: "desc" });
   // Every case, whatever its status: drafts, D365 leads, VP Commercial's decisions, and dismissed drafts.
   const leads = demo.tenders;
-  const toConfirm = demo.tenders.filter((t) => t.status === "Draft").length;
   const [tab, setTab] = useState<ProspectStatus | "All">("All");
 
   const facets = useMemo<Facet[]>(() => {
@@ -100,14 +99,9 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
       {/* The table fills the rest of the window and scrolls inside, with its headings pinned. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-soft in-data-step-section:rounded-none in-data-step-section:shadow-none">
         <TableHeader title="All cases" count={rows.length} search={q} onSearch={setQ}>
-          {toConfirm > 0 && (
-            <Link href="/inbox" className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-primary">
-              <Inbox className="size-3.5" /> {toConfirm} draft{toConfirm === 1 ? "" : "s"} to review →
-            </Link>
-          )}
           <FilterMenu facets={facets} filters={filters} />
           <Button size="lg" onClick={() => exportCsv(rows)} disabled={!rows.length}>
-            Export CSV <Download />
+            Export <Download />
           </Button>
         </TableHeader>
         {/* Every status in journey order, with how many cases are in each. */}
@@ -182,7 +176,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                   >
                     <td className="py-2.5 pr-3 pl-5 whitespace-nowrap">
                       {inD365(t) ? (
-                        <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
+                        <span className="tabular-nums text-xs font-medium text-teal-700">{t.lead.leadId}</span>
                       ) : (
                         <span className="text-xs font-medium text-muted-foreground">No lead yet</span>
                       )}

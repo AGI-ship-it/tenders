@@ -96,6 +96,7 @@ export function StepTabs() {
     {
       href: "/inbox",
       title: "Tender discovery",
+      short: "AI drafts to review",
       action: "AI reads mailboxes · prepares drafts",
       value: alerts,
       unit: "drafts",
@@ -107,6 +108,7 @@ export function StepTabs() {
     {
       href: "/pipeline",
       title: "Lead pipeline",
+      short: "Leads in D365",
       action: "AI pre-qualification",
       value: leads.length,
       unit: "leads",
@@ -118,6 +120,7 @@ export function StepTabs() {
     {
       href: "/approvals",
       title: "Approvals",
+      short: "Awaiting a decision",
       action: "BD Head decides · HoD if asked",
       value: awaiting,
       unit: "pending",
@@ -132,8 +135,8 @@ export function StepTabs() {
 
   return (
     // One root, so first-time setup can hide it. Each step is one compact row: number circle, then title and detail.
-    <div className="dot-grid shrink-0 border-b bg-zinc-50/60">
-      <ol className="mx-auto flex max-w-7xl items-center justify-center gap-1.5 px-4 py-6 lg:gap-2 lg:py-10">
+    <div className="dot-grid relative shrink-0 overflow-hidden border-b bg-zinc-50/60 bg-[radial-gradient(70%_140%_at_50%_0%,color-mix(in_oklch,var(--primary)_7%,transparent),transparent_70%)]">
+      <ol className="mx-auto flex max-w-7xl items-center justify-center gap-1.5 px-4 py-4 lg:gap-2 lg:py-6">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);
           return (
@@ -144,31 +147,43 @@ export function StepTabs() {
                 title={s.gauge}
                 className={cn(
                   "group relative flex min-w-0 shrink-0 items-center gap-2.5 rounded-full py-1 pr-4 pl-1 lg:gap-3 lg:py-1.5 lg:pr-5 lg:pl-1.5 transition-colors",
-                  on ? "bg-card shadow-soft ring-1 ring-primary/15" : "hover:bg-card/70",
+                  !on && "hover:bg-card/70",
                 )}
               >
+                {on && (
+                  <>
+                    {/* The white pill glides to the selected step. */}
+                    <motion.span
+                      layoutId="step-pill"
+                      aria-hidden
+                      className="absolute inset-0 -z-[1] rounded-full bg-white/55 ring-1 ring-primary/10 backdrop-blur-sm dark:bg-white/5"
+                      transition={{ type: "spring", stiffness: 380, damping: 34 }}
+                    />
+                  </>
+                )}
                 <span
                   className={cn(
-                    "relative grid size-11 lg:size-14 shrink-0 place-items-center rounded-full transition-all duration-300",
+                    "relative grid size-12 lg:size-16 shrink-0 place-items-center rounded-full transition-all duration-300",
                     on ? "bg-primary text-primary-foreground" : "bg-card text-primary shadow-soft",
                   )}
                 >
                   {on && <Breathe />}
                   <ProgressRing progress={s.progress} selected={on} />
-                  <span className="tabular text-base font-extrabold lg:text-xl tracking-tight">
+                  <span className="tabular text-lg font-extrabold lg:text-2xl tracking-tight">
                     <CountUp value={s.value} />
                   </span>
                 </span>
                 <span className="min-w-0 leading-tight">
                   <span
                     className={cn(
-                      "flex items-center gap-1.5 text-xs font-bold whitespace-nowrap lg:text-base",
+                      "flex items-center gap-1.5 text-sm font-bold whitespace-nowrap lg:text-lg",
                       on ? "text-primary" : "text-foreground",
                     )}
                   >
                     {s.title}
                     {s.badge && <StepBadge {...s.badge} />}
                   </span>
+                  <span className="mt-0.5 hidden text-[13px] whitespace-nowrap text-muted-foreground lg:block">{s.short}</span>
                 </span>
               </Link>
               {i < steps.length - 1 && <FlowLine filled={i < current} />}
@@ -199,9 +214,9 @@ function ProgressRing({ progress, selected }: { progress: number; selected: bool
       <circle
         cx="50"
         cy="50"
-        r="48"
+        r="47"
         fill="none"
-        strokeWidth="1.6"
+        strokeWidth="3"
         strokeLinecap="round"
         pathLength={120}
         strokeDasharray="1.4 2.6"
@@ -210,9 +225,9 @@ function ProgressRing({ progress, selected }: { progress: number; selected: bool
       <motion.circle
         cx="50"
         cy="50"
-        r="48"
+        r="47"
         fill="none"
-        strokeWidth="3"
+        strokeWidth="5"
         strokeLinecap="round"
         stroke={selected ? "rgb(255 255 255 / 0.85)" : `url(#${id}-arc)`}
         initial={reduce ? false : { pathLength: 0 }}
@@ -252,7 +267,7 @@ function StepBadge({ text, tone }: { text: string; tone: keyof typeof BADGE_TONE
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 500, damping: 22, delay: 0.5 }}
       className={cn(
-        "hidden rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ring-1 ring-inset lg:inline-block",
+        "hidden rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap lg:inline-block",
         BADGE_TONE[tone],
       )}
     >
