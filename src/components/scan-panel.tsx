@@ -343,7 +343,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       <div className="space-y-6">
       <section className="space-y-2">
-        <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">By source</h3>
+        <h3 className="text-xs font-bold tracking-wide text-primary uppercase">By source</h3>
         <ul className="divide-y rounded-xl bg-card ring-1 ring-border">
           {runs.map(({ source, outcome }) => (
             <li key={source.id} className="flex items-center gap-2.5 px-3 py-2.5 text-sm">
@@ -371,7 +371,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
       </div>
 
       <section className="space-y-2">
-        <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">
+        <h3 className="text-xs font-bold tracking-wide text-primary uppercase">
           {newTenders.length ? "New leads in D365" : "Prospects found"}
         </h3>
         {list.length === 0 ? (
@@ -417,7 +417,7 @@ function ScanResults({ scan }: { scan: LastScan }) {
         )}
         {alreadyLeads.length > 0 && (
           <div className="space-y-1.5 pt-3">
-            <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">Already leads from email</h3>
+            <h3 className="text-xs font-bold tracking-wide text-primary uppercase">Already leads from email</h3>
             {alreadyLeads.map((t) => (
               <div key={t.id} className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 <Repeat2 className="size-3.5 shrink-0" />

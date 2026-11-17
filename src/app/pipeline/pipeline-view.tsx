@@ -192,7 +192,7 @@ export function PipelineView({ embedded = false }: { embedded?: boolean }) {
                         </span>
                       )}
                     </td>
-                    <td className="max-w-[380px] px-3 py-2.5" title={`${t.title}\n\n${t.summary}`}>
+                    <td className="max-w-[280px] px-3 py-2.5" title={`${t.title}\n\n${t.summary}`}>
                       <div className="truncate font-medium group-hover:text-primary">{t.title}</div>
                     </td>
                     <td className="max-w-[200px] px-3 py-2.5" title={t.buyer}>

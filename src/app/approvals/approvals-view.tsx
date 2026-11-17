@@ -320,7 +320,7 @@ function ReviewPanel({
       </Button>
 
       <div className="rounded-xl bg-muted/30 p-5">
-        <h3 className="mb-4 text-sm font-bold text-primary">Approval · BD Head, HoD if asked</h3>
+        <h3 className="mb-4 text-sm font-bold text-primary">Conflict check, then approval</h3>
         <DecisionPanel tender={tender} />
         {!isHod && PENDING.includes(tender.status) && (
           <Button variant="secondary" size="lg" className="mt-3 w-full" onClick={() => openHodEmail(tender.id)}>

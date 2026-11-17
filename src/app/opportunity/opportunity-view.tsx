@@ -88,7 +88,7 @@ export function TenderDetail() {
               </li>
             </ol>
           </nav>
-          <h1 className="max-w-3xl text-2xl font-bold tracking-tight">{tender.title}</h1>
+          <h1 className="max-w-3xl text-2xl font-bold tracking-tight text-primary">{tender.title}</h1>
           <div className="text-sm text-muted-foreground">
             {tender.category} · {tender.buyer} · {tender.emirate}
           </div>
@@ -185,7 +185,7 @@ export function TenderDetail() {
             <DecisionPanel tender={tender} />
             {history.length > 0 && (
               <div className="mt-6 border-t pt-4">
-                <h3 className="mb-3 text-xs font-bold tracking-wide text-foreground uppercase">History</h3>
+                <h3 className="mb-3 text-xs font-bold tracking-wide text-primary uppercase">History</h3>
                 <ol className="space-y-3">
                   {history.slice(0, 5).map((e) => (
                     <li key={e.id} className="flex gap-2.5 text-xs">
@@ -251,7 +251,7 @@ function PrequalCard({ tender }: { tender: Tender }) {
         </div>
       </div>
 
-      <h3 className="mt-4 mb-2 text-xs font-bold tracking-wide text-foreground uppercase">
+      <h3 className="mt-4 mb-2 text-xs font-bold tracking-wide text-primary uppercase">
         Why {yes ? "Yes" : "No"}
       </h3>
       <ul className="grid gap-2 sm:grid-cols-2">

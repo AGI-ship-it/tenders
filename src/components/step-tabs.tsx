@@ -8,7 +8,6 @@ import { useDemo } from "@/lib/store";
 import { aiPrequalified, inD365 } from "@/lib/scoring";
 import { daysSince } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { boldD365 } from "@/components/shared";
 
 export const STEP_ROUTES = ["/inbox", "/pipeline", "/approvals"];
 
@@ -98,7 +97,6 @@ export function StepTabs() {
       href: "/inbox",
       title: "Tender discovery",
       action: "AI reads mailboxes · prepares drafts",
-      short: "AI drafts · review, create in D365",
       value: alerts,
       unit: "drafts",
       progress: ratio(leads.length, found.length),
@@ -110,7 +108,6 @@ export function StepTabs() {
       href: "/pipeline",
       title: "Lead pipeline",
       action: "AI pre-qualification",
-      short: "In D365 · AI pre-qualified",
       value: leads.length,
       unit: "leads",
       progress: ratio(aiYes, leads.length),
@@ -122,7 +119,6 @@ export function StepTabs() {
       href: "/approvals",
       title: "Approvals",
       action: "BD Head decides · HoD if asked",
-      short: "Pending · BD Head, HoD if asked",
       value: awaiting,
       unit: "pending",
       progress: ratio(decided, leads.length),
@@ -137,7 +133,7 @@ export function StepTabs() {
   return (
     // One root, so first-time setup can hide it. Each step is one compact row: number circle, then title and detail.
     <div className="dot-grid shrink-0 border-b bg-zinc-50/60">
-      <ol className="mx-auto flex max-w-7xl items-center justify-center gap-1.5 px-4 py-3 lg:gap-2 lg:py-5">
+      <ol className="mx-auto flex max-w-7xl items-center justify-center gap-1.5 px-4 py-6 lg:gap-2 lg:py-10">
         {steps.map((s, i) => {
           const on = pathname.startsWith(s.href);
           return (
@@ -173,7 +169,6 @@ export function StepTabs() {
                     {s.title}
                     {s.badge && <StepBadge {...s.badge} />}
                   </span>
-                  <span className="hidden mt-0.5 text-xs whitespace-nowrap text-muted-foreground lg:block">{boldD365(s.short)}</span>
                 </span>
               </Link>
               {i < steps.length - 1 && <FlowLine filled={i < current} />}

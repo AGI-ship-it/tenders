@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Ban, CheckCircle2, Mail, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, ChevronDown, Mail, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { motion, useReducedMotion } from "motion/react";
 import { createLead, dismissDraft, useDemo, type LeadEdits } from "@/lib/store";
@@ -90,7 +90,7 @@ export function LeadForm({
   }
 
   return (
-    <div className="@container flex min-h-0 flex-1 flex-col bg-muted/30 text-foreground">
+    <div className="@container flex min-h-0 flex-1 flex-col bg-card text-foreground">
       {/* Command bar */}
       <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border bg-card px-3 text-[13px] text-foreground/90">
         {onOpenEmail && (
@@ -110,10 +110,10 @@ export function LeadForm({
         <div className="relative border-b border-border bg-card px-4 py-4 pr-14 @2xl:px-5 @2xl:pr-16">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">
+              <h1 className="text-xl font-bold text-primary">{f.title || "Untitled lead"}</h1>
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 {draft ? "Lead draft · not in D365 yet" : dismissed ? "Draft dismissed · not a tender" : `Lead · ${t.lead.state}`}
               </div>
-              <h1 className="mt-0.5 text-xl font-semibold">{f.title || "Untitled lead"}</h1>
             </div>
             <dl className="flex flex-wrap gap-x-8 gap-y-2 text-[13px]">
               <HeaderField
@@ -299,9 +299,9 @@ function HeaderField({ label, value }: { label: string; value: React.ReactNode }
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-md bg-card shadow-xs ring-1 ring-border">
+    <section className="overflow-hidden rounded-lg bg-zinc-50 ring-1 ring-border/70 dark:bg-white/[0.03]">
       <div className="flex items-baseline justify-between border-b border-border px-4 py-2.5">
-        <h2 className="text-sm font-semibold">{title}</h2>
+        <h2 className="text-sm font-bold text-primary">{title}</h2>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </div>
       {children}
@@ -359,11 +359,21 @@ function SelectInput({
   disabled?: boolean;
 }) {
   return (
-    <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={INPUT}>
-      {options.map((o) => (
-        <option key={o}>{o}</option>
-      ))}
-    </select>
+    <div className="relative min-w-0">
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(INPUT, "cursor-pointer appearance-none truncate pr-8")}
+      >
+        {options.map((o) => (
+          <option key={o}>{o}</option>
+        ))}
+      </select>
+      {!disabled && (
+        <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      )}
+    </div>
   );
 }
 

@@ -164,12 +164,21 @@ export function hodText(o: OpsInput): string {
 
 type StepState = "done" | "rejected" | "current" | "next";
 
-/** Who has the lead: the HoD row appears only when the BD Head asked them. Each response is logged on the D365 lead. */
+/** Who has the lead: the conflict-of-interest check comes first, then approval. The HoD row appears only when the BD Head asked them. Each response is logged on the D365 lead. */
 function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval: ApprovalRecord; ops?: OpsInput }) {
   const s = tender.status;
   const bdState: StepState =
     a.decision === "Approved" ? "done" : a.decision === "Rejected" ? "rejected" : s === "BD Head review" ? "current" : "next";
-  const rows: { who: string; role: string; state: StepState; text: string; tone?: string; note?: string }[] = [];
+  const rows: { who: string; role: string; state: StepState; text: string; tone?: string; note?: string; detail?: string }[] = [];
+  // First, before anyone approves: the AI's conflict-of-interest check, run when the lead is created.
+  rows.push({
+    who: "Conflict of interest",
+    role: "AI check",
+    state: "done",
+    text: "Clear",
+    tone: "text-emerald-700",
+    detail: `No ties found between ${tender.buyer} and AGFS staff, current clients or partners`,
+  });
   if (ops) {
     rows.push({
       who: ops.person,
@@ -230,6 +239,7 @@ function ApprovalChain({ tender, approval: a, ops }: { tender: Tender; approval:
                 </span>
                 <span className={cn("shrink-0 text-xs", r.tone ?? "text-muted-foreground")}>{r.text}</span>
               </div>
+              {r.detail && <div className="mt-0.5 text-xs text-muted-foreground">{r.detail}</div>}
               {r.note && <div className="mt-0.5 text-xs text-muted-foreground italic">“{r.note}”</div>}
             </div>
           </li>

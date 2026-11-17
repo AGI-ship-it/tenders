@@ -37,7 +37,7 @@ export function EmailView({ m, t, className }: { m: MailItem; t?: Tender; classN
   return (
     <div className={cn("flex min-w-0 flex-1 flex-col bg-card text-foreground", className)}>
       <div className="shrink-0 border-b px-5 pt-4 pb-3 pr-12">
-        <h2 className="truncate text-base font-semibold" title={m.subject}>
+        <h2 className="truncate text-base font-bold text-primary" title={m.subject}>
           {m.subject}
         </h2>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">

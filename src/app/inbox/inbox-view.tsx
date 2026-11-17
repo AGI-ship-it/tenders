@@ -20,6 +20,7 @@ import { MailboxOnboarding } from "@/components/mailbox-connect";
 import { CountUp } from "@/components/step-tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LeadForm } from "@/components/lead-form";
+import outlookIcon from "@/assets/outlook.svg";
 
 /** The agent's run over the mailbox. "sort" moves the emails into lanes one at a time. */
 const STEPS = [
@@ -342,7 +343,7 @@ function ScanScreen({
       >
         <ScanHero />
 
-        <h2 className="mt-3 text-xl font-semibold tracking-tight text-foreground">AI drafting from Outlook</h2>
+        <h2 className="mt-3 text-xl font-bold tracking-tight text-primary">AI drafting from Outlook</h2>
         <p className="mt-1 text-[13px] text-muted-foreground">Finding tenders in {addresses.map(shortMailbox).join(" and ")}</p>
 
         {/* Progress: the step, a hairline bar, and what it is reading */}
@@ -550,27 +551,10 @@ function OrbitRing({ half }: { half: "back" | "front" }) {
   );
 }
 
-/** Outlook-style app mark: the blue envelope with the "O" tile in front. */
+/** The Microsoft Outlook app icon (2025). */
 function OutlookLogo({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" role="img" aria-label="Outlook" className={className}>
-      <defs>
-        <linearGradient id="ol-env" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#28A8EA" />
-          <stop offset="1" stopColor="#0364B8" />
-        </linearGradient>
-        <linearGradient id="ol-tile" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#1490DF" />
-          <stop offset="1" stopColor="#0A4FA8" />
-        </linearGradient>
-      </defs>
-      <rect x="15" y="9" width="30" height="30" rx="4" fill="url(#ol-env)" />
-      <path d="M15 17l15 10 15-10" fill="none" stroke="#fff" strokeOpacity=".6" strokeWidth="2" strokeLinejoin="round" />
-      <rect x="15" y="27" width="30" height="12" rx="3" fill="#0F78D4" fillOpacity=".55" />
-      <rect x="3" y="13" width="22" height="22" rx="3.5" fill="url(#ol-tile)" />
-      <ellipse cx="14" cy="24" rx="5" ry="6" fill="none" stroke="#fff" strokeWidth="2.6" />
-    </svg>
-  );
+  // eslint-disable-next-line @next/next/no-img-element -- static export; the SVG needs no optimisation
+  return <img src={outlookIcon.src} alt="Outlook" draggable={false} className={cn("object-contain", className)} />;
 }
 
 function EmptyLane({ text }: { text: string }) {
@@ -643,7 +627,7 @@ function Results({
       {/* Left: the drafts the AI prepared, one selected. */}
       <aside className="flex shrink-0 flex-col border-b lg:min-h-0 lg:w-[380px] lg:border-r lg:border-b-0 xl:w-[420px]">
         <div className="shrink-0 space-y-3 px-4 pt-4 pb-2">
-          <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">
+          <h3 className="text-xs font-bold tracking-wide text-primary uppercase">
             Lead drafts{" "}
             <span className="text-[11px] font-semibold tracking-normal text-muted-foreground normal-case">
               ({toReview ? `${toReview} to review` : "all reviewed"})
@@ -690,7 +674,7 @@ function Results({
           ))}
           {dupMail.length > 0 && (
             <div className="space-y-2.5 pt-5">
-              <h3 className="px-1 text-xs font-bold tracking-wide text-foreground uppercase">Already a lead</h3>
+              <h3 className="px-1 text-xs font-bold tracking-wide text-primary uppercase">Already a lead</h3>
               {dupMail.map((m) => (
                 <MailRow
                   key={m.id}
@@ -738,7 +722,7 @@ function AllDone({ created, dismissed, linked, onRun }: { created: number; dismi
     >
       <aside className="flex shrink-0 flex-col border-b lg:min-h-0 lg:w-[380px] lg:border-r lg:border-b-0 xl:w-[420px]">
         <div className="shrink-0 px-4 pt-4 pb-2">
-          <h3 className="text-xs font-bold tracking-wide text-foreground uppercase">
+          <h3 className="text-xs font-bold tracking-wide text-primary uppercase">
             Lead drafts <span className="text-[11px] font-semibold tracking-normal text-muted-foreground normal-case">(0 to review)</span>
           </h3>
         </div>
@@ -766,7 +750,7 @@ function AllDone({ created, dismissed, linked, onRun }: { created: number; dismi
         >
           <Check className="size-9" strokeWidth={2.5} />
         </motion.span>
-        <h3 className="relative mt-6 text-xl font-bold text-foreground">
+        <h3 className="relative mt-6 text-xl font-bold text-primary">
           {created || dismissed ? <>Every draft is in {boldD365("D365")}</> : "You're all caught up"}
         </h3>
         <p className="relative mt-1.5 max-w-sm text-sm text-balance text-muted-foreground">
