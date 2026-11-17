@@ -526,34 +526,28 @@ function Register({
                         {line.opsHead} · {line.name}
                       </div>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td
+                      className="px-3 py-3 whitespace-nowrap"
+                      title={
+                        mine?.includes(t.status)
+                          ? "Your step"
+                          : pending
+                            ? t.approval
+                              ? `Lead created ${timeAgo(t.approval.submittedAt).toLowerCase()}`
+                              : undefined
+                            : `${agrees ? "Matches AI" : "Overrides AI"}${t.approval?.decidedAt ? ` · ${formatDate(t.approval.decidedAt)}` : ""}`
+                      }
+                    >
                       <StatusBadge status={t.status} />
-                      <div className="mt-1.5 text-[11px] text-muted-foreground">
-                        {mine?.includes(t.status) ? (
-                          <span className="font-semibold text-primary">Your step</span>
-                        ) : pending ? (
-                          t.approval && `Lead created ${timeAgo(t.approval.submittedAt).toLowerCase()}`
-                        ) : (
-                          <span className={cn("font-medium", !agrees && "text-magenta")}>
-                            {agrees ? "Matches AI" : "Overrides AI"}
-                            {t.approval?.decidedAt && (
-                              <span className="font-normal text-muted-foreground"> · {formatDate(t.approval.decidedAt)}</span>
-                            )}
-                          </span>
-                        )}
-                      </div>
                     </td>
-                    <td className="px-3 py-3 pr-5 whitespace-nowrap">
+                    <td
+                      className="px-3 py-3 pr-5 whitespace-nowrap"
+                      title={t.opportunity ? `Opportunity · from ${t.lead.leadId}` : `Lead · ${t.lead.state}`}
+                    >
                       {t.opportunity ? (
-                        <>
-                          <span className="font-mono text-xs font-medium text-emerald-700">{t.opportunity.oppId}</span>
-                          <div className="text-xs text-muted-foreground">Opportunity · from {t.lead.leadId}</div>
-                        </>
+                        <span className="font-mono text-xs font-medium text-emerald-700">{t.opportunity.oppId}</span>
                       ) : (
-                        <>
-                          <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
-                          <div className="text-xs text-muted-foreground">Lead · {t.lead.state}</div>
-                        </>
+                        <span className="font-mono text-xs font-medium text-teal-700">{t.lead.leadId}</span>
                       )}
                     </td>
                   </tr>
