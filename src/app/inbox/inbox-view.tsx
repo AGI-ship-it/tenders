@@ -451,6 +451,64 @@ function ScanScreen({
  * The picture at the top: the Outlook logo in the middle with a glowing ring round it like Saturn's
  * (behind it at the top, in front at the bottom) and a light running round.
  */
+/**
+ * A soft energy orb behind the Outlook mark while the AI reads: a pulsing light-blue core and a few glowing
+ * orbits spinning on different tilts.
+ */
+function EnergyOrb() {
+  const reduce = useReducedMotion();
+  const orbits = [
+    { tilt: 35, rx: 46, ry: 18, dur: 9, dir: 1, w: 1.4, o: 0.7 },
+    { tilt: 125, rx: 44, ry: 16, dur: 12, dir: -1, w: 1.1, o: 0.5 },
+  ];
+  return (
+    <div aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 size-44 -translate-x-1/2 -translate-y-1/2">
+      {/* Core */}
+      <motion.div
+        className="absolute inset-2 rounded-full bg-[radial-gradient(circle,rgb(255_255_255/0.8)_0%,rgb(125_211_252/0.5)_22%,rgb(56_189_248/0.22)_48%,transparent_70%)] blur-[3px]"
+        animate={reduce ? undefined : { scale: [0.9, 1.08, 0.9], opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <svg viewBox="0 0 100 100" className="absolute inset-0 size-full overflow-visible">
+        <defs>
+          <linearGradient id="orb-arc" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#e0f2fe" />
+            <stop offset="0.5" stopColor="#7dd3fc" />
+            <stop offset="1" stopColor="#28a8ea" />
+          </linearGradient>
+          <filter id="orb-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.2" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {orbits.map((r, i) => (
+          <g key={i} transform={`rotate(${r.tilt} 50 50)`}>
+            <motion.ellipse
+              cx="50"
+              cy="50"
+              rx={r.rx}
+              ry={r.ry}
+              fill="none"
+              stroke="url(#orb-arc)"
+              strokeWidth={r.w}
+              strokeLinecap="round"
+              strokeDasharray="90 60"
+              opacity={r.o}
+              filter="url(#orb-glow)"
+              style={{ transformOrigin: "50px 50px" }}
+              animate={reduce ? undefined : { strokeDashoffset: [0, -150 * r.dir] }}
+              transition={{ duration: r.dur, repeat: Infinity, ease: "linear" }}
+            />
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 function ScanHero() {
   const reduce = useReducedMotion();
   const float = (d: number) =>
@@ -462,6 +520,8 @@ function ScanHero() {
         aria-hidden
         className="absolute top-1/2 left-1/2 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#28a8ea]/25 blur-2xl"
       />
+
+      <EnergyOrb />
 
       <OrbitRing half="back" />
 
@@ -475,8 +535,6 @@ function ScanHero() {
       {/* Twinkles */}
       {[
         { c: "top-1 right-8 size-3.5", d: 0, star: true },
-        { c: "top-[70%] left-[30%] size-1.5", d: 0.5 },
-        { c: "top-3 left-[36%] size-1", d: 1.1 },
         { c: "top-[40%] right-2 size-1.5", d: 0.8 },
       ].map((x) => (
         <motion.span
