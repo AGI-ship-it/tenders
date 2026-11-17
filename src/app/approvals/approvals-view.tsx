@@ -10,6 +10,7 @@ import { downloadCsv } from "@/lib/csv";
 import { daysUntil, formatDate, formatDateTime, hoursLeft, timeAgo } from "@/lib/format";
 import type { Tender } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { AiSpark } from "@/components/ai-spark";
 import { Button } from "@/components/ui/button";
 import { FilterChips, FilterMenu, TableHeader, useTableFilters, type Facet } from "@/components/table-filters";
 import { SortTh, compareBy, nextSort, type SortState } from "@/components/sort-header";
@@ -294,21 +295,23 @@ function ReviewPanel({
         </motion.div>
       )}
 
-      <div className="pr-8">
-        <h2 className="text-lg leading-tight font-bold tracking-tight text-primary">{tender.title}</h2>
-        <div className="mt-1.5 text-sm text-muted-foreground">
-          {tender.buyer} · {tender.emirate}
+      <div className="flex items-start gap-3 pr-8">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg leading-tight font-bold tracking-tight text-primary">{tender.title}</h2>
+          <div className="mt-1.5 text-sm text-muted-foreground">
+            {tender.buyer} · {tender.emirate}
+          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            <span className="font-mono">{tender.id}</span> · lead <span className="font-mono">{tender.lead.leadId}</span> ·{" "}
+            {tender.category}
+          </div>
         </div>
-        <div className="mt-0.5 text-xs text-muted-foreground">
-          <span className="font-mono">{tender.id}</span> · lead <span className="font-mono">{tender.lead.leadId}</span> · {tender.category}
-        </div>
-      </div>
-
-      <div className="space-y-2.5 rounded-xl bg-secondary/60 p-5">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
-        </div>
-        <p className="text-sm text-foreground/80">{tender.aiNarrative}</p>
+        <AiSpark label="AI pre-qualification">
+          <span className="flex items-center gap-2 font-semibold">
+            AI pre-qualification <PrequalBadge yes={aiPrequalified(tender)} />
+          </span>
+          <span className="block opacity-80">{tender.aiNarrative}</span>
+        </AiSpark>
       </div>
 
       <Button

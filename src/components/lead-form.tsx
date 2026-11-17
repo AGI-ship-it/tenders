@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Ban, CheckCircle2, ChevronDown, Mail, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { motion, useReducedMotion } from "motion/react";
 import { createLead, dismissDraft, useDemo, type LeadEdits } from "@/lib/store";
 import { aiPrequalified } from "@/lib/scoring";
 import { formatAED, formatDate, formatDateTime } from "@/lib/format";
@@ -13,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { channelOf, mailboxOfTender, senderOf } from "@/lib/mailbox";
 import { Button } from "@/components/ui/button";
 import { boldD365 } from "@/components/shared";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AiSpark } from "@/components/ai-spark";
 
 const CATEGORIES: Category[] = [
   "Integrated FM",
@@ -53,7 +52,6 @@ export function LeadForm({
   const draft = t.status === "Draft";
   const dismissed = t.status === "Not a tender";
   const [dismissing, setDismissing] = useState(false);
-  const reduce = useReducedMotion();
   const [f, setF] = useState({
     title: t.title,
     buyer: t.buyer,
@@ -134,34 +132,13 @@ export function LeadForm({
               <HeaderField label="Owner" value={t.lead.owner} />
             </dl>
             {draft && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={<button aria-label="How the AI prepared this draft" />}
-                  className="group/ai absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-linear-to-br from-primary to-magenta text-white shadow-md shadow-primary/30 transition-transform hover:scale-110 @2xl:right-5"
-                >
-                  {/* Soft ripple and a twinkling sparkle, so the AI note invites a look */}
-                  <motion.span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-primary/40"
-                    animate={reduce ? undefined : { scale: [1, 1.7], opacity: [0.55, 0] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
-                  />
-                  <motion.span
-                    className="relative"
-                    animate={reduce ? undefined : { rotate: [0, 18, -10, 0], scale: [1, 1.15, 1] }}
-                    transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 0.6, ease: "easeInOut" }}
-                  >
-                    <Sparkles className="size-4" />
-                  </motion.span>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" align="end" className="max-w-80 flex-col items-start gap-1 text-left">
-                  <span className="block font-semibold">Draft prepared by the AI from {mailboxOfTender(t, demo.mailboxes)}</span>
-                  <span className="block opacity-80">
-                    From the email {sender.name} sent {formatDateTime(t.discoveredAt)}. Check the details it filled in, correct anything,
-                    then create the lead. Nothing is in D365 until you do.
-                  </span>
-                </TooltipContent>
-              </Tooltip>
+              <AiSpark label="How the AI prepared this draft" className="absolute top-4 right-4 @2xl:right-5">
+                <span className="block font-semibold">Draft prepared by the AI from {mailboxOfTender(t, demo.mailboxes)}</span>
+                <span className="block opacity-80">
+                  From the email {sender.name} sent {formatDateTime(t.discoveredAt)}. Check the details it filled in, correct anything, then
+                  create the lead. Nothing is in D365 until you do.
+                </span>
+              </AiSpark>
             )}
           </div>
         </div>
